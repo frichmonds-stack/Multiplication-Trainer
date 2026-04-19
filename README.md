@@ -1,16 +1,20 @@
-# Multiplication Trainer
+# Foo's Multiplication Trainer
 
 A self-contained multiplication practice webapp built with plain HTML, CSS, and JavaScript.
 
 ## What it does
 
-- Runs short or endless multiplication drills
+- Uses a slimmer app-style shell with a separate header band and dedicated Setup, Practice, Results, and Progress screens
 - Supports mixed-table practice or a focused single-table mode
+- Supports timed runs, question-goal runs, and endless practice
+- Keeps the practice screen minimal with a question timer, session timer, countdown start, and quick right/wrong feedback
 - Uses adaptive question weighting to bring back new or missed facts more often
-- Tracks streaks, accuracy, pace, and recent answers
+- Tracks daily slice and heart rewards with browser-local streak history
+- Shows a current-month calendar for completed practice days and daily rewards
 - Shows a table-by-table radar so weak and strong tables are easy to spot
 - Remembers your preferred setup in the browser between visits
 - Saves long-term progress in the browser with localStorage
+- Uses a watermelon-inspired theme with rotating banner messages
 
 ## Run it
 

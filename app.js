@@ -1,84 +1,183 @@
 const STORAGE_KEY = "multiplication-trainer-progress-v1";
 const SETTINGS_KEY = "multiplication-trainer-settings-v1";
+const HERO_MESSAGE_KEY = "multiplication-trainer-hero-message-v1";
 const FACTOR_LIMIT = 12;
 const TABLE_FACTORS = Array.from({ length: FACTOR_LIMIT }, (_, index) => index + 1);
-const SESSION_LENGTH_OPTIONS = [10, 20, 40, 0];
+const QUESTION_PRESETS = [10, 20, 30];
+const TIME_PRESETS = [1, 3, 5];
+const DAILY_TARGET = 10;
+const COUNTDOWN_STEPS = ["3", "2", "1", "START!"];
+const ENDLESS_COLORS = [
+  "#ff8787",
+  "#ff9f80",
+  "#ffb266",
+  "#ffd166",
+  "#dfe88d",
+  "#b8e6a5",
+  "#7fd6b1",
+  "#72d1c7",
+  "#88c7ff",
+  "#d7a7ff",
+];
+const HERO_MESSAGES = [
+  "Patterns get friendlier the more often you meet them.",
+  "Practice is where facts stop feeling random.",
+  "Every session makes the next answer a little easier.",
+  "Math rewards the patient brain.",
+  "Knowledge grows quietly, then suddenly feels obvious.",
+  "A little practice has a long memory.",
+  "What feels tricky now can feel natural later.",
+  "Today's practice is tomorrow's confidence.",
+  "Repetition is just pattern recognition in work clothes.",
+  "Small steps in practice become speed over time.",
+  "Strong recall is usually built in small pieces.",
+  "Each answer is one more pattern made familiar.",
+  "Brains love a pattern that keeps showing up.",
+  "Steady reps turn guesswork into recognition.",
+  "Fluency grows one familiar fact at a time.",
+];
+
+const RESULTS_SLIDES = [
+  {
+    key: "trouble",
+    kicker: "Trouble Spots",
+    title: "What to revisit next",
+  },
+  {
+    key: "recent",
+    kicker: "Recent Answers",
+    title: "How the last run felt",
+  },
+];
 
 const elements = {
+  screens: Array.from(document.querySelectorAll(".screen")),
+  navButtons: Array.from(document.querySelectorAll(".nav-button")),
+  viewButtons: Array.from(document.querySelectorAll("[data-view-target]")),
+  heroMessage: document.getElementById("heroMessage"),
   settingsForm: document.getElementById("settingsForm"),
   minFactor: document.getElementById("minFactor"),
   maxFactor: document.getElementById("maxFactor"),
-  sessionLength: document.getElementById("sessionLength"),
-  focusFactor: document.getElementById("focusFactor"),
   focusField: document.getElementById("focusField"),
+  focusFactor: document.getElementById("focusFactor"),
   adaptiveMode: document.getElementById("adaptiveMode"),
+  timeField: document.getElementById("timeField"),
+  timeCustomField: document.getElementById("timeCustomField"),
+  timeCustom: document.getElementById("timeCustom"),
+  questionTargetField: document.getElementById("questionTargetField"),
+  questionCustomField: document.getElementById("questionCustomField"),
+  questionCustom: document.getElementById("questionCustom"),
   resetProgressButton: document.getElementById("resetProgressButton"),
+  setupPreviewStyle: document.getElementById("setupPreviewStyle"),
+  setupPreviewType: document.getElementById("setupPreviewType"),
+  setupPreviewRange: document.getElementById("setupPreviewRange"),
+  setupPreviewAdaptive: document.getElementById("setupPreviewAdaptive"),
+  setupPreviewNote: document.getElementById("setupPreviewNote"),
+  countdownNumber: document.getElementById("countdownNumber"),
+  sessionBadge: document.getElementById("sessionBadge"),
+  finishSessionButton: document.getElementById("finishSessionButton"),
+  questionTimer: document.getElementById("questionTimer"),
+  sessionTimer: document.getElementById("sessionTimer"),
+  practiceAttemptedCount: document.getElementById("practiceAttemptedCount"),
+  progressFill: document.getElementById("progressFill"),
+  progressText: document.getElementById("progressText"),
+  problemText: document.getElementById("problemText"),
   answerForm: document.getElementById("answerForm"),
   answerInput: document.getElementById("answerInput"),
   checkButton: document.getElementById("checkButton"),
   skipButton: document.getElementById("skipButton"),
-  problemText: document.getElementById("problemText"),
-  promptCopy: document.getElementById("promptCopy"),
   feedback: document.getElementById("feedback"),
-  sessionBadge: document.getElementById("sessionBadge"),
-  progressFill: document.getElementById("progressFill"),
-  progressText: document.getElementById("progressText"),
-  questionTimer: document.getElementById("questionTimer"),
-  goalText: document.getElementById("goalText"),
-  sessionRecap: document.getElementById("sessionRecap"),
-  recapAnswered: document.getElementById("recapAnswered"),
-  recapAccuracy: document.getElementById("recapAccuracy"),
-  recapPace: document.getElementById("recapPace"),
-  recapBestStreak: document.getElementById("recapBestStreak"),
-  sessionCorrect: document.getElementById("sessionCorrect"),
-  sessionAccuracy: document.getElementById("sessionAccuracy"),
-  sessionStreak: document.getElementById("sessionStreak"),
-  sessionBestStreak: document.getElementById("sessionBestStreak"),
-  sessionAvgTime: document.getElementById("sessionAvgTime"),
-  sessionSkipped: document.getElementById("sessionSkipped"),
+  resultsTitle: document.getElementById("resultsTitle"),
+  resultsSummary: document.getElementById("resultsSummary"),
+  resultQuestions: document.getElementById("resultQuestions"),
+  resultCorrect: document.getElementById("resultCorrect"),
+  resultAccuracy: document.getElementById("resultAccuracy"),
+  resultPace: document.getElementById("resultPace"),
+  resultBestStreak: document.getElementById("resultBestStreak"),
+  resultSkipped: document.getElementById("resultSkipped"),
+  repeatSessionButton: document.getElementById("repeatSessionButton"),
+  resultsMonthLabel: document.getElementById("resultsMonthLabel"),
+  resultsRewardStatus: document.getElementById("resultsRewardStatus"),
+  resultsCalendarGrid: document.getElementById("resultsCalendarGrid"),
+  resultsCarouselKicker: document.getElementById("resultsCarouselKicker"),
+  resultsCarouselTitle: document.getElementById("resultsCarouselTitle"),
+  resultsPrevButton: document.getElementById("resultsPrevButton"),
+  resultsNextButton: document.getElementById("resultsNextButton"),
+  resultsSlides: Array.from(document.querySelectorAll(".results-slide")),
   overallAnswered: document.getElementById("overallAnswered"),
   overallAccuracy: document.getElementById("overallAccuracy"),
   overallBestStreak: document.getElementById("overallBestStreak"),
   overallBestPace: document.getElementById("overallBestPace"),
-  troubleList: document.getElementById("troubleList"),
+  currentPracticeStreak: document.getElementById("currentPracticeStreak"),
+  bestPracticeDayStreak: document.getElementById("bestPracticeDayStreak"),
+  currentMonthLabel: document.getElementById("currentMonthLabel"),
+  calendarGrid: document.getElementById("calendarGrid"),
+  streakMessage: document.getElementById("streakMessage"),
   coachTip: document.getElementById("coachTip"),
+  resultsTroubleList: document.getElementById("resultsTroubleList"),
+  progressTroubleList: document.getElementById("progressTroubleList"),
   tableGrid: document.getElementById("tableGrid"),
   recentResults: document.getElementById("recentResults"),
+  sliceBadge: document.getElementById("sliceBadge"),
+  heartBadge: document.getElementById("heartBadge"),
+  sliceFill: document.getElementById("sliceFill"),
+  heartFill: document.getElementById("heartFill"),
+  sliceProgressLabel: document.getElementById("sliceProgressLabel"),
+  heartProgressLabel: document.getElementById("heartProgressLabel"),
+  dailyProgressText: document.getElementById("dailyProgressText"),
+  dailyProgressStatus: document.getElementById("dailyProgressStatus"),
 };
 
 const state = {
   progress: loadProgress(),
   active: false,
+  countingDown: false,
+  view: "setup",
   settings: null,
   currentQuestion: null,
   questionStartedAt: 0,
+  sessionStartedAt: 0,
+  sessionEndedAt: 0,
   lastQuestionKey: null,
   advanceTimeoutId: null,
-  timerIntervalId: null,
+  countdownTimeoutId: null,
+  hudIntervalId: null,
+  resultsSlideIndex: 0,
   session: createEmptySession(),
 };
 
 function createEmptySession() {
   return {
-    answered: 0,
+    attempted: 0,
     correct: 0,
+    skipped: 0,
     streak: 0,
     bestStreak: 0,
-    skipped: 0,
     responseTimes: [],
     recent: [],
   };
 }
 
+function defaultDailyRecord() {
+  return {
+    attempted: 0,
+    correct: 0,
+    sliceEarned: false,
+    heartEarned: false,
+    sessionsCompleted: 0,
+  };
+}
+
 function defaultProgress() {
   return {
-    totalAnswered: 0,
+    totalAttempted: 0,
     totalCorrect: 0,
     bestStreak: 0,
     sessionsCompleted: 0,
     bestAccuracy: 0,
     fastestAverageMs: null,
     facts: {},
+    dailyRecords: {},
   };
 }
 
@@ -86,47 +185,127 @@ function defaultSettingsSnapshot() {
   return {
     minFactor: 2,
     maxFactor: 12,
-    sessionLength: 20,
+    questionStyle: "mixed",
     focusFactor: 7,
     adaptiveMode: true,
-    mode: "mixed",
+    sessionType: "question-goal",
+    questionPreset: "20",
+    questionTarget: 20,
+    timePreset: "3",
+    timeLimitMinutes: 3,
   };
 }
 
 function clampNumber(value, min, max, fallback) {
-  if (Number.isNaN(value)) {
+  if (!Number.isFinite(value)) {
     return fallback;
   }
 
   return Math.min(Math.max(value, min), max);
 }
 
+function normaliseDailyRecord(record) {
+  const attempted = clampNumber(
+    Number(record?.attempted ?? record?.answered),
+    0,
+    9999,
+    0,
+  );
+  const correct = clampNumber(Number(record?.correct), 0, 9999, 0);
+  const heartEarned = Boolean(record?.heartEarned) || correct >= DAILY_TARGET;
+  const sliceEarned =
+    Boolean(record?.sliceEarned) ||
+    Boolean(record?.starEarned) ||
+    attempted >= DAILY_TARGET ||
+    heartEarned;
+
+  return {
+    attempted,
+    correct,
+    sliceEarned,
+    heartEarned,
+    sessionsCompleted: clampNumber(Number(record?.sessionsCompleted), 0, 9999, 0),
+  };
+}
+
 function sanitiseSettingsSnapshot(settings) {
   const defaults = defaultSettingsSnapshot();
-  const rawMin = clampNumber(Number(settings?.minFactor), 1, FACTOR_LIMIT, defaults.minFactor);
-  const rawMax = clampNumber(Number(settings?.maxFactor), 1, FACTOR_LIMIT, defaults.maxFactor);
-  const minFactor = Math.min(rawMin, rawMax);
-  const maxFactor = Math.max(rawMin, rawMax);
-  const sessionLength = SESSION_LENGTH_OPTIONS.includes(Number(settings?.sessionLength))
-    ? Number(settings.sessionLength)
-    : defaults.sessionLength;
+  const questionStyle =
+    settings?.questionStyle === "focus" || settings?.mode === "focus"
+      ? "focus"
+      : "mixed";
+  const legacySessionLength = Number(settings?.sessionLength);
+  const sessionType =
+    settings?.sessionType === "timed" ||
+    settings?.sessionType === "question-goal" ||
+    settings?.sessionType === "endless"
+      ? settings.sessionType
+      : legacySessionLength === 0
+        ? "endless"
+        : defaults.sessionType;
+  const rawMinFactor = clampNumber(
+    Number(settings?.minFactor),
+    1,
+    FACTOR_LIMIT,
+    defaults.minFactor,
+  );
+  const rawMaxFactor = clampNumber(
+    Number(settings?.maxFactor),
+    1,
+    FACTOR_LIMIT,
+    defaults.maxFactor,
+  );
+  const minFactor = Math.min(rawMinFactor, rawMaxFactor);
+  const maxFactor = Math.max(rawMinFactor, rawMaxFactor);
   const focusFactor = clampNumber(
     Number(settings?.focusFactor),
     1,
     FACTOR_LIMIT,
     defaults.focusFactor,
   );
+  const questionTargetFallback =
+    legacySessionLength > 0 ? legacySessionLength : defaults.questionTarget;
+  const questionTarget = clampNumber(
+    Number(settings?.questionTarget),
+    5,
+    200,
+    questionTargetFallback,
+  );
+  const timeLimitMinutes = clampNumber(
+    Number(settings?.timeLimitMinutes),
+    1,
+    60,
+    defaults.timeLimitMinutes,
+  );
+  const questionPreset = QUESTION_PRESETS.includes(questionTarget)
+    ? `${questionTarget}`
+    : settings?.questionPreset === "custom"
+      ? "custom"
+      : QUESTION_PRESETS.includes(Number(settings?.questionPreset))
+        ? `${Number(settings.questionPreset)}`
+        : "custom";
+  const timePreset = TIME_PRESETS.includes(timeLimitMinutes)
+    ? `${timeLimitMinutes}`
+    : settings?.timePreset === "custom"
+      ? "custom"
+      : TIME_PRESETS.includes(Number(settings?.timePreset))
+        ? `${Number(settings.timePreset)}`
+        : "custom";
 
   return {
     minFactor,
     maxFactor,
-    sessionLength,
+    questionStyle,
     focusFactor,
     adaptiveMode:
       typeof settings?.adaptiveMode === "boolean"
         ? settings.adaptiveMode
         : defaults.adaptiveMode,
-    mode: settings?.mode === "focus" ? "focus" : defaults.mode,
+    sessionType,
+    questionPreset,
+    questionTarget,
+    timePreset,
+    timeLimitMinutes,
   };
 }
 
@@ -138,10 +317,25 @@ function loadProgress() {
     }
 
     const parsed = JSON.parse(raw);
+    const dailyRecords = Object.fromEntries(
+      Object.entries(parsed.dailyRecords || {}).map(([key, record]) => [
+        key,
+        normaliseDailyRecord(record),
+      ]),
+    );
+
     return {
       ...defaultProgress(),
       ...parsed,
+      totalAttempted: clampNumber(
+        Number(parsed.totalAttempted ?? parsed.totalAnswered),
+        0,
+        999999,
+        0,
+      ),
+      totalCorrect: clampNumber(Number(parsed.totalCorrect), 0, 999999, 0),
       facts: parsed.facts || {},
+      dailyRecords,
     };
   } catch (error) {
     return defaultProgress();
@@ -180,46 +374,98 @@ function saveSettingsSnapshot(settings) {
   }
 }
 
-function getPracticeMode() {
-  return document.querySelector('input[name="practiceMode"]:checked')?.value || "mixed";
+function formatDateKey(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function parseDateKey(key) {
+  const [year, month, day] = key.split("-").map(Number);
+  return new Date(year, month - 1, day, 12);
+}
+
+function shiftDateKey(key, days) {
+  const shifted = parseDateKey(key);
+  shifted.setDate(shifted.getDate() + days);
+  return formatDateKey(shifted);
+}
+
+function getTodayDateKey() {
+  return formatDateKey(new Date());
+}
+
+function getCheckedValue(name) {
+  return document.querySelector(`input[name="${name}"]:checked`)?.value || "";
+}
+
+function setCheckedValue(name, value) {
+  document.querySelectorAll(`input[name="${name}"]`).forEach((input) => {
+    input.checked = input.value === value;
+  });
 }
 
 function applySettingsSnapshot(settings) {
   const snapshot = sanitiseSettingsSnapshot(settings);
   elements.minFactor.value = `${snapshot.minFactor}`;
   elements.maxFactor.value = `${snapshot.maxFactor}`;
-  elements.sessionLength.value = `${snapshot.sessionLength}`;
   elements.focusFactor.value = `${snapshot.focusFactor}`;
   elements.adaptiveMode.checked = snapshot.adaptiveMode;
-
-  document.querySelectorAll('input[name="practiceMode"]').forEach((radio) => {
-    radio.checked = radio.value === snapshot.mode;
-  });
+  elements.questionCustom.value = `${snapshot.questionTarget}`;
+  elements.timeCustom.value = `${snapshot.timeLimitMinutes}`;
+  setCheckedValue("questionStyle", snapshot.questionStyle);
+  setCheckedValue("sessionType", snapshot.sessionType);
+  setCheckedValue("questionPreset", snapshot.questionPreset);
+  setCheckedValue("timePreset", snapshot.timePreset);
 }
 
 function getFormSettingsSnapshot() {
   return sanitiseSettingsSnapshot({
     minFactor: Number(elements.minFactor.value),
     maxFactor: Number(elements.maxFactor.value),
-    sessionLength: Number(elements.sessionLength.value),
+    questionStyle: getCheckedValue("questionStyle"),
     focusFactor: Number(elements.focusFactor.value),
     adaptiveMode: elements.adaptiveMode.checked,
-    mode: getPracticeMode(),
+    sessionType: getCheckedValue("sessionType"),
+    questionPreset: getCheckedValue("questionPreset"),
+    questionTarget: Number(elements.questionCustom.value),
+    timePreset: getCheckedValue("timePreset"),
+    timeLimitMinutes: Number(elements.timeCustom.value),
   });
 }
 
-function toggleFocusField() {
-  const isFocusMode = getPracticeMode() === "focus";
-  elements.focusField.classList.toggle("is-hidden", !isFocusMode);
+function toggleSetupFields() {
+  const questionStyle = getCheckedValue("questionStyle");
+  const sessionType = getCheckedValue("sessionType");
+  const questionPreset = getCheckedValue("questionPreset");
+  const timePreset = getCheckedValue("timePreset");
+
+  elements.focusField.classList.toggle("is-hidden", questionStyle !== "focus");
+  elements.timeField.classList.toggle("is-hidden", sessionType !== "timed");
+  elements.questionTargetField.classList.toggle(
+    "is-hidden",
+    sessionType !== "question-goal",
+  );
+  elements.timeCustomField.classList.toggle(
+    "is-hidden",
+    sessionType !== "timed" || timePreset !== "custom",
+  );
+  elements.questionCustomField.classList.toggle(
+    "is-hidden",
+    sessionType !== "question-goal" || questionPreset !== "custom",
+  );
 }
 
 function readSettings() {
   const minFactor = Number(elements.minFactor.value);
   const maxFactor = Number(elements.maxFactor.value);
-  const sessionLength = Number(elements.sessionLength.value);
   const focusFactor = Number(elements.focusFactor.value);
+  const questionStyle = getCheckedValue("questionStyle");
+  const sessionType = getCheckedValue("sessionType");
+  const questionPreset = getCheckedValue("questionPreset");
+  const timePreset = getCheckedValue("timePreset");
   const adaptiveMode = elements.adaptiveMode.checked;
-  const mode = getPracticeMode();
 
   if (
     Number.isNaN(minFactor) ||
@@ -234,14 +480,37 @@ function readSettings() {
     return { error: "Choose a valid factor range between 1 and 12." };
   }
 
-  return {
+  const questionTarget =
+    questionPreset === "custom"
+      ? Number(elements.questionCustom.value)
+      : Number(questionPreset);
+  const timeLimitMinutes =
+    timePreset === "custom" ? Number(elements.timeCustom.value) : Number(timePreset);
+
+  if (sessionType === "question-goal") {
+    if (Number.isNaN(questionTarget) || questionTarget < 5 || questionTarget > 200) {
+      return { error: "Choose a question target between 5 and 200." };
+    }
+  }
+
+  if (sessionType === "timed") {
+    if (Number.isNaN(timeLimitMinutes) || timeLimitMinutes < 1 || timeLimitMinutes > 60) {
+      return { error: "Choose a timed session between 1 and 60 minutes." };
+    }
+  }
+
+  return sanitiseSettingsSnapshot({
     minFactor,
     maxFactor,
-    sessionLength,
+    questionStyle,
     focusFactor,
     adaptiveMode,
-    mode,
-  };
+    sessionType,
+    questionPreset,
+    questionTarget,
+    timePreset,
+    timeLimitMinutes,
+  });
 }
 
 function getCurrentSettingsPreview() {
@@ -249,10 +518,157 @@ function getCurrentSettingsPreview() {
   return settings.error ? getFormSettingsSnapshot() : settings;
 }
 
+function average(values) {
+  if (!values.length) {
+    return null;
+  }
+
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
+}
+
+function getAccuracy(correct, total) {
+  if (!total) {
+    return 0;
+  }
+
+  return correct / total;
+}
+
+function formatPercent(value) {
+  return `${Math.round(value * 100)}%`;
+}
+
+function formatQuestionDuration(milliseconds) {
+  if (milliseconds === null || !Number.isFinite(milliseconds)) {
+    return "-";
+  }
+
+  return `${(milliseconds / 1000).toFixed(1)}s`;
+}
+
+function formatStopwatch(milliseconds) {
+  const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  if (hours > 0) {
+    return `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  }
+
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
+function formatMinutesLabel(minutes) {
+  return `${minutes} minute${minutes === 1 ? "" : "s"}`;
+}
+
+function getQuestionStyleLabel(settings) {
+  return settings.questionStyle === "focus"
+    ? `Focus one table: ${settings.focusFactor}s`
+    : "Mixed tables";
+}
+
+function getSessionTypeLabel(settings) {
+  if (settings.sessionType === "timed") {
+    return `${formatMinutesLabel(settings.timeLimitMinutes)} timed run`;
+  }
+
+  if (settings.sessionType === "question-goal") {
+    return `${settings.questionTarget} attempted answers`;
+  }
+
+  return "Endless practice";
+}
+
+function getSessionBadgeLabel(settings) {
+  const styleLabel =
+    settings.questionStyle === "focus"
+      ? `${settings.focusFactor}s focus`
+      : "Mixed tables";
+
+  if (settings.sessionType === "timed") {
+    return `${styleLabel} - ${settings.timeLimitMinutes} min`;
+  }
+
+  if (settings.sessionType === "question-goal") {
+    return `${styleLabel} - ${settings.questionTarget} attempted`;
+  }
+
+  return `${styleLabel} - Endless`;
+}
+
+function getSetupPreviewNote(settings) {
+  if (settings.sessionType === "timed") {
+    return "Timed runs end when the clock runs out. Ten attempted today secures the slice.";
+  }
+
+  if (settings.sessionType === "question-goal") {
+    return "Question-goal runs finish when you submit the target number of answers. Skips do not count toward the target.";
+  }
+
+  return "Endless runs keep going until you press Finish Session. Every 10 attempted answers fills a new color band.";
+}
+
+function getHeroMessage() {
+  try {
+    const previousMessage = window.sessionStorage.getItem(HERO_MESSAGE_KEY);
+    const choices = HERO_MESSAGES.filter((message) => message !== previousMessage);
+    const pool = choices.length ? choices : HERO_MESSAGES;
+    const message = pool[Math.floor(Math.random() * pool.length)];
+    window.sessionStorage.setItem(HERO_MESSAGE_KEY, message);
+    return message;
+  } catch (error) {
+    return HERO_MESSAGES[Math.floor(Math.random() * HERO_MESSAGES.length)];
+  }
+}
+
+function viewMatchesButton(view, buttonTarget) {
+  if (buttonTarget === "setup") {
+    return ["setup", "countdown", "practice", "results"].includes(view);
+  }
+
+  return buttonTarget === view;
+}
+
+function showView(view) {
+  state.view = view;
+
+  elements.screens.forEach((screen) => {
+    screen.classList.toggle("is-active", screen.dataset.view === view);
+  });
+
+  elements.navButtons.forEach((button) => {
+    button.classList.toggle("is-active", viewMatchesButton(view, button.dataset.viewTarget));
+    button.disabled = state.active;
+  });
+}
+
+function renderSetupPreview() {
+  const settings = getCurrentSettingsPreview();
+  elements.setupPreviewStyle.textContent = getQuestionStyleLabel(settings);
+  elements.setupPreviewType.textContent = getSessionTypeLabel(settings);
+  elements.setupPreviewRange.textContent = `${settings.minFactor} through ${settings.maxFactor}`;
+  elements.setupPreviewAdaptive.textContent = settings.adaptiveMode ? "On" : "Off";
+  elements.setupPreviewNote.textContent = getSetupPreviewNote(settings);
+}
+
+function createFact(left, right) {
+  const a = Math.min(left, right);
+  const b = Math.max(left, right);
+
+  return {
+    a,
+    b,
+    key: `${a}x${b}`,
+    answer: a * b,
+  };
+}
+
 function buildPool(settings) {
   const pool = [];
 
-  if (settings.mode === "focus") {
+  if (settings.questionStyle === "focus") {
     for (let factor = settings.minFactor; factor <= settings.maxFactor; factor += 1) {
       pool.push(createFact(settings.focusFactor, factor));
     }
@@ -268,14 +684,13 @@ function buildPool(settings) {
   return pool;
 }
 
-function createFact(left, right) {
-  const a = Math.min(left, right);
-  const b = Math.max(left, right);
+function randomiseDisplay(fact) {
+  const swap = Math.random() > 0.5;
+
   return {
-    a,
-    b,
-    key: `${a}x${b}`,
-    answer: a * b,
+    ...fact,
+    left: swap ? fact.b : fact.a,
+    right: swap ? fact.a : fact.b,
   };
 }
 
@@ -289,61 +704,6 @@ function getFactProgress(key) {
     averageMs: null,
     ...(state.progress.facts[key] || {}),
   };
-}
-
-function getSessionGoalText(settings) {
-  if (settings.mode === "focus") {
-    return `Lock in the ${settings.focusFactor}s with calm repetition.`;
-  }
-
-  if (settings.adaptiveMode && settings.sessionLength === 0) {
-    return "Stay steady while adaptive mode keeps bringing back shaky facts.";
-  }
-
-  if (settings.adaptiveMode) {
-    return "Let the drill surface new facts and the ones that still wobble.";
-  }
-
-  if (settings.sessionLength === 0) {
-    return "Hold a smooth rhythm and build endurance across the full range.";
-  }
-
-  if (settings.sessionLength <= 10) {
-    return "Use this short burst to sharpen recall without overthinking.";
-  }
-
-  return "Sweep the range and aim for a strong, repeatable pace.";
-}
-
-function renderSessionGoal(settings = null) {
-  const goalSettings =
-    settings || (state.active && state.settings ? state.settings : getCurrentSettingsPreview());
-  elements.goalText.textContent = getSessionGoalText(goalSettings);
-}
-
-function renderQuestionTimer(value) {
-  elements.questionTimer.textContent =
-    typeof value === "number" ? formatDuration(value) : value;
-}
-
-function stopQuestionTimer(finalValue = null) {
-  window.clearInterval(state.timerIntervalId);
-  state.timerIntervalId = null;
-
-  if (finalValue !== null) {
-    renderQuestionTimer(finalValue);
-  }
-}
-
-function startQuestionTimer() {
-  stopQuestionTimer(0);
-  state.timerIntervalId = window.setInterval(() => {
-    if (!state.active || !state.questionStartedAt) {
-      return;
-    }
-
-    renderQuestionTimer(window.performance.now() - state.questionStartedAt);
-  }, 100);
 }
 
 function pickQuestion() {
@@ -367,10 +727,7 @@ function pickQuestion() {
       weight *= 0.18;
     }
 
-    return {
-      fact,
-      weight,
-    };
+    return { fact, weight };
   });
 
   const totalWeight = weightedPool.reduce((sum, item) => sum + item.weight, 0);
@@ -386,49 +743,243 @@ function pickQuestion() {
   return randomiseDisplay(weightedPool[weightedPool.length - 1].fact);
 }
 
-function randomiseDisplay(fact) {
-  const swap = Math.random() > 0.5;
+function getDailyRecord(dateKey = getTodayDateKey()) {
   return {
-    ...fact,
-    left: swap ? fact.b : fact.a,
-    right: swap ? fact.a : fact.b,
+    ...defaultDailyRecord(),
+    ...normaliseDailyRecord(state.progress.dailyRecords[dateKey]),
   };
 }
 
-function queueNextQuestion(delay = 950) {
-  window.clearTimeout(state.advanceTimeoutId);
-  state.advanceTimeoutId = window.setTimeout(() => {
-    if (!state.active) {
-      return;
-    }
-
-    if (isSessionComplete()) {
-      completeSession();
-      return;
-    }
-
-    askNextQuestion();
-  }, delay);
+function writeDailyRecord(dateKey, record) {
+  state.progress.dailyRecords[dateKey] = normaliseDailyRecord(record);
 }
 
-function askNextQuestion() {
-  state.currentQuestion = pickQuestion();
-  state.questionStartedAt = window.performance.now();
-  state.lastQuestionKey = state.currentQuestion.key;
-  startQuestionTimer();
-
-  elements.problemText.textContent = `${state.currentQuestion.left} x ${state.currentQuestion.right}`;
-  elements.promptCopy.textContent = "Answer from memory first, then use the feedback to tighten the gap.";
-  elements.answerInput.value = "";
-  elements.answerInput.disabled = false;
-  elements.checkButton.disabled = false;
-  elements.skipButton.disabled = false;
-  elements.answerInput.focus();
-  setFeedback("Stay smooth. Your streak grows one fact at a time.", "");
-  renderSession();
+function updateDailyRecordForAttempt(isCorrect) {
+  const dateKey = getTodayDateKey();
+  const record = getDailyRecord(dateKey);
+  record.attempted += 1;
+  if (isCorrect) {
+    record.correct += 1;
+  }
+  if (record.attempted >= DAILY_TARGET) {
+    record.sliceEarned = true;
+  }
+  if (record.correct >= DAILY_TARGET) {
+    record.heartEarned = true;
+    record.sliceEarned = true;
+  }
+  writeDailyRecord(dateKey, record);
 }
 
-function setFeedback(message, tone) {
+function updateDailyRecordForSessionCompletion() {
+  const dateKey = getTodayDateKey();
+  const record = getDailyRecord(dateKey);
+  record.sessionsCompleted += 1;
+  if (record.attempted >= DAILY_TARGET) {
+    record.sliceEarned = true;
+  }
+  if (record.correct >= DAILY_TARGET) {
+    record.heartEarned = true;
+    record.sliceEarned = true;
+  }
+  writeDailyRecord(dateKey, record);
+}
+
+function getSliceDateKeys() {
+  return Object.entries(state.progress.dailyRecords)
+    .filter(([, record]) => normaliseDailyRecord(record).sliceEarned)
+    .map(([key]) => key)
+    .sort();
+}
+
+function calculateBestPracticeStreak(keys) {
+  if (!keys.length) {
+    return 0;
+  }
+
+  let best = 1;
+  let current = 1;
+
+  for (let index = 1; index < keys.length; index += 1) {
+    if (keys[index] === shiftDateKey(keys[index - 1], 1)) {
+      current += 1;
+    } else {
+      current = 1;
+    }
+    best = Math.max(best, current);
+  }
+
+  return best;
+}
+
+function calculateCurrentPracticeStreak(keys) {
+  if (!keys.length) {
+    return 0;
+  }
+
+  const keySet = new Set(keys);
+  const todayKey = getTodayDateKey();
+  const yesterdayKey = shiftDateKey(todayKey, -1);
+  let anchor = null;
+
+  if (keySet.has(todayKey)) {
+    anchor = todayKey;
+  } else if (keySet.has(yesterdayKey)) {
+    anchor = yesterdayKey;
+  } else {
+    return 0;
+  }
+
+  let streak = 0;
+  let cursor = anchor;
+  while (keySet.has(cursor)) {
+    streak += 1;
+    cursor = shiftDateKey(cursor, -1);
+  }
+
+  return streak;
+}
+
+function getPracticeStreakSummary() {
+  const sliceDateKeys = getSliceDateKeys();
+  return {
+    current: calculateCurrentPracticeStreak(sliceDateKeys),
+    best: calculateBestPracticeStreak(sliceDateKeys),
+  };
+}
+
+function getStreakEncouragement(streakCount) {
+  if (streakCount >= 30) {
+    return "A whole month of practice is a serious habit now.";
+  }
+
+  if (streakCount >= 14) {
+    return "This rhythm is starting to stick.";
+  }
+
+  if (streakCount >= 7) {
+    return "A full week is on the board.";
+  }
+
+  if (streakCount >= 3) {
+    return "Momentum is building nicely.";
+  }
+
+  if (streakCount >= 1) {
+    return "Nice start. Another day locks in the chain.";
+  }
+
+  return "Ten attempted answers today will start the next streak.";
+}
+
+function setIconFill(element, ratio) {
+  element.style.setProperty("--fill-ratio", `${Math.min(Math.max(ratio, 0), 1)}`);
+}
+
+function renderDailyProgress() {
+  const todayRecord = getDailyRecord();
+  const attemptedRatio = Math.min(todayRecord.attempted / DAILY_TARGET, 1);
+  const correctRatio = Math.min(todayRecord.correct / DAILY_TARGET, 1);
+  const attemptedRemaining = Math.max(0, DAILY_TARGET - todayRecord.attempted);
+  const correctRemaining = Math.max(0, DAILY_TARGET - todayRecord.correct);
+
+  setIconFill(elements.sliceFill, attemptedRatio);
+  setIconFill(elements.heartFill, correctRatio);
+
+  elements.sliceProgressLabel.textContent = `${Math.min(todayRecord.attempted, DAILY_TARGET)} / 10 attempted`;
+  elements.heartProgressLabel.textContent = `${Math.min(todayRecord.correct, DAILY_TARGET)} / 10 correct`;
+  elements.dailyProgressText.textContent = `${todayRecord.attempted} attempted | ${todayRecord.correct} correct`;
+
+  if (todayRecord.sliceEarned && todayRecord.heartEarned) {
+    elements.dailyProgressStatus.textContent = "Slice secured. Heart glowing.";
+  } else if (todayRecord.sliceEarned) {
+    elements.dailyProgressStatus.textContent =
+      correctRemaining === 0
+        ? "Heart ready too."
+        : `${correctRemaining} more correct for the heart.`;
+  } else if (todayRecord.attempted > 0 || todayRecord.correct > 0) {
+    elements.dailyProgressStatus.textContent = `${attemptedRemaining} to the slice.`;
+  } else {
+    elements.dailyProgressStatus.textContent = "Two quick wins waiting today.";
+  }
+
+  elements.sliceBadge.classList.toggle("is-earned", todayRecord.sliceEarned);
+  elements.heartBadge.classList.toggle("is-earned", todayRecord.heartEarned);
+}
+
+function renderQuestionTimer(value) {
+  elements.questionTimer.textContent =
+    typeof value === "number" ? formatQuestionDuration(value) : value;
+}
+
+function getElapsedSessionMs() {
+  if (!state.sessionStartedAt) {
+    return 0;
+  }
+
+  if (state.sessionEndedAt) {
+    return state.sessionEndedAt - state.sessionStartedAt;
+  }
+
+  return state.active && !state.countingDown
+    ? window.performance.now() - state.sessionStartedAt
+    : 0;
+}
+
+function renderSessionTimer() {
+  if (!state.settings) {
+    elements.sessionTimer.textContent = "0:00";
+    return;
+  }
+
+  const elapsedMs = getElapsedSessionMs();
+
+  if (state.settings.sessionType === "timed") {
+    elements.sessionTimer.textContent = `${formatStopwatch(elapsedMs)} / ${formatStopwatch(
+      state.settings.timeLimitMinutes * 60000,
+    )}`;
+    return;
+  }
+
+  elements.sessionTimer.textContent = formatStopwatch(elapsedMs);
+}
+
+function renderPracticeProgress() {
+  const settings = state.settings || getCurrentSettingsPreview();
+  let fillRatio = 0;
+  let progressLabel = "Ready";
+  let fillColor = "linear-gradient(90deg, #ff8787 0%, #e2577d 100%)";
+
+  if (settings.sessionType === "question-goal") {
+    fillRatio =
+      settings.questionTarget > 0
+        ? Math.min(state.session.attempted / settings.questionTarget, 1)
+        : 0;
+    progressLabel = `${state.session.attempted} / ${settings.questionTarget} attempted`;
+  } else if (settings.sessionType === "timed") {
+    const elapsedMs = getElapsedSessionMs();
+    fillRatio = Math.min(elapsedMs / (settings.timeLimitMinutes * 60000), 1);
+    progressLabel = `${formatStopwatch(elapsedMs)} / ${formatStopwatch(
+      settings.timeLimitMinutes * 60000,
+    )}`;
+  } else {
+    const completedBands = Math.floor(state.session.attempted / DAILY_TARGET);
+    const withinBand = state.session.attempted % DAILY_TARGET;
+    fillRatio =
+      state.session.attempted > 0 && withinBand === 0
+        ? 1
+        : withinBand / DAILY_TARGET;
+    fillColor = ENDLESS_COLORS[completedBands % ENDLESS_COLORS.length];
+    progressLabel = `${state.session.attempted} attempted`;
+  }
+
+  elements.progressFill.style.width = `${fillRatio * 100}%`;
+  elements.progressFill.style.background = fillColor;
+  elements.progressText.textContent = progressLabel;
+  elements.practiceAttemptedCount.textContent = `${state.session.attempted}`;
+}
+
+function setFeedback(message, tone = "") {
   elements.feedback.textContent = message;
   elements.feedback.classList.remove("success", "error");
   if (tone) {
@@ -436,35 +987,140 @@ function setFeedback(message, tone) {
   }
 }
 
+function askNextQuestion() {
+  state.currentQuestion = pickQuestion();
+  state.questionStartedAt = window.performance.now();
+  state.lastQuestionKey = state.currentQuestion.key;
+
+  elements.problemText.textContent = `${state.currentQuestion.left} x ${state.currentQuestion.right}`;
+  elements.answerInput.value = "";
+  elements.answerInput.disabled = false;
+  elements.checkButton.disabled = false;
+  elements.skipButton.disabled = false;
+  elements.answerInput.focus();
+  setFeedback("");
+  renderQuestionTimer(0);
+  renderPracticeProgress();
+}
+
+function updateLiveTimers() {
+  if (!state.active || state.countingDown || !state.currentQuestion) {
+    return;
+  }
+
+  const questionElapsedMs = window.performance.now() - state.questionStartedAt;
+  const sessionElapsedMs = getElapsedSessionMs();
+
+  renderQuestionTimer(questionElapsedMs);
+  renderSessionTimer();
+  renderPracticeProgress();
+
+  if (
+    state.settings.sessionType === "timed" &&
+    sessionElapsedMs >= state.settings.timeLimitMinutes * 60000
+  ) {
+    completeSession("timer");
+  }
+}
+
+function startHudTimer() {
+  window.clearInterval(state.hudIntervalId);
+  state.hudIntervalId = window.setInterval(updateLiveTimers, 100);
+}
+
+function stopHudTimer() {
+  window.clearInterval(state.hudIntervalId);
+  state.hudIntervalId = null;
+}
+
+function stopCountdown() {
+  window.clearTimeout(state.countdownTimeoutId);
+  state.countdownTimeoutId = null;
+  state.countingDown = false;
+}
+
+function beginPracticeSession() {
+  state.countingDown = false;
+  state.sessionStartedAt = window.performance.now();
+  state.sessionEndedAt = 0;
+
+  showView("practice");
+  elements.finishSessionButton.classList.toggle(
+    "is-hidden",
+    state.settings.sessionType !== "endless",
+  );
+  renderSessionTimer();
+  renderPracticeProgress();
+  renderDailyProgress();
+  askNextQuestion();
+  startHudTimer();
+}
+
+function runCountdownStep(stepIndex) {
+  const step = COUNTDOWN_STEPS[stepIndex];
+  elements.countdownNumber.textContent = step;
+  elements.countdownNumber.classList.remove("countdown-pop");
+  window.requestAnimationFrame(() => {
+    elements.countdownNumber.classList.add("countdown-pop");
+  });
+
+  const isLastStep = stepIndex === COUNTDOWN_STEPS.length - 1;
+  const delay = isLastStep ? 650 : 1000;
+
+  state.countdownTimeoutId = window.setTimeout(() => {
+    if (!state.active) {
+      return;
+    }
+
+    if (isLastStep) {
+      beginPracticeSession();
+      return;
+    }
+
+    runCountdownStep(stepIndex + 1);
+  }, delay);
+}
+
 function startSession(settings) {
+  stopCountdown();
+  stopHudTimer();
+  window.clearTimeout(state.advanceTimeoutId);
+
   state.active = true;
+  state.countingDown = true;
   state.settings = settings;
   state.session = createEmptySession();
+  state.currentQuestion = null;
   state.lastQuestionKey = null;
-  window.clearTimeout(state.advanceTimeoutId);
-  stopQuestionTimer(0);
+  state.questionStartedAt = 0;
+  state.sessionStartedAt = 0;
+  state.sessionEndedAt = 0;
+
   saveSettingsSnapshot(settings);
-  hideSessionRecap();
-
-  elements.sessionBadge.textContent =
-    settings.mode === "focus"
-      ? `Focused on the ${settings.focusFactor}s`
-      : settings.adaptiveMode
-        ? "Adaptive mixed drill"
-        : "Mixed drill";
-
-  renderSessionGoal(settings);
-  renderRecent();
-  askNextQuestion();
-  renderSession();
+  elements.sessionBadge.textContent = getSessionBadgeLabel(settings);
+  elements.finishSessionButton.classList.add("is-hidden");
+  elements.answerInput.disabled = true;
+  elements.checkButton.disabled = true;
+  elements.skipButton.disabled = true;
+  elements.problemText.textContent = "Get ready";
+  renderQuestionTimer(0);
+  renderSessionTimer();
+  renderPracticeProgress();
+  renderDailyProgress();
+  setFeedback("");
+  showView("countdown");
+  runCountdownStep(0);
 }
 
 function isSessionComplete() {
-  return state.settings.sessionLength > 0 && state.session.answered >= state.settings.sessionLength;
+  return (
+    state.settings.sessionType === "question-goal" &&
+    state.session.attempted >= state.settings.questionTarget
+  );
 }
 
 function finishSessionProgress() {
-  const accuracy = getAccuracy(state.session.correct, state.session.answered);
+  const accuracy = getAccuracy(state.session.correct, state.session.attempted);
   const averageMs = average(state.session.responseTimes);
 
   state.progress.bestStreak = Math.max(state.progress.bestStreak, state.session.bestStreak);
@@ -477,59 +1133,6 @@ function finishSessionProgress() {
   }
 
   state.progress.sessionsCompleted += 1;
-  saveProgress();
-}
-
-function completeSession() {
-  state.active = false;
-  stopQuestionTimer("Done");
-  elements.answerInput.disabled = true;
-  elements.checkButton.disabled = true;
-  elements.skipButton.disabled = true;
-
-  finishSessionProgress();
-
-  const accuracyLabel = formatPercent(getAccuracy(state.session.correct, state.session.answered));
-  const averageLabel = formatDuration(average(state.session.responseTimes));
-  elements.sessionBadge.textContent = "Session complete";
-  elements.problemText.textContent = "Nice run.";
-  elements.promptCopy.textContent = `You wrapped up ${state.session.answered} facts at ${accuracyLabel} accuracy with an average pace of ${averageLabel}.`;
-  setFeedback("Start another round and try to beat your best streak.", "success");
-
-  renderSession();
-  renderOverall();
-  renderTroubleSpots();
-  renderCoachTip();
-  renderTableRadar();
-  renderSessionRecap();
-}
-
-function average(values) {
-  if (!values.length) {
-    return null;
-  }
-
-  return values.reduce((sum, value) => sum + value, 0) / values.length;
-}
-
-function getAccuracy(correct, answered) {
-  if (!answered) {
-    return 0;
-  }
-
-  return correct / answered;
-}
-
-function formatPercent(value) {
-  return `${Math.round(value * 100)}%`;
-}
-
-function formatDuration(milliseconds) {
-  if (milliseconds === null || Number.isNaN(milliseconds)) {
-    return "-";
-  }
-
-  return `${(milliseconds / 1000).toFixed(1)}s`;
 }
 
 function updateFactProgress(question, isCorrect, responseTimeMs) {
@@ -540,7 +1143,9 @@ function updateFactProgress(question, isCorrect, responseTimeMs) {
     correct: existing.correct + (isCorrect ? 1 : 0),
     misses: existing.misses + (isCorrect ? 0 : 1),
     currentStreak: isCorrect ? existing.currentStreak + 1 : 0,
-    bestStreak: isCorrect ? Math.max(existing.bestStreak, existing.currentStreak + 1) : existing.bestStreak,
+    bestStreak: isCorrect
+      ? Math.max(existing.bestStreak, existing.currentStreak + 1)
+      : existing.bestStreak,
     averageMs:
       responseTimeMs === null
         ? existing.averageMs
@@ -552,57 +1157,80 @@ function updateFactProgress(question, isCorrect, responseTimeMs) {
   state.progress.facts[question.key] = updated;
 }
 
-function registerAnswer(isCorrect, answerValue, options = {}) {
-  const responseTimeMs = options.skipped ? null : window.performance.now() - state.questionStartedAt;
-  stopQuestionTimer(options.skipped ? "Skipped" : responseTimeMs);
-
-  state.session.answered += 1;
-  state.session.correct += isCorrect ? 1 : 0;
-  state.session.skipped += options.skipped ? 1 : 0;
-  state.session.streak = isCorrect ? state.session.streak + 1 : 0;
-  state.session.bestStreak = Math.max(state.session.bestStreak, state.session.streak);
-
-  if (responseTimeMs !== null) {
-    state.session.responseTimes.push(responseTimeMs);
-  }
-
+function registerRecentAnswer(answerValue, isCorrect, skipped, responseTimeMs) {
   state.session.recent.unshift({
     equation: `${state.currentQuestion.left} x ${state.currentQuestion.right}`,
     answer: state.currentQuestion.answer,
     provided: answerValue,
     isCorrect,
-    skipped: Boolean(options.skipped),
+    skipped,
     responseTimeMs,
   });
   state.session.recent = state.session.recent.slice(0, 8);
+}
 
-  state.progress.totalAnswered += 1;
-  state.progress.totalCorrect += isCorrect ? 1 : 0;
+function registerAnswer(isCorrect, answerValue, options = {}) {
+  const skipped = Boolean(options.skipped);
+  const responseTimeMs = skipped ? null : window.performance.now() - state.questionStartedAt;
 
-  updateFactProgress(state.currentQuestion, isCorrect, responseTimeMs);
+  if (skipped) {
+    state.session.skipped += 1;
+    state.session.streak = 0;
+    registerRecentAnswer("Skipped", false, true, null);
+  } else {
+    state.session.attempted += 1;
+    state.session.correct += isCorrect ? 1 : 0;
+    state.session.streak = isCorrect ? state.session.streak + 1 : 0;
+    state.session.bestStreak = Math.max(state.session.bestStreak, state.session.streak);
+    state.session.responseTimes.push(responseTimeMs);
+    state.progress.totalAttempted += 1;
+    state.progress.totalCorrect += isCorrect ? 1 : 0;
+    updateDailyRecordForAttempt(isCorrect);
+    updateFactProgress(state.currentQuestion, isCorrect, responseTimeMs);
+    registerRecentAnswer(answerValue, isCorrect, false, responseTimeMs);
+  }
+
   saveProgress();
-  renderSession();
-  renderOverall();
-  renderTroubleSpots();
-  renderCoachTip();
-  renderTableRadar();
-  renderRecent();
+  renderDailyProgress();
+  renderPracticeProgress();
 
   elements.answerInput.disabled = true;
   elements.checkButton.disabled = true;
   elements.skipButton.disabled = true;
 }
 
+function queueNextQuestion(delay) {
+  window.clearTimeout(state.advanceTimeoutId);
+  state.advanceTimeoutId = window.setTimeout(() => {
+    if (!state.active) {
+      return;
+    }
+
+    if (isSessionComplete()) {
+      completeSession("goal");
+      return;
+    }
+
+    askNextQuestion();
+  }, delay);
+}
+
 function handleSubmit(event) {
   event.preventDefault();
 
-  if (!state.active || !state.currentQuestion) {
+  if (!state.active || state.countingDown || !state.currentQuestion) {
     return;
   }
 
   const rawValue = elements.answerInput.value.trim();
   if (!rawValue) {
-    setFeedback("Type an answer before checking.", "error");
+    setFeedback("Type an answer first.", "error");
+    elements.answerInput.focus();
+    return;
+  }
+
+  if (!/^\d+$/.test(rawValue)) {
+    setFeedback("Use digits only.", "error");
     elements.answerInput.focus();
     return;
   }
@@ -611,62 +1239,136 @@ function handleSubmit(event) {
   const isCorrect = numericValue === state.currentQuestion.answer;
 
   registerAnswer(isCorrect, numericValue);
-
-  if (isCorrect) {
-    setFeedback(`Correct. ${state.currentQuestion.left} x ${state.currentQuestion.right} = ${state.currentQuestion.answer}.`, "success");
-  } else {
-    setFeedback(
-      `${state.currentQuestion.left} x ${state.currentQuestion.right} = ${state.currentQuestion.answer}. You entered ${numericValue}.`,
-      "error",
-    );
-  }
-
-  queueNextQuestion(isCorrect ? 900 : 1500);
+  setFeedback(isCorrect ? "Right" : "Wrong", isCorrect ? "success" : "error");
+  queueNextQuestion(isCorrect ? 320 : 520);
 }
 
 function handleSkip() {
-  if (!state.active || !state.currentQuestion) {
+  if (!state.active || state.countingDown || !state.currentQuestion) {
     return;
   }
 
   registerAnswer(false, "Skipped", { skipped: true });
-  setFeedback(
-    `Skipped. ${state.currentQuestion.left} x ${state.currentQuestion.right} = ${state.currentQuestion.answer}.`,
-    "error",
-  );
-  queueNextQuestion(1300);
+  setFeedback("Skipped", "error");
+  queueNextQuestion(420);
 }
 
-function renderSession() {
-  const answered = state.session.answered;
-  const target = state.active ? state.settings.sessionLength : Number(elements.sessionLength.value);
-  const progressRatio = target > 0 ? Math.min(answered / target, 1) : 0;
+function getTodayRewardSummary() {
+  const todayRecord = getDailyRecord();
+  const attemptedRemaining = Math.max(0, DAILY_TARGET - todayRecord.attempted);
+  const correctRemaining = Math.max(0, DAILY_TARGET - todayRecord.correct);
 
-  elements.progressFill.style.width = `${progressRatio * 100}%`;
-  elements.progressText.textContent =
-    target > 0 ? `${answered} / ${target}` : `${answered} answered`;
-  elements.sessionCorrect.textContent = `${state.session.correct}`;
-  elements.sessionAccuracy.textContent = formatPercent(
-    getAccuracy(state.session.correct, state.session.answered),
-  );
-  elements.sessionStreak.textContent = `${state.session.streak}`;
-  elements.sessionBestStreak.textContent = `${state.session.bestStreak}`;
-  elements.sessionAvgTime.textContent = formatDuration(average(state.session.responseTimes));
-  elements.sessionSkipped.textContent = `${state.session.skipped}`;
+  if (todayRecord.sliceEarned && todayRecord.heartEarned) {
+    return "Today's slice is secured and the heart is glowing.";
+  }
+
+  if (todayRecord.sliceEarned) {
+    return `${correctRemaining} more correct for today's heart.`;
+  }
+
+  if (todayRecord.attempted > 0 || todayRecord.correct > 0) {
+    return `${attemptedRemaining} more attempted for today's slice.`;
+  }
+
+  return "Start a round to wake up today's rewards.";
+}
+
+function getResultsRewardStatus() {
+  const todayRecord = getDailyRecord();
+  const streakSummary = getPracticeStreakSummary();
+
+  if (todayRecord.sliceEarned && todayRecord.heartEarned) {
+    return `${streakSummary.current} day streak active.`;
+  }
+
+  if (todayRecord.sliceEarned) {
+    return `Slice secured. ${Math.max(0, DAILY_TARGET - todayRecord.correct)} more correct for the heart.`;
+  }
+
+  return `${Math.max(0, DAILY_TARGET - todayRecord.attempted)} more attempted to secure today's slice.`;
+}
+
+function renderResults(reason) {
+  const accuracy = getAccuracy(state.session.correct, state.session.attempted);
+  const averageMs = average(state.session.responseTimes);
+
+  if (reason === "timer") {
+    elements.resultsTitle.textContent = "Time called.";
+  } else if (state.settings.sessionType === "endless") {
+    elements.resultsTitle.textContent = "Endless run wrapped.";
+  } else {
+    elements.resultsTitle.textContent = "Session complete.";
+  }
+
+  elements.resultsSummary.textContent = getTodayRewardSummary();
+  elements.resultQuestions.textContent = `${state.session.attempted}`;
+  elements.resultCorrect.textContent = `${state.session.correct}`;
+  elements.resultAccuracy.textContent = formatPercent(accuracy);
+  elements.resultPace.textContent = formatQuestionDuration(averageMs);
+  elements.resultBestStreak.textContent = `${state.session.bestStreak}`;
+  elements.resultSkipped.textContent = `${state.session.skipped}`;
+  elements.resultsRewardStatus.textContent = getResultsRewardStatus();
+}
+
+function completeSession(reason = "manual") {
+  if (!state.active) {
+    return;
+  }
+
+  state.active = false;
+  state.countingDown = false;
+  state.sessionEndedAt = state.sessionStartedAt ? window.performance.now() : 0;
+  window.clearTimeout(state.advanceTimeoutId);
+  stopHudTimer();
+  stopCountdown();
+
+  elements.answerInput.disabled = true;
+  elements.checkButton.disabled = true;
+  elements.skipButton.disabled = true;
+  elements.finishSessionButton.classList.add("is-hidden");
+
+  updateDailyRecordForSessionCompletion();
+  finishSessionProgress();
+  saveProgress();
+
+  renderQuestionTimer("Done");
+  renderSessionTimer();
+  renderDailyProgress();
+  renderOverall();
+  renderTroubleSpots();
+  renderCoachTip();
+  renderTableRadar();
+  renderRecent();
+  renderCalendars();
+  renderStreakPanel();
+  renderResults(reason);
+  renderResultsCarousel();
+  showView("results");
+}
+
+function handleFinishSession() {
+  if (!state.active || state.settings.sessionType !== "endless" || state.countingDown) {
+    return;
+  }
+
+  const shouldFinish = window.confirm("End this endless session and view your results?");
+  if (!shouldFinish) {
+    return;
+  }
+
+  completeSession("manual");
 }
 
 function renderOverall() {
-  const totalAnswered = state.progress.totalAnswered;
-  const accuracy = totalAnswered ? state.progress.totalCorrect / totalAnswered : 0;
-
-  elements.overallAnswered.textContent = `${totalAnswered}`;
+  const accuracy = getAccuracy(state.progress.totalCorrect, state.progress.totalAttempted);
+  elements.overallAnswered.textContent = `${state.progress.totalAttempted}`;
   elements.overallAccuracy.textContent = formatPercent(accuracy);
   elements.overallBestStreak.textContent = `${state.progress.bestStreak}`;
-  elements.overallBestPace.textContent = formatDuration(state.progress.fastestAverageMs);
+  elements.overallBestPace.textContent = formatQuestionDuration(state.progress.fastestAverageMs);
 }
 
 function getTroubleFacts(limit = 5) {
-  const entries = Object.entries(state.progress.facts)
+  return Object.entries(state.progress.facts)
     .map(([key, value]) => ({
       key,
       ...value,
@@ -679,23 +1381,23 @@ function getTroubleFacts(limit = 5) {
     .filter((fact) => fact.attempts > 0 && (fact.misses > 0 || fact.mastery < 0.8))
     .sort((left, right) => right.weight - left.weight || left.mastery - right.mastery)
     .slice(0, limit);
-
-  return entries;
 }
 
-function renderTroubleSpots() {
-  const troubleFacts = getTroubleFacts();
+function renderTroubleList(target, troubleFacts) {
+  if (!target) {
+    return;
+  }
 
   if (!troubleFacts.length) {
-    elements.troubleList.innerHTML = `
-      <div class="insight-item">
-        <div class="fact-meta">No trouble spots yet. Start a session and the app will surface the facts that need more reps.</div>
+    target.innerHTML = `
+      <div class="insight-item empty-state">
+        <div class="fact-meta">No trouble spots yet. A few more answers will give the trainer something to rank.</div>
       </div>
     `;
     return;
   }
 
-  elements.troubleList.innerHTML = troubleFacts
+  target.innerHTML = troubleFacts
     .map((fact) => {
       const [a, b] = fact.key.split("x");
       const masteryPercent = Math.round(fact.mastery * 100);
@@ -719,44 +1421,36 @@ function renderTroubleSpots() {
     .join("");
 }
 
+function renderTroubleSpots() {
+  const troubleFacts = getTroubleFacts();
+  renderTroubleList(elements.resultsTroubleList, troubleFacts);
+  renderTroubleList(elements.progressTroubleList, troubleFacts);
+}
+
 function renderCoachTip() {
-  const totalAnswered = state.progress.totalAnswered;
+  const totalAttempted = state.progress.totalAttempted;
   const troubleFacts = getTroubleFacts(1);
 
-  if (!totalAnswered) {
+  if (!totalAttempted) {
     elements.coachTip.innerHTML =
-      "<strong>Start simple.</strong> Run a short 10 or 20 fact session to give the trainer a baseline. Adaptive mode will get smarter after a few misses and wins.";
+      "<strong>Start simple.</strong> A short session is enough to give the trainer a baseline.";
     return;
   }
 
   if (troubleFacts.length) {
     const [a, b] = troubleFacts[0].key.split("x");
-    elements.coachTip.innerHTML = `<strong>Next best target:</strong> spend a few rounds on <strong>${a} x ${b}</strong> and nearby facts. Your saved history shows this pair is costing you the most accuracy right now.`;
+    elements.coachTip.innerHTML = `<strong>Next best target:</strong> spend a few rounds on <strong>${a} x ${b}</strong> and nearby facts. That pair is costing you the most right now.`;
     return;
   }
 
   if (state.progress.bestStreak >= 15) {
     elements.coachTip.innerHTML =
-      "<strong>You have momentum.</strong> Push the range wider or switch to endless mode to stress-test recall under a longer streak.";
+      "<strong>You have momentum.</strong> Push the range wider, try a timed run, or stretch things out with endless mode.";
     return;
   }
 
   elements.coachTip.innerHTML =
-    "<strong>Consistency wins.</strong> Aim for a smooth pace before chasing perfect speed. Short, repeatable sessions build recall faster than one long grind.";
-}
-
-function hideSessionRecap() {
-  elements.sessionRecap.classList.add("is-hidden");
-}
-
-function renderSessionRecap() {
-  elements.recapAnswered.textContent = `${state.session.answered}`;
-  elements.recapAccuracy.textContent = formatPercent(
-    getAccuracy(state.session.correct, state.session.answered),
-  );
-  elements.recapPace.textContent = formatDuration(average(state.session.responseTimes));
-  elements.recapBestStreak.textContent = `${state.session.bestStreak}`;
-  elements.sessionRecap.classList.remove("is-hidden");
+    "<strong>Consistency wins.</strong> Secure the daily slice first, then chase the heart with cleaner answers.";
 }
 
 function getTableStatus(table) {
@@ -800,23 +1494,21 @@ function getTableStats() {
     );
 
     const accuracy = getAccuracy(totals.correct, totals.attempts);
-    const status = getTableStatus({
-      ...totals,
-      accuracy,
-    });
-
     return {
       factor,
       totalFacts: keys.length,
       accuracy,
       ...totals,
-      ...status,
+      ...getTableStatus({
+        ...totals,
+        accuracy,
+      }),
     };
   });
 }
 
 function renderTableRadar() {
-  if (!state.progress.totalAnswered) {
+  if (!state.progress.totalAttempted) {
     elements.tableGrid.innerHTML = `
       <div class="table-card unseen">
         <div class="table-name">Start a round</div>
@@ -860,8 +1552,8 @@ function renderTableRadar() {
 function renderRecent() {
   if (!state.session.recent.length) {
     elements.recentResults.innerHTML = `
-      <div class="recent-item">
-        <div class="recent-meta">Recent answers will appear here once you start practicing.</div>
+      <div class="recent-item empty-state">
+        <div class="recent-meta">Recent answers from the latest session will appear here.</div>
       </div>
     `;
     return;
@@ -870,11 +1562,12 @@ function renderRecent() {
   elements.recentResults.innerHTML = state.session.recent
     .map((item) => {
       const toneClass = item.isCorrect ? "correct" : "incorrect";
-      const pillLabel = item.isCorrect ? "Correct" : item.skipped ? "Skipped" : "Try again";
+      const pillLabel = item.isCorrect ? "Right" : item.skipped ? "Skipped" : "Wrong";
       const detail = item.skipped
-        ? `Answer: ${item.answer}`
+        ? `Correct answer: ${item.answer}`
         : `You said ${item.provided}, answer ${item.answer}`;
-      const speed = item.responseTimeMs === null ? "No timer" : formatDuration(item.responseTimeMs);
+      const speed =
+        item.responseTimeMs === null ? "No timer" : formatQuestionDuration(item.responseTimeMs);
 
       return `
         <article class="recent-item ${toneClass}">
@@ -890,6 +1583,110 @@ function renderRecent() {
     .join("");
 }
 
+function getCurrentMonthLabel() {
+  return new Date().toLocaleDateString(undefined, {
+    month: "long",
+    year: "numeric",
+  });
+}
+
+function buildCalendarMarkup() {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = today.getMonth();
+  const firstDay = new Date(year, month, 1);
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const leadingBlankDays = firstDay.getDay();
+  const cells = [];
+
+  for (let index = 0; index < leadingBlankDays; index += 1) {
+    cells.push('<div class="calendar-day empty"></div>');
+  }
+
+  for (let day = 1; day <= daysInMonth; day += 1) {
+    const date = new Date(year, month, day, 12);
+    const dateKey = formatDateKey(date);
+    const record = getDailyRecord(dateKey);
+    const classes = ["calendar-day"];
+
+    if (dateKey === getTodayDateKey()) {
+      classes.push("today");
+    }
+    if (record.sliceEarned) {
+      classes.push("has-slice");
+    }
+    if (record.heartEarned) {
+      classes.push("has-heart");
+    }
+
+    cells.push(`
+      <div class="${classes.join(" ")}">
+        <div class="calendar-day-top">
+          <span class="day-number">${day}</span>
+          <span class="day-icons">
+            ${record.sliceEarned ? '<span class="day-slice" aria-label="Slice earned"></span>' : ""}
+            ${record.heartEarned ? '<span class="day-heart" aria-label="Heart earned">&#9829;</span>' : ""}
+          </span>
+        </div>
+      </div>
+    `);
+  }
+
+  while (cells.length % 7 !== 0) {
+    cells.push('<div class="calendar-day empty"></div>');
+  }
+
+  return cells.join("");
+}
+
+function renderCalendars() {
+  const monthLabel = getCurrentMonthLabel();
+  const calendarMarkup = buildCalendarMarkup();
+
+  elements.currentMonthLabel.textContent = monthLabel;
+  elements.resultsMonthLabel.textContent = monthLabel;
+  elements.calendarGrid.innerHTML = calendarMarkup;
+  elements.resultsCalendarGrid.innerHTML = calendarMarkup;
+}
+
+function renderStreakPanel() {
+  const streakSummary = getPracticeStreakSummary();
+  const todayRecord = getDailyRecord();
+  let message = getStreakEncouragement(streakSummary.current);
+
+  if (todayRecord.sliceEarned && todayRecord.heartEarned) {
+    message = `Today's slice and heart are both secured. ${message}`;
+  } else if (todayRecord.sliceEarned) {
+    message = `Today's slice is secured. ${message}`;
+  }
+
+  elements.currentPracticeStreak.textContent = `${streakSummary.current}`;
+  elements.bestPracticeDayStreak.textContent = `${streakSummary.best}`;
+  elements.streakMessage.textContent = message;
+}
+
+function renderResultsCarousel() {
+  const activeSlide = RESULTS_SLIDES[state.resultsSlideIndex];
+  elements.resultsCarouselKicker.textContent = activeSlide.kicker;
+  elements.resultsCarouselTitle.textContent = activeSlide.title;
+
+  elements.resultsSlides.forEach((slide) => {
+    slide.classList.toggle("is-active", slide.dataset.resultsSlide === activeSlide.key);
+  });
+}
+
+function shiftResultsCarousel(direction) {
+  state.resultsSlideIndex =
+    (state.resultsSlideIndex + direction + RESULTS_SLIDES.length) % RESULTS_SLIDES.length;
+  renderResultsCarousel();
+}
+
+function handleSettingsChange() {
+  toggleSetupFields();
+  renderSetupPreview();
+  saveSettingsSnapshot(getCurrentSettingsPreview());
+}
+
 function resetProgress() {
   const shouldReset = window.confirm("Reset all saved multiplication progress on this browser?");
   if (!shouldReset) {
@@ -898,42 +1695,45 @@ function resetProgress() {
 
   state.progress = defaultProgress();
   saveProgress();
+  renderDailyProgress();
   renderOverall();
   renderTroubleSpots();
   renderCoachTip();
   renderTableRadar();
   renderRecent();
-  setFeedback("Saved progress cleared. Your next session starts fresh.", "success");
-}
-
-function handleSettingsChange() {
-  toggleFocusField();
-  saveSettingsSnapshot(getFormSettingsSnapshot());
-  renderSessionGoal();
-
-  if (!state.active) {
-    renderSession();
-  }
+  renderCalendars();
+  renderStreakPanel();
+  window.alert("Saved progress cleared.");
 }
 
 function initialise() {
-  applySettingsSnapshot(loadSettingsSnapshot());
-  toggleFocusField();
-  renderSession();
-  renderSessionGoal();
+  elements.heroMessage.textContent = getHeroMessage();
+
+  const savedSettings = loadSettingsSnapshot();
+  applySettingsSnapshot(savedSettings);
+  toggleSetupFields();
+  renderSetupPreview();
+  renderDailyProgress();
   renderOverall();
   renderTroubleSpots();
   renderCoachTip();
   renderTableRadar();
   renderRecent();
-  hideSessionRecap();
+  renderCalendars();
+  renderStreakPanel();
+  renderResultsCarousel();
+  renderPracticeProgress();
+  renderSessionTimer();
+  renderQuestionTimer(0);
+  setFeedback("");
+  showView("setup");
 
   elements.settingsForm.addEventListener("submit", (event) => {
     event.preventDefault();
     const settings = readSettings();
 
     if (settings.error) {
-      setFeedback(settings.error, "error");
+      window.alert(settings.error);
       return;
     }
 
@@ -944,7 +1744,34 @@ function initialise() {
   elements.settingsForm.addEventListener("change", handleSettingsChange);
   elements.answerForm.addEventListener("submit", handleSubmit);
   elements.skipButton.addEventListener("click", handleSkip);
+  elements.finishSessionButton.addEventListener("click", handleFinishSession);
+  elements.repeatSessionButton.addEventListener("click", () => {
+    if (state.settings) {
+      startSession(state.settings);
+    }
+  });
   elements.resetProgressButton.addEventListener("click", resetProgress);
+  elements.resultsPrevButton.addEventListener("click", () => shiftResultsCarousel(-1));
+  elements.resultsNextButton.addEventListener("click", () => shiftResultsCarousel(1));
+
+  [elements.checkButton, elements.skipButton].forEach((button) => {
+    button.addEventListener("mousedown", (event) => {
+      event.preventDefault();
+    });
+  });
+
+  elements.viewButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      if (state.active) {
+        return;
+      }
+
+      const targetView = button.dataset.viewTarget;
+      if (targetView) {
+        showView(targetView);
+      }
+    });
+  });
 }
 
 initialise();

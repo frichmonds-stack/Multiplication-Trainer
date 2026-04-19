@@ -6,8 +6,25 @@ The format is inspired by Keep a Changelog and uses a simple project-friendly ve
 
 ## [Unreleased]
 
+### Added
+- Version 3 app shell with dedicated Setup, Practice, Results, and Progress screens.
+- Timed, question-goal, and endless session types with preset and custom limits.
+- Countdown start flow before every session begins.
+- Month-view daily reward calendar for the Results screen.
+- Phase 1 browser-local streak tracking and current-month practice calendar.
+
+### Changed
+- Refocused practice into a minimalist timed-answer interface with brief right/wrong feedback only.
+- Reworked daily rewards into a watermelon slice plus heart system that fills from daily attempted and correct totals.
+- Moved deeper insights like trouble spots, history, and table radar into Results and Progress instead of showing everything during practice.
+- Shifted the header into a slimmer intro band with compact daily progress and `Progress` / `Start!` navigation.
+- Swapped the palette to a watermelon-inspired color system.
+
 ### Planned
-- Reshape the trainer from a webpage-style dashboard into a more focused app-style shell.
+- Learn mode with more detailed corrective feedback.
+- Bronze / silver / gold daily effort tiers.
+- Richer celebration artwork and milestone visuals.
+- Leaderboard support.
 
 ## [0.2.0] - 2026-04-19
 
