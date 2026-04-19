@@ -30,18 +30,8 @@ const HERO_MESSAGES = [
   "When you build your mind, you don't have to use your muscles",
 ];
 
-const RESULTS_SLIDES = [
-  {
-    key: "trouble",
-    kicker: "Trouble Spots",
-    title: "What to revisit next",
-  },
-  {
-    key: "recent",
-    kicker: "Recent Answers",
-    title: "How the last run felt",
-  },
-];
+const RESULTS_SLIDES = ["summary", "tracker", "trouble", "recent"];
+const PROGRESS_SLIDES = ["overview", "tracker", "facts", "trouble", "coach"];
 
 const elements = {
   screens: Array.from(document.querySelectorAll(".screen")),
@@ -96,11 +86,12 @@ const elements = {
   resultsCalendarGrid: document.getElementById("resultsCalendarGrid"),
   resultsMonthPrevButton: document.getElementById("resultsMonthPrevButton"),
   resultsMonthNextButton: document.getElementById("resultsMonthNextButton"),
-  resultsCarouselKicker: document.getElementById("resultsCarouselKicker"),
-  resultsCarouselTitle: document.getElementById("resultsCarouselTitle"),
   resultsPrevButton: document.getElementById("resultsPrevButton"),
   resultsNextButton: document.getElementById("resultsNextButton"),
   resultsSlides: Array.from(document.querySelectorAll(".results-slide")),
+  progressPrevButton: document.getElementById("progressPrevButton"),
+  progressNextButton: document.getElementById("progressNextButton"),
+  progressSlides: Array.from(document.querySelectorAll(".progress-slide")),
   overallAnswered: document.getElementById("overallAnswered"),
   overallAccuracy: document.getElementById("overallAccuracy"),
   overallBestStreak: document.getElementById("overallBestStreak"),
@@ -138,6 +129,7 @@ const state = {
   countdownTimeoutId: null,
   hudIntervalId: null,
   resultsSlideIndex: 0,
+  progressSlideIndex: 0,
   displayMonthKey: "",
   session: createEmptySession(),
 };
@@ -172,6 +164,9 @@ function defaultProgress() {
   return {
     totalAttempted: 0,
     totalCorrect: 0,
+    totalMagnitudeCorrect: 0,
+    totalSignCorrect: 0,
+    totalSignErrors: 0,
     bestStreak: 0,
     sessionsCompleted: 0,
     bestAccuracy: 0,
@@ -339,6 +334,14 @@ function loadProgress() {
         0,
       ),
       totalCorrect: clampNumber(Number(parsed.totalCorrect), 0, 999999, 0),
+      totalMagnitudeCorrect: clampNumber(
+        Number(parsed.totalMagnitudeCorrect),
+        0,
+        999999,
+        0,
+      ),
+      totalSignCorrect: clampNumber(Number(parsed.totalSignCorrect), 0, 999999, 0),
+      totalSignErrors: clampNumber(Number(parsed.totalSignErrors), 0, 999999, 0),
       facts: parsed.facts || {},
       dailyRecords,
     };
@@ -637,7 +640,7 @@ function getSetupPreviewNote(settings) {
     return `Answer ${settings.questionTarget} questions to finish the workout session. Skipping doesn't count!`;
   }
 
-  return "Train until you choose End Workout. Every 10 attempts starts a fresh colour bar.";
+  return "Train on your own terms. No pressure.";
 }
 
 function getHeroMessage() {
@@ -751,6 +754,9 @@ function getFactProgress(key) {
   return {
     attempts: 0,
     correct: 0,
+    magnitudeCorrect: 0,
+    signCorrect: 0,
+    signErrors: 0,
     misses: 0,
     bestStreak: 0,
     currentStreak: 0,
@@ -915,15 +921,15 @@ function renderDailyProgress() {
   setRewardProgress(elements.attemptBadge, attemptedRatio);
   setRewardProgress(elements.accuracyBadge, correctRatio);
 
-  elements.attemptProgressLabel.textContent = `${Math.min(todayRecord.attempted, DAILY_TARGET)} / 10 attempted`;
-  elements.accuracyProgressLabel.textContent = `${Math.min(todayRecord.correct, DAILY_TARGET)} / 10 correct`;
+  elements.attemptProgressLabel.textContent = `${Math.min(todayRecord.attempted, DAILY_TARGET)} / 10`;
+  elements.accuracyProgressLabel.textContent = `${Math.min(todayRecord.correct, DAILY_TARGET)} / 10`;
 
   if (todayRecord.attemptGoalEarned && todayRecord.accuracyGoalEarned) {
     elements.dailyProgressStatus.textContent = "Both goals locked in today.";
   } else if (todayRecord.attemptGoalEarned) {
-    elements.dailyProgressStatus.textContent = `${correctRemaining} more correct to finish today strong.`;
+    elements.dailyProgressStatus.textContent = `${correctRemaining} more correct for the heart.`;
   } else if (todayRecord.attempted > 0 || todayRecord.correct > 0) {
-    elements.dailyProgressStatus.textContent = `${attemptedRemaining} more attempts to lock in the first goal.`;
+    elements.dailyProgressStatus.textContent = `${attemptedRemaining} more attempts for the star.`;
   } else {
     elements.dailyProgressStatus.textContent = "Two quick wins waiting today.";
   }
@@ -1163,13 +1169,24 @@ function finishSessionProgress() {
 
 function updateFactProgress(question, isCorrect, responseTimeMs) {
   const existing = getFactProgress(question.key);
+  const magnitudeCorrect =
+    typeof isCorrect === "object" ? Boolean(isCorrect.magnitudeCorrect) : Boolean(isCorrect);
+  const signCorrect =
+    typeof isCorrect === "object" ? Boolean(isCorrect.signCorrect) : Boolean(isCorrect);
+  const signError =
+    typeof isCorrect === "object" ? Boolean(isCorrect.signError) : false;
+  const fullyCorrect =
+    typeof isCorrect === "object" ? Boolean(isCorrect.isCorrect) : Boolean(isCorrect);
   const updated = {
     ...existing,
     attempts: existing.attempts + 1,
-    correct: existing.correct + (isCorrect ? 1 : 0),
-    misses: existing.misses + (isCorrect ? 0 : 1),
-    currentStreak: isCorrect ? existing.currentStreak + 1 : 0,
-    bestStreak: isCorrect
+    correct: existing.correct + (fullyCorrect ? 1 : 0),
+    magnitudeCorrect: existing.magnitudeCorrect + (magnitudeCorrect ? 1 : 0),
+    signCorrect: existing.signCorrect + (signCorrect ? 1 : 0),
+    signErrors: existing.signErrors + (signError ? 1 : 0),
+    misses: existing.misses + (fullyCorrect ? 0 : 1),
+    currentStreak: fullyCorrect ? existing.currentStreak + 1 : 0,
+    bestStreak: fullyCorrect
       ? Math.max(existing.bestStreak, existing.currentStreak + 1)
       : existing.bestStreak,
     averageMs:
@@ -1183,27 +1200,29 @@ function updateFactProgress(question, isCorrect, responseTimeMs) {
   state.progress.facts[question.key] = updated;
 }
 
-function registerRecentAnswer(answerValue, isCorrect, skipped, responseTimeMs) {
+function registerRecentAnswer(answerValue, evaluation, skipped, responseTimeMs) {
   state.session.recent.unshift({
     equation: `${state.currentQuestion.left} x ${state.currentQuestion.right}`,
     answer: state.currentQuestion.answer,
     provided: answerValue,
-    isCorrect,
+    isCorrect: Boolean(evaluation?.isCorrect),
+    signError: Boolean(evaluation?.signError),
     skipped,
     responseTimeMs,
   });
   state.session.recent = state.session.recent.slice(0, 8);
 }
 
-function registerAnswer(isCorrect, answerValue, options = {}) {
+function registerAnswer(evaluation, answerValue, options = {}) {
   const skipped = Boolean(options.skipped);
   const responseTimeMs = skipped ? null : window.performance.now() - state.questionStartedAt;
 
   if (skipped) {
     state.session.skipped += 1;
     state.session.streak = 0;
-    registerRecentAnswer("Skipped", false, true, null);
+    registerRecentAnswer("Skipped", null, true, null);
   } else {
+    const isCorrect = Boolean(evaluation.isCorrect);
     state.session.attempted += 1;
     state.session.correct += isCorrect ? 1 : 0;
     state.session.streak = isCorrect ? state.session.streak + 1 : 0;
@@ -1211,9 +1230,12 @@ function registerAnswer(isCorrect, answerValue, options = {}) {
     state.session.responseTimes.push(responseTimeMs);
     state.progress.totalAttempted += 1;
     state.progress.totalCorrect += isCorrect ? 1 : 0;
+    state.progress.totalMagnitudeCorrect += evaluation.magnitudeCorrect ? 1 : 0;
+    state.progress.totalSignCorrect += evaluation.signCorrect ? 1 : 0;
+    state.progress.totalSignErrors += evaluation.signError ? 1 : 0;
     updateDailyRecordForAttempt(isCorrect);
-    updateFactProgress(state.currentQuestion, isCorrect, responseTimeMs);
-    registerRecentAnswer(answerValue, isCorrect, false, responseTimeMs);
+    updateFactProgress(state.currentQuestion, evaluation, responseTimeMs);
+    registerRecentAnswer(answerValue, evaluation, false, responseTimeMs);
   }
 
   saveProgress();
@@ -1262,11 +1284,20 @@ function handleSubmit(event) {
   }
 
   const numericValue = Number(rawValue);
-  const isCorrect = numericValue === state.currentQuestion.answer;
+  const expectedValue = state.currentQuestion.answer;
+  const magnitudeCorrect = Math.abs(numericValue) === Math.abs(expectedValue);
+  const signCorrect =
+    magnitudeCorrect && (numericValue === expectedValue || Math.sign(numericValue) === Math.sign(expectedValue));
+  const evaluation = {
+    isCorrect: numericValue === expectedValue,
+    magnitudeCorrect,
+    signCorrect,
+    signError: magnitudeCorrect && numericValue !== expectedValue,
+  };
 
-  registerAnswer(isCorrect, numericValue);
-  setFeedback(isCorrect ? "Right" : "Wrong", isCorrect ? "success" : "error");
-  queueNextQuestion(isCorrect ? 320 : 520);
+  registerAnswer(evaluation, numericValue);
+  setFeedback(evaluation.isCorrect ? "Right" : "Wrong", evaluation.isCorrect ? "success" : "error");
+  queueNextQuestion(evaluation.isCorrect ? 320 : 520);
 }
 
 function handleSkip() {
@@ -1274,7 +1305,7 @@ function handleSkip() {
     return;
   }
 
-  registerAnswer(false, "Skipped", { skipped: true });
+  registerAnswer(null, "Skipped", { skipped: true });
   setFeedback("Skipped", "error");
   queueNextQuestion(420);
 }
@@ -1368,6 +1399,7 @@ function completeSession(reason = "manual") {
   renderCalendars();
   renderStreakPanel();
   renderResults(reason);
+  state.resultsSlideIndex = 0;
   renderResultsCarousel();
   showView("results");
 }
@@ -1476,7 +1508,7 @@ function renderCoachTip() {
   }
 
   elements.coachTip.innerHTML =
-    "<strong>Consistency wins.</strong> Secure the attempt goal first, then chase the accuracy goal with cleaner answers.";
+    "<strong>Consistency wins.</strong> Lock in the star first, then chase the heart with cleaner answers.";
 }
 
 function parseFactKey(key) {
@@ -1558,7 +1590,7 @@ function renderTableRadar() {
     elements.tableGrid.innerHTML = `
       <div class="table-card unseen">
         <div class="table-name">Start a workout</div>
-        <div class="fact-meta">The table radar fills in after you answer a few facts.</div>
+        <div class="fact-meta">The fact tracker fills in after you answer a few facts.</div>
       </div>
     `;
     return;
@@ -1701,8 +1733,8 @@ function buildCalendarMarkup(monthDate) {
         </div>
         <div class="calendar-day-body">
           <span class="day-icons">
-            ${record.attemptGoalEarned ? '<span class="day-attempt" aria-label="Attempt goal earned"><svg viewBox="0 0 72 72" role="presentation"><path d="M12 27h8l7 18H18a6 6 0 0 1-6-6v-6c0-3.3 2.7-6 6-6Zm48 0a6 6 0 0 1 6 6v6a6 6 0 0 1-6 6h-9l7-18h8ZM28 23h16l10 26H18l10-26Z"/></svg></span>' : ""}
-            ${record.accuracyGoalEarned ? '<span class="day-accuracy" aria-label="Accuracy goal earned"><svg viewBox="0 0 72 72" role="presentation"><path d="M36 10 48 16l14 2-4 13 3 15-13-4-12 8-12-8-13 4 3-15-4-13 14-2 12-6Z"/></svg></span>' : ""}
+            ${record.attemptGoalEarned ? '<span class="day-attempt" aria-label="Star earned"><svg viewBox="0 0 72 72" role="presentation"><path d="M36 8 44.552 25.33 63.678 28.108 49.839 41.6 53.106 60.648 36 51.652 18.894 60.648 22.161 41.6 8.322 28.108 27.448 25.33Z"/></svg></span>' : ""}
+            ${record.accuracyGoalEarned ? '<span class="day-accuracy" aria-label="Heart earned"><svg viewBox="0 0 72 72" role="presentation"><path d="M36 57.024 14.448 35.472c-5.304-5.304-5.304-13.896 0-19.2 5.304-5.304 13.896-5.304 19.2 0L36 18.624l2.352-2.352c5.304-5.304 13.896-5.304 19.2 0 5.304 5.304 5.304 13.896 0 19.2Z"/></svg></span>' : ""}
           </span>
         </div>
       </div>
@@ -1770,19 +1802,49 @@ function renderStreakPanel() {
 }
 
 function renderResultsCarousel() {
-  const activeSlide = RESULTS_SLIDES[state.resultsSlideIndex];
-  elements.resultsCarouselKicker.textContent = activeSlide.kicker;
-  elements.resultsCarouselTitle.textContent = activeSlide.title;
-
   elements.resultsSlides.forEach((slide) => {
-    slide.classList.toggle("is-active", slide.dataset.resultsSlide === activeSlide.key);
+    slide.classList.toggle(
+      "is-active",
+      slide.dataset.resultsSlide === RESULTS_SLIDES[state.resultsSlideIndex],
+    );
   });
+
+  elements.resultsPrevButton.disabled = state.resultsSlideIndex === 0;
+  elements.resultsNextButton.disabled =
+    state.resultsSlideIndex === RESULTS_SLIDES.length - 1;
 }
 
 function shiftResultsCarousel(direction) {
-  state.resultsSlideIndex =
-    (state.resultsSlideIndex + direction + RESULTS_SLIDES.length) % RESULTS_SLIDES.length;
+  state.resultsSlideIndex = clampNumber(
+    state.resultsSlideIndex + direction,
+    0,
+    RESULTS_SLIDES.length - 1,
+    state.resultsSlideIndex,
+  );
   renderResultsCarousel();
+}
+
+function renderProgressCarousel() {
+  elements.progressSlides.forEach((slide) => {
+    slide.classList.toggle(
+      "is-active",
+      slide.dataset.progressSlide === PROGRESS_SLIDES[state.progressSlideIndex],
+    );
+  });
+
+  elements.progressPrevButton.disabled = state.progressSlideIndex === 0;
+  elements.progressNextButton.disabled =
+    state.progressSlideIndex === PROGRESS_SLIDES.length - 1;
+}
+
+function shiftProgressCarousel(direction) {
+  state.progressSlideIndex = clampNumber(
+    state.progressSlideIndex + direction,
+    0,
+    PROGRESS_SLIDES.length - 1,
+    state.progressSlideIndex,
+  );
+  renderProgressCarousel();
 }
 
 function handleSettingsChange() {
@@ -1808,6 +1870,7 @@ function resetProgress() {
   renderRecent();
   renderCalendars();
   renderStreakPanel();
+  renderProgressCarousel();
   window.alert("Saved progress cleared.");
 }
 
@@ -1828,6 +1891,7 @@ function initialise() {
   renderCalendars();
   renderStreakPanel();
   renderResultsCarousel();
+  renderProgressCarousel();
   renderPracticeProgress();
   renderSessionTimer();
   renderQuestionTimer(0);
@@ -1863,6 +1927,8 @@ function initialise() {
   elements.resultsMonthNextButton.addEventListener("click", () => shiftDisplayedMonth(1));
   elements.resultsPrevButton.addEventListener("click", () => shiftResultsCarousel(-1));
   elements.resultsNextButton.addEventListener("click", () => shiftResultsCarousel(1));
+  elements.progressPrevButton.addEventListener("click", () => shiftProgressCarousel(-1));
+  elements.progressNextButton.addEventListener("click", () => shiftProgressCarousel(1));
 
   [elements.checkButton, elements.skipButton].forEach((button) => {
     button.addEventListener("mousedown", (event) => {

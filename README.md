@@ -10,12 +10,13 @@ A strength-themed multiplication practice webapp built with plain HTML, CSS, and
 - Supports positive and negative integer multiplication while keeping the practice range magnitude-based
 - Keeps the practice screen minimal with a question timer, session timer, countdown start, and quick right/wrong feedback
 - Uses adaptive question weighting to bring back new or missed facts more often
-- Tracks daily attempt and accuracy goals with browser-local workout history
+- Tracks daily star and heart goals with browser-local workout history
 - Shows a shared month-view workout tracker calendar across Results and Progress
-- Shows a table-by-table radar so weak and strong multiplication facts are easy to spot
+- Uses carousel-style Results and Progress screens to reduce scrolling
+- Shows a fact tracker so weaker and stronger multiplication facts are easy to spot
 - Remembers your preferred setup in the browser between visits
 - Saves long-term progress in the browser with localStorage
-- Uses a workout-inspired theme with rotating strength-building banner messages
+- Uses a dark workout-inspired theme with rotating strength-building banner messages
 
 ## Run it
 

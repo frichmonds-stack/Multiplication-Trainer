@@ -17,11 +17,12 @@ The format is inspired by Keep a Changelog and uses a simple project-friendly ve
 
 ### Changed
 - Refocused practice into a minimalist timed-answer interface with brief right/wrong feedback only.
-- Reworked daily rewards into attempt and accuracy goal cards that shade as progress builds and complete with stronger states.
-- Moved deeper insights like trouble spots, history, and table radar into Results and Progress instead of showing everything during practice.
-- Shifted the header into a slimmer intro band with compact daily progress and `Progress` / `Start!` navigation.
-- Swapped the palette to a strength-focused workout theme.
+- Reworked daily rewards into star and heart cards that shade as progress builds and complete with stronger states.
+- Moved deeper insights like trouble spots, history, and fact tracking into Results and Progress instead of showing everything during practice.
+- Shifted the header into a slimmer intro band with compact daily progress and `Progress` / `Work Out` navigation.
+- Swapped the palette to a darker strength-focused workout theme.
 - Renamed the setup, preview, tracker, and log copy to match the workout framing.
+- Converted both Results and Progress into carousel-style panels to cut down on scrolling.
 
 ### Planned
 - Learn mode with more detailed corrective feedback.
