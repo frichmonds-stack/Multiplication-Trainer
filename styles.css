@@ -438,6 +438,51 @@ button:disabled {
   gap: 0.75rem;
 }
 
+.pulse-strip {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.pulse-card,
+.session-recap,
+.table-card {
+  border-radius: 22px;
+  border: 1px solid rgba(76, 58, 37, 0.08);
+}
+
+.pulse-card {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.95rem 1rem;
+  background: rgba(255, 251, 245, 0.72);
+}
+
+.pulse-label,
+.recap-label,
+.table-pill {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.pulse-value,
+.recap-title,
+.table-name {
+  color: var(--text);
+}
+
+.pulse-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.pulse-copy {
+  font-size: 0.98rem;
+  line-height: 1.45;
+}
+
 .progress-track {
   width: 170px;
   height: 12px;
@@ -480,6 +525,48 @@ button:disabled {
 
 .feedback.error {
   color: var(--danger);
+}
+
+.session-recap {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+  background:
+    radial-gradient(circle at top right, rgba(255, 205, 145, 0.25), transparent 32%),
+    linear-gradient(145deg, rgba(255, 252, 246, 0.88), rgba(246, 231, 212, 0.64));
+}
+
+.session-recap-heading {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.recap-title {
+  margin: 0;
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 1.45rem;
+  line-height: 1.05;
+}
+
+.session-recap-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.recap-stat {
+  padding: 0.9rem;
+  border-radius: 18px;
+  background: rgba(255, 250, 242, 0.74);
+  border: 1px solid rgba(76, 58, 37, 0.08);
+}
+
+.recap-value {
+  display: block;
+  margin-bottom: 0.3rem;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text);
 }
 
 .stats-grid {
@@ -546,6 +633,95 @@ button:disabled {
 
 .coach-card strong {
   color: var(--text);
+}
+
+.table-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 0.85rem;
+}
+
+.table-card {
+  display: grid;
+  gap: 0.8rem;
+  padding: 1rem;
+  background: rgba(255, 251, 245, 0.72);
+}
+
+.table-card-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: start;
+}
+
+.table-name {
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.table-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.45rem 0.65rem;
+  border-radius: 999px;
+}
+
+.table-pill.unseen {
+  background: rgba(108, 90, 74, 0.12);
+  color: var(--muted);
+}
+
+.table-pill.warm {
+  background: rgba(242, 167, 58, 0.16);
+  color: #95590f;
+}
+
+.table-pill.steady,
+.bar-fill.steady {
+  background: linear-gradient(90deg, rgba(28, 128, 108, 0.72), rgba(81, 160, 118, 0.92));
+  color: #135a4a;
+}
+
+.table-pill.strong,
+.bar-fill.strong {
+  background: linear-gradient(90deg, rgba(19, 121, 91, 0.82), rgba(34, 151, 108, 0.95));
+  color: #f5fffb;
+}
+
+.table-pill.needs,
+.bar-fill.needs {
+  background: linear-gradient(90deg, rgba(164, 58, 24, 0.78), rgba(224, 107, 45, 0.95));
+  color: #fff7f2;
+}
+
+.bar-fill.warm {
+  background: linear-gradient(90deg, rgba(242, 167, 58, 0.78), rgba(224, 107, 45, 0.94));
+}
+
+.bar-fill.unseen {
+  background: rgba(108, 90, 74, 0.2);
+}
+
+.table-card.unseen {
+  border-color: rgba(108, 90, 74, 0.12);
+}
+
+.table-card.needs {
+  border-color: rgba(164, 58, 24, 0.18);
+}
+
+.table-card.strong {
+  border-color: rgba(19, 121, 91, 0.18);
+}
+
+.table-card-stats {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.92rem;
+  color: var(--muted);
 }
 
 .recent-strip {
@@ -652,6 +828,10 @@ button:disabled {
   .problem-wrap {
     min-height: 220px;
   }
+
+  .session-recap-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 640px) {
@@ -665,7 +845,9 @@ button:disabled {
   }
 
   .hero-metrics,
-  .stats-grid {
+  .stats-grid,
+  .pulse-strip,
+  .session-recap-grid {
     grid-template-columns: 1fr;
   }
 
@@ -682,5 +864,11 @@ button:disabled {
 
   .progress-track {
     width: 100%;
+  }
+
+  .table-card-top,
+  .table-card-stats {
+    flex-direction: column;
+    align-items: start;
   }
 }

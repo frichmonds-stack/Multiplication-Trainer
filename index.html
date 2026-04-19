@@ -102,6 +102,7 @@
             <label class="field" id="focusField">
               <span>Focus table</span>
               <select id="focusFactor">
+                <option value="1">1s</option>
                 <option value="2">2s</option>
                 <option value="3">3s</option>
                 <option value="4">4s</option>
@@ -144,6 +145,17 @@
             </div>
           </div>
 
+          <div class="pulse-strip">
+            <div class="pulse-card">
+              <span class="pulse-label">Live Timer</span>
+              <span class="pulse-value" id="questionTimer">0.0s</span>
+            </div>
+            <div class="pulse-card">
+              <span class="pulse-label">Session Goal</span>
+              <span class="pulse-value pulse-copy" id="goalText">Build steady recall</span>
+            </div>
+          </div>
+
           <div class="problem-wrap">
             <p class="problem-label">Current fact</p>
             <div class="problem-text" id="problemText">Press start to begin.</div>
@@ -174,6 +186,32 @@
           <p class="feedback" id="feedback" aria-live="polite">
             Your next streak starts here.
           </p>
+
+          <div class="session-recap is-hidden" id="sessionRecap" aria-live="polite">
+            <div class="session-recap-heading">
+              <p class="section-kicker">Latest Session</p>
+              <p class="recap-title">Hold onto the pattern that worked.</p>
+            </div>
+
+            <div class="session-recap-grid">
+              <div class="recap-stat">
+                <span class="recap-value" id="recapAnswered">0</span>
+                <span class="recap-label">Facts Answered</span>
+              </div>
+              <div class="recap-stat">
+                <span class="recap-value" id="recapAccuracy">0%</span>
+                <span class="recap-label">Accuracy</span>
+              </div>
+              <div class="recap-stat">
+                <span class="recap-value" id="recapPace">-</span>
+                <span class="recap-label">Average Pace</span>
+              </div>
+              <div class="recap-stat">
+                <span class="recap-value" id="recapBestStreak">0</span>
+                <span class="recap-label">Best Streak</span>
+              </div>
+            </div>
+          </div>
         </section>
 
         <section class="card stats-card reveal">
@@ -232,6 +270,18 @@
           </div>
 
           <div class="coach-card" id="coachTip"></div>
+        </section>
+
+        <section class="card full-span reveal">
+          <div class="section-heading compact">
+            <div>
+              <p class="section-kicker">Table Radar</p>
+              <h2>See which tables are settling in</h2>
+            </div>
+            <p class="section-note">Each card rolls up your saved history for one table.</p>
+          </div>
+
+          <div class="table-grid" id="tableGrid"></div>
         </section>
 
         <section class="card full-span reveal">

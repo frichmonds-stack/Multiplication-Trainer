@@ -8,6 +8,8 @@ A self-contained multiplication practice webapp built with plain HTML, CSS, and 
 - Supports mixed-table practice or a focused single-table mode
 - Uses adaptive question weighting to bring back new or missed facts more often
 - Tracks streaks, accuracy, pace, and recent answers
+- Shows a table-by-table radar so weak and strong tables are easy to spot
+- Remembers your preferred setup in the browser between visits
 - Saves long-term progress in the browser with localStorage
 
 ## Run it

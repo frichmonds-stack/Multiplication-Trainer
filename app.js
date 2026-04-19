@@ -1,4 +1,8 @@
 const STORAGE_KEY = "multiplication-trainer-progress-v1";
+const SETTINGS_KEY = "multiplication-trainer-settings-v1";
+const FACTOR_LIMIT = 12;
+const TABLE_FACTORS = Array.from({ length: FACTOR_LIMIT }, (_, index) => index + 1);
+const SESSION_LENGTH_OPTIONS = [10, 20, 40, 0];
 
 const elements = {
   settingsForm: document.getElementById("settingsForm"),
@@ -19,6 +23,13 @@ const elements = {
   sessionBadge: document.getElementById("sessionBadge"),
   progressFill: document.getElementById("progressFill"),
   progressText: document.getElementById("progressText"),
+  questionTimer: document.getElementById("questionTimer"),
+  goalText: document.getElementById("goalText"),
+  sessionRecap: document.getElementById("sessionRecap"),
+  recapAnswered: document.getElementById("recapAnswered"),
+  recapAccuracy: document.getElementById("recapAccuracy"),
+  recapPace: document.getElementById("recapPace"),
+  recapBestStreak: document.getElementById("recapBestStreak"),
   sessionCorrect: document.getElementById("sessionCorrect"),
   sessionAccuracy: document.getElementById("sessionAccuracy"),
   sessionStreak: document.getElementById("sessionStreak"),
@@ -31,6 +42,7 @@ const elements = {
   overallBestPace: document.getElementById("overallBestPace"),
   troubleList: document.getElementById("troubleList"),
   coachTip: document.getElementById("coachTip"),
+  tableGrid: document.getElementById("tableGrid"),
   recentResults: document.getElementById("recentResults"),
 };
 
@@ -42,6 +54,7 @@ const state = {
   questionStartedAt: 0,
   lastQuestionKey: null,
   advanceTimeoutId: null,
+  timerIntervalId: null,
   session: createEmptySession(),
 };
 
@@ -66,6 +79,54 @@ function defaultProgress() {
     bestAccuracy: 0,
     fastestAverageMs: null,
     facts: {},
+  };
+}
+
+function defaultSettingsSnapshot() {
+  return {
+    minFactor: 2,
+    maxFactor: 12,
+    sessionLength: 20,
+    focusFactor: 7,
+    adaptiveMode: true,
+    mode: "mixed",
+  };
+}
+
+function clampNumber(value, min, max, fallback) {
+  if (Number.isNaN(value)) {
+    return fallback;
+  }
+
+  return Math.min(Math.max(value, min), max);
+}
+
+function sanitiseSettingsSnapshot(settings) {
+  const defaults = defaultSettingsSnapshot();
+  const rawMin = clampNumber(Number(settings?.minFactor), 1, FACTOR_LIMIT, defaults.minFactor);
+  const rawMax = clampNumber(Number(settings?.maxFactor), 1, FACTOR_LIMIT, defaults.maxFactor);
+  const minFactor = Math.min(rawMin, rawMax);
+  const maxFactor = Math.max(rawMin, rawMax);
+  const sessionLength = SESSION_LENGTH_OPTIONS.includes(Number(settings?.sessionLength))
+    ? Number(settings.sessionLength)
+    : defaults.sessionLength;
+  const focusFactor = clampNumber(
+    Number(settings?.focusFactor),
+    1,
+    FACTOR_LIMIT,
+    defaults.focusFactor,
+  );
+
+  return {
+    minFactor,
+    maxFactor,
+    sessionLength,
+    focusFactor,
+    adaptiveMode:
+      typeof settings?.adaptiveMode === "boolean"
+        ? settings.adaptiveMode
+        : defaults.adaptiveMode,
+    mode: settings?.mode === "focus" ? "focus" : defaults.mode,
   };
 }
 
@@ -95,8 +156,56 @@ function saveProgress() {
   }
 }
 
+function loadSettingsSnapshot() {
+  try {
+    const raw = window.localStorage.getItem(SETTINGS_KEY);
+    if (!raw) {
+      return defaultSettingsSnapshot();
+    }
+
+    return sanitiseSettingsSnapshot(JSON.parse(raw));
+  } catch (error) {
+    return defaultSettingsSnapshot();
+  }
+}
+
+function saveSettingsSnapshot(settings) {
+  try {
+    window.localStorage.setItem(
+      SETTINGS_KEY,
+      JSON.stringify(sanitiseSettingsSnapshot(settings)),
+    );
+  } catch (error) {
+    // Ignore storage failures so the app still works when persistence is restricted.
+  }
+}
+
 function getPracticeMode() {
   return document.querySelector('input[name="practiceMode"]:checked')?.value || "mixed";
+}
+
+function applySettingsSnapshot(settings) {
+  const snapshot = sanitiseSettingsSnapshot(settings);
+  elements.minFactor.value = `${snapshot.minFactor}`;
+  elements.maxFactor.value = `${snapshot.maxFactor}`;
+  elements.sessionLength.value = `${snapshot.sessionLength}`;
+  elements.focusFactor.value = `${snapshot.focusFactor}`;
+  elements.adaptiveMode.checked = snapshot.adaptiveMode;
+
+  document.querySelectorAll('input[name="practiceMode"]').forEach((radio) => {
+    radio.checked = radio.value === snapshot.mode;
+  });
+}
+
+function getFormSettingsSnapshot() {
+  return sanitiseSettingsSnapshot({
+    minFactor: Number(elements.minFactor.value),
+    maxFactor: Number(elements.maxFactor.value),
+    sessionLength: Number(elements.sessionLength.value),
+    focusFactor: Number(elements.focusFactor.value),
+    adaptiveMode: elements.adaptiveMode.checked,
+    mode: getPracticeMode(),
+  });
 }
 
 function toggleFocusField() {
@@ -115,8 +224,11 @@ function readSettings() {
   if (
     Number.isNaN(minFactor) ||
     Number.isNaN(maxFactor) ||
+    Number.isNaN(focusFactor) ||
     minFactor < 1 ||
-    maxFactor > 12 ||
+    maxFactor > FACTOR_LIMIT ||
+    focusFactor < 1 ||
+    focusFactor > FACTOR_LIMIT ||
     minFactor > maxFactor
   ) {
     return { error: "Choose a valid factor range between 1 and 12." };
@@ -130,6 +242,11 @@ function readSettings() {
     adaptiveMode,
     mode,
   };
+}
+
+function getCurrentSettingsPreview() {
+  const settings = readSettings();
+  return settings.error ? getFormSettingsSnapshot() : settings;
 }
 
 function buildPool(settings) {
@@ -163,16 +280,70 @@ function createFact(left, right) {
 }
 
 function getFactProgress(key) {
-  return (
-    state.progress.facts[key] || {
-      attempts: 0,
-      correct: 0,
-      misses: 0,
-      bestStreak: 0,
-      currentStreak: 0,
-      averageMs: null,
+  return {
+    attempts: 0,
+    correct: 0,
+    misses: 0,
+    bestStreak: 0,
+    currentStreak: 0,
+    averageMs: null,
+    ...(state.progress.facts[key] || {}),
+  };
+}
+
+function getSessionGoalText(settings) {
+  if (settings.mode === "focus") {
+    return `Lock in the ${settings.focusFactor}s with calm repetition.`;
+  }
+
+  if (settings.adaptiveMode && settings.sessionLength === 0) {
+    return "Stay steady while adaptive mode keeps bringing back shaky facts.";
+  }
+
+  if (settings.adaptiveMode) {
+    return "Let the drill surface new facts and the ones that still wobble.";
+  }
+
+  if (settings.sessionLength === 0) {
+    return "Hold a smooth rhythm and build endurance across the full range.";
+  }
+
+  if (settings.sessionLength <= 10) {
+    return "Use this short burst to sharpen recall without overthinking.";
+  }
+
+  return "Sweep the range and aim for a strong, repeatable pace.";
+}
+
+function renderSessionGoal(settings = null) {
+  const goalSettings =
+    settings || (state.active && state.settings ? state.settings : getCurrentSettingsPreview());
+  elements.goalText.textContent = getSessionGoalText(goalSettings);
+}
+
+function renderQuestionTimer(value) {
+  elements.questionTimer.textContent =
+    typeof value === "number" ? formatDuration(value) : value;
+}
+
+function stopQuestionTimer(finalValue = null) {
+  window.clearInterval(state.timerIntervalId);
+  state.timerIntervalId = null;
+
+  if (finalValue !== null) {
+    renderQuestionTimer(finalValue);
+  }
+}
+
+function startQuestionTimer() {
+  stopQuestionTimer(0);
+  state.timerIntervalId = window.setInterval(() => {
+    if (!state.active || !state.questionStartedAt) {
+      return;
     }
-  );
+
+    renderQuestionTimer(window.performance.now() - state.questionStartedAt);
+  }, 100);
 }
 
 function pickQuestion() {
@@ -244,6 +415,7 @@ function askNextQuestion() {
   state.currentQuestion = pickQuestion();
   state.questionStartedAt = window.performance.now();
   state.lastQuestionKey = state.currentQuestion.key;
+  startQuestionTimer();
 
   elements.problemText.textContent = `${state.currentQuestion.left} x ${state.currentQuestion.right}`;
   elements.promptCopy.textContent = "Answer from memory first, then use the feedback to tighten the gap.";
@@ -268,7 +440,11 @@ function startSession(settings) {
   state.active = true;
   state.settings = settings;
   state.session = createEmptySession();
+  state.lastQuestionKey = null;
   window.clearTimeout(state.advanceTimeoutId);
+  stopQuestionTimer(0);
+  saveSettingsSnapshot(settings);
+  hideSessionRecap();
 
   elements.sessionBadge.textContent =
     settings.mode === "focus"
@@ -277,6 +453,8 @@ function startSession(settings) {
         ? "Adaptive mixed drill"
         : "Mixed drill";
 
+  renderSessionGoal(settings);
+  renderRecent();
   askNextQuestion();
   renderSession();
 }
@@ -304,6 +482,7 @@ function finishSessionProgress() {
 
 function completeSession() {
   state.active = false;
+  stopQuestionTimer("Done");
   elements.answerInput.disabled = true;
   elements.checkButton.disabled = true;
   elements.skipButton.disabled = true;
@@ -321,6 +500,8 @@ function completeSession() {
   renderOverall();
   renderTroubleSpots();
   renderCoachTip();
+  renderTableRadar();
+  renderSessionRecap();
 }
 
 function average(values) {
@@ -373,6 +554,7 @@ function updateFactProgress(question, isCorrect, responseTimeMs) {
 
 function registerAnswer(isCorrect, answerValue, options = {}) {
   const responseTimeMs = options.skipped ? null : window.performance.now() - state.questionStartedAt;
+  stopQuestionTimer(options.skipped ? "Skipped" : responseTimeMs);
 
   state.session.answered += 1;
   state.session.correct += isCorrect ? 1 : 0;
@@ -403,6 +585,7 @@ function registerAnswer(isCorrect, answerValue, options = {}) {
   renderOverall();
   renderTroubleSpots();
   renderCoachTip();
+  renderTableRadar();
   renderRecent();
 
   elements.answerInput.disabled = true;
@@ -456,7 +639,7 @@ function handleSkip() {
 
 function renderSession() {
   const answered = state.session.answered;
-  const target = state.settings?.sessionLength ?? Number(elements.sessionLength.value);
+  const target = state.active ? state.settings.sessionLength : Number(elements.sessionLength.value);
   const progressRatio = target > 0 ? Math.min(answered / target, 1) : 0;
 
   elements.progressFill.style.width = `${progressRatio * 100}%`;
@@ -488,9 +671,12 @@ function getTroubleFacts(limit = 5) {
       key,
       ...value,
       mastery: value.attempts ? value.correct / value.attempts : 0,
-      weight: value.misses * 3 + (value.attempts - value.correct) + (value.attempts < 3 ? 2 : 0),
+      weight:
+        value.misses * 4 +
+        Math.round((1 - (value.attempts ? value.correct / value.attempts : 0)) * 6) +
+        (value.attempts < 3 ? 1 : 0),
     }))
-    .filter((fact) => fact.attempts > 0)
+    .filter((fact) => fact.attempts > 0 && (fact.misses > 0 || fact.mastery < 0.8))
     .sort((left, right) => right.weight - left.weight || left.mastery - right.mastery)
     .slice(0, limit);
 
@@ -559,6 +745,118 @@ function renderCoachTip() {
     "<strong>Consistency wins.</strong> Aim for a smooth pace before chasing perfect speed. Short, repeatable sessions build recall faster than one long grind.";
 }
 
+function hideSessionRecap() {
+  elements.sessionRecap.classList.add("is-hidden");
+}
+
+function renderSessionRecap() {
+  elements.recapAnswered.textContent = `${state.session.answered}`;
+  elements.recapAccuracy.textContent = formatPercent(
+    getAccuracy(state.session.correct, state.session.answered),
+  );
+  elements.recapPace.textContent = formatDuration(average(state.session.responseTimes));
+  elements.recapBestStreak.textContent = `${state.session.bestStreak}`;
+  elements.sessionRecap.classList.remove("is-hidden");
+}
+
+function getTableStatus(table) {
+  if (!table.seenFacts) {
+    return { label: "Unseen", tone: "unseen" };
+  }
+
+  if (table.accuracy >= 0.92 && table.seenFacts >= 6) {
+    return { label: "Confident", tone: "strong" };
+  }
+
+  if (table.accuracy >= 0.8) {
+    return { label: "Building", tone: "steady" };
+  }
+
+  if (table.accuracy >= 0.65) {
+    return { label: "Warming", tone: "warm" };
+  }
+
+  return { label: "Needs Reps", tone: "needs" };
+}
+
+function getTableStats() {
+  return TABLE_FACTORS.map((factor) => {
+    const keys = TABLE_FACTORS.map((otherFactor) => createFact(factor, otherFactor).key);
+    const totals = keys.reduce(
+      (summary, key) => {
+        const progress = getFactProgress(key);
+        summary.attempts += progress.attempts;
+        summary.correct += progress.correct;
+        summary.misses += progress.misses;
+        summary.seenFacts += progress.attempts > 0 ? 1 : 0;
+        return summary;
+      },
+      {
+        attempts: 0,
+        correct: 0,
+        misses: 0,
+        seenFacts: 0,
+      },
+    );
+
+    const accuracy = getAccuracy(totals.correct, totals.attempts);
+    const status = getTableStatus({
+      ...totals,
+      accuracy,
+    });
+
+    return {
+      factor,
+      totalFacts: keys.length,
+      accuracy,
+      ...totals,
+      ...status,
+    };
+  });
+}
+
+function renderTableRadar() {
+  if (!state.progress.totalAnswered) {
+    elements.tableGrid.innerHTML = `
+      <div class="table-card unseen">
+        <div class="table-name">Start a round</div>
+        <div class="fact-meta">The table radar fills in after you answer a few facts.</div>
+      </div>
+    `;
+    return;
+  }
+
+  elements.tableGrid.innerHTML = getTableStats()
+    .map((table) => {
+      const accuracyLabel = table.attempts
+        ? `${formatPercent(table.accuracy)} accuracy`
+        : "No attempts yet";
+      const detailLabel = table.attempts
+        ? `${table.seenFacts}/${table.totalFacts} facts seen`
+        : "Fresh table";
+
+      return `
+        <article class="table-card ${table.tone}">
+          <div class="table-card-top">
+            <div>
+              <div class="table-name">${table.factor}s</div>
+              <div class="fact-meta">${detailLabel}</div>
+            </div>
+            <span class="table-pill ${table.tone}">${table.label}</span>
+          </div>
+          <div class="bar-track" aria-hidden="true">
+            <div class="bar-fill ${table.tone}" style="width: ${Math.round(table.accuracy * 100)}%"></div>
+          </div>
+          <div class="table-card-stats">
+            <span>${accuracyLabel}</span>
+            <span>${table.misses} misses logged</span>
+          </div>
+        </article>
+      `;
+    })
+    .join("");
+}
+
 function renderRecent() {
   if (!state.session.recent.length) {
     elements.recentResults.innerHTML = `
@@ -603,17 +901,32 @@ function resetProgress() {
   renderOverall();
   renderTroubleSpots();
   renderCoachTip();
+  renderTableRadar();
   renderRecent();
   setFeedback("Saved progress cleared. Your next session starts fresh.", "success");
 }
 
+function handleSettingsChange() {
+  toggleFocusField();
+  saveSettingsSnapshot(getFormSettingsSnapshot());
+  renderSessionGoal();
+
+  if (!state.active) {
+    renderSession();
+  }
+}
+
 function initialise() {
+  applySettingsSnapshot(loadSettingsSnapshot());
   toggleFocusField();
   renderSession();
+  renderSessionGoal();
   renderOverall();
   renderTroubleSpots();
   renderCoachTip();
+  renderTableRadar();
   renderRecent();
+  hideSessionRecap();
 
   elements.settingsForm.addEventListener("submit", (event) => {
     event.preventDefault();
@@ -627,10 +940,8 @@ function initialise() {
     startSession(settings);
   });
 
-  document.querySelectorAll('input[name="practiceMode"]').forEach((radio) => {
-    radio.addEventListener("change", toggleFocusField);
-  });
-
+  elements.settingsForm.addEventListener("input", handleSettingsChange);
+  elements.settingsForm.addEventListener("change", handleSettingsChange);
   elements.answerForm.addEventListener("submit", handleSubmit);
   elements.skipButton.addEventListener("click", handleSkip);
   elements.resetProgressButton.addEventListener("click", resetProgress);
