@@ -8,33 +8,26 @@ const TIME_PRESETS = [1, 3, 5];
 const DAILY_TARGET = 10;
 const COUNTDOWN_STEPS = ["3", "2", "1", "START!"];
 const ENDLESS_COLORS = [
-  "#ff8787",
-  "#ff9f80",
-  "#ffb266",
-  "#ffd166",
-  "#dfe88d",
-  "#b8e6a5",
-  "#7fd6b1",
-  "#72d1c7",
-  "#88c7ff",
-  "#d7a7ff",
+  "#c6452d",
+  "#e2752d",
+  "#d0a14a",
+  "#7c8794",
+  "#4e5d6b",
+  "#2f7a49",
+  "#885d4b",
+  "#6f4f45",
+  "#9d5a2f",
+  "#39424b",
 ];
 const HERO_MESSAGES = [
-  "Patterns get friendlier the more often you meet them.",
-  "Practice is where facts stop feeling random.",
-  "Every session makes the next answer a little easier.",
-  "Math rewards the patient brain.",
-  "Knowledge grows quietly, then suddenly feels obvious.",
-  "A little practice has a long memory.",
-  "What feels tricky now can feel natural later.",
-  "Today's practice is tomorrow's confidence.",
-  "Repetition is just pattern recognition in work clothes.",
-  "Small steps in practice become speed over time.",
-  "Strong recall is usually built in small pieces.",
-  "Each answer is one more pattern made familiar.",
-  "Brains love a pattern that keeps showing up.",
-  "Steady reps turn guesswork into recognition.",
-  "Fluency grows one familiar fact at a time.",
+  "Strength is built one steady rep at a time.",
+  "Small sessions build strong recall.",
+  "Every rep makes the next one lighter.",
+  "Progress comes from showing up again.",
+  "Strong habits are built in ordinary days.",
+  "The weight gets lighter when the pattern gets familiar.",
+  "Discipline turns effort into strength.",
+  "When you build your mind, you don't have to use your muscles",
 ];
 
 const RESULTS_SLIDES = [
@@ -61,6 +54,7 @@ const elements = {
   focusField: document.getElementById("focusField"),
   focusFactor: document.getElementById("focusFactor"),
   adaptiveMode: document.getElementById("adaptiveMode"),
+  negativesMode: document.getElementById("negativesMode"),
   timeField: document.getElementById("timeField"),
   timeCustomField: document.getElementById("timeCustomField"),
   timeCustom: document.getElementById("timeCustom"),
@@ -72,6 +66,7 @@ const elements = {
   setupPreviewType: document.getElementById("setupPreviewType"),
   setupPreviewRange: document.getElementById("setupPreviewRange"),
   setupPreviewAdaptive: document.getElementById("setupPreviewAdaptive"),
+  setupPreviewNegatives: document.getElementById("setupPreviewNegatives"),
   setupPreviewNote: document.getElementById("setupPreviewNote"),
   countdownNumber: document.getElementById("countdownNumber"),
   sessionBadge: document.getElementById("sessionBadge"),
@@ -99,6 +94,8 @@ const elements = {
   resultsMonthLabel: document.getElementById("resultsMonthLabel"),
   resultsRewardStatus: document.getElementById("resultsRewardStatus"),
   resultsCalendarGrid: document.getElementById("resultsCalendarGrid"),
+  resultsMonthPrevButton: document.getElementById("resultsMonthPrevButton"),
+  resultsMonthNextButton: document.getElementById("resultsMonthNextButton"),
   resultsCarouselKicker: document.getElementById("resultsCarouselKicker"),
   resultsCarouselTitle: document.getElementById("resultsCarouselTitle"),
   resultsPrevButton: document.getElementById("resultsPrevButton"),
@@ -112,19 +109,17 @@ const elements = {
   bestPracticeDayStreak: document.getElementById("bestPracticeDayStreak"),
   currentMonthLabel: document.getElementById("currentMonthLabel"),
   calendarGrid: document.getElementById("calendarGrid"),
-  streakMessage: document.getElementById("streakMessage"),
+  progressMonthPrevButton: document.getElementById("progressMonthPrevButton"),
+  progressMonthNextButton: document.getElementById("progressMonthNextButton"),
   coachTip: document.getElementById("coachTip"),
   resultsTroubleList: document.getElementById("resultsTroubleList"),
   progressTroubleList: document.getElementById("progressTroubleList"),
   tableGrid: document.getElementById("tableGrid"),
   recentResults: document.getElementById("recentResults"),
-  sliceBadge: document.getElementById("sliceBadge"),
-  heartBadge: document.getElementById("heartBadge"),
-  sliceFill: document.getElementById("sliceFill"),
-  heartFill: document.getElementById("heartFill"),
-  sliceProgressLabel: document.getElementById("sliceProgressLabel"),
-  heartProgressLabel: document.getElementById("heartProgressLabel"),
-  dailyProgressText: document.getElementById("dailyProgressText"),
+  attemptBadge: document.getElementById("attemptBadge"),
+  accuracyBadge: document.getElementById("accuracyBadge"),
+  attemptProgressLabel: document.getElementById("attemptProgressLabel"),
+  accuracyProgressLabel: document.getElementById("accuracyProgressLabel"),
   dailyProgressStatus: document.getElementById("dailyProgressStatus"),
 };
 
@@ -143,8 +138,13 @@ const state = {
   countdownTimeoutId: null,
   hudIntervalId: null,
   resultsSlideIndex: 0,
+  displayMonthKey: "",
   session: createEmptySession(),
 };
+
+function formatCount(value, singular, plural = `${singular}s`) {
+  return `${value} ${value === 1 ? singular : plural}`;
+}
 
 function createEmptySession() {
   return {
@@ -162,8 +162,8 @@ function defaultDailyRecord() {
   return {
     attempted: 0,
     correct: 0,
-    sliceEarned: false,
-    heartEarned: false,
+    attemptGoalEarned: false,
+    accuracyGoalEarned: false,
     sessionsCompleted: 0,
   };
 }
@@ -188,6 +188,7 @@ function defaultSettingsSnapshot() {
     questionStyle: "mixed",
     focusFactor: 7,
     adaptiveMode: true,
+    negativesMode: false,
     sessionType: "question-goal",
     questionPreset: "20",
     questionTarget: 20,
@@ -212,18 +213,18 @@ function normaliseDailyRecord(record) {
     0,
   );
   const correct = clampNumber(Number(record?.correct), 0, 9999, 0);
-  const heartEarned = Boolean(record?.heartEarned) || correct >= DAILY_TARGET;
-  const sliceEarned =
-    Boolean(record?.sliceEarned) ||
-    Boolean(record?.starEarned) ||
+  const accuracyGoalEarned = Boolean(record?.accuracyGoalEarned ?? record?.heartEarned) ||
+    correct >= DAILY_TARGET;
+  const attemptGoalEarned =
+    Boolean(record?.attemptGoalEarned ?? record?.sliceEarned ?? record?.starEarned) ||
     attempted >= DAILY_TARGET ||
-    heartEarned;
+    accuracyGoalEarned;
 
   return {
     attempted,
     correct,
-    sliceEarned,
-    heartEarned,
+    attemptGoalEarned,
+    accuracyGoalEarned,
     sessionsCompleted: clampNumber(Number(record?.sessionsCompleted), 0, 9999, 0),
   };
 }
@@ -301,6 +302,10 @@ function sanitiseSettingsSnapshot(settings) {
       typeof settings?.adaptiveMode === "boolean"
         ? settings.adaptiveMode
         : defaults.adaptiveMode,
+    negativesMode:
+      typeof settings?.negativesMode === "boolean"
+        ? settings.negativesMode
+        : defaults.negativesMode,
     sessionType,
     questionPreset,
     questionTarget,
@@ -346,7 +351,7 @@ function saveProgress() {
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state.progress));
   } catch (error) {
-    // Ignore storage failures so practice still works in restricted contexts.
+    // Ignore storage failures so the app still works in restricted contexts.
   }
 }
 
@@ -396,6 +401,27 @@ function getTodayDateKey() {
   return formatDateKey(new Date());
 }
 
+function getCurrentMonthDate() {
+  const today = new Date();
+  return new Date(today.getFullYear(), today.getMonth(), 1, 12);
+}
+
+function getMonthKey(date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function createMonthDateFromKey(monthKey) {
+  const [year, month] = monthKey.split("-").map(Number);
+  return new Date(year, month - 1, 1, 12);
+}
+
+function formatMonthLabel(date) {
+  return date.toLocaleDateString(undefined, {
+    month: "long",
+    year: "numeric",
+  });
+}
+
 function getCheckedValue(name) {
   return document.querySelector(`input[name="${name}"]:checked`)?.value || "";
 }
@@ -412,6 +438,7 @@ function applySettingsSnapshot(settings) {
   elements.maxFactor.value = `${snapshot.maxFactor}`;
   elements.focusFactor.value = `${snapshot.focusFactor}`;
   elements.adaptiveMode.checked = snapshot.adaptiveMode;
+  elements.negativesMode.checked = snapshot.negativesMode;
   elements.questionCustom.value = `${snapshot.questionTarget}`;
   elements.timeCustom.value = `${snapshot.timeLimitMinutes}`;
   setCheckedValue("questionStyle", snapshot.questionStyle);
@@ -427,6 +454,7 @@ function getFormSettingsSnapshot() {
     questionStyle: getCheckedValue("questionStyle"),
     focusFactor: Number(elements.focusFactor.value),
     adaptiveMode: elements.adaptiveMode.checked,
+    negativesMode: elements.negativesMode.checked,
     sessionType: getCheckedValue("sessionType"),
     questionPreset: getCheckedValue("questionPreset"),
     questionTarget: Number(elements.questionCustom.value),
@@ -466,6 +494,7 @@ function readSettings() {
   const questionPreset = getCheckedValue("questionPreset");
   const timePreset = getCheckedValue("timePreset");
   const adaptiveMode = elements.adaptiveMode.checked;
+  const negativesMode = elements.negativesMode.checked;
 
   if (
     Number.isNaN(minFactor) ||
@@ -477,7 +506,7 @@ function readSettings() {
     focusFactor > FACTOR_LIMIT ||
     minFactor > maxFactor
   ) {
-    return { error: "Choose a valid factor range between 1 and 12." };
+    return { error: "Choose a valid practice range between 1 and 12." };
   }
 
   const questionTarget =
@@ -489,13 +518,13 @@ function readSettings() {
 
   if (sessionType === "question-goal") {
     if (Number.isNaN(questionTarget) || questionTarget < 5 || questionTarget > 200) {
-      return { error: "Choose a question target between 5 and 200." };
+      return { error: "Choose an attempt goal between 5 and 200." };
     }
   }
 
   if (sessionType === "timed") {
     if (Number.isNaN(timeLimitMinutes) || timeLimitMinutes < 1 || timeLimitMinutes > 60) {
-      return { error: "Choose a timed session between 1 and 60 minutes." };
+      return { error: "Choose a workout duration between 1 and 60 minutes." };
     }
   }
 
@@ -505,6 +534,7 @@ function readSettings() {
     questionStyle,
     focusFactor,
     adaptiveMode,
+    negativesMode,
     sessionType,
     questionPreset,
     questionTarget,
@@ -565,49 +595,49 @@ function formatMinutesLabel(minutes) {
 
 function getQuestionStyleLabel(settings) {
   return settings.questionStyle === "focus"
-    ? `Focus one table: ${settings.focusFactor}s`
+    ? `Focus one table: x ${settings.focusFactor}`
     : "Mixed tables";
 }
 
 function getSessionTypeLabel(settings) {
   if (settings.sessionType === "timed") {
-    return `${formatMinutesLabel(settings.timeLimitMinutes)} timed run`;
+    return `High Intensity Training - ${formatMinutesLabel(settings.timeLimitMinutes)}`;
   }
 
   if (settings.sessionType === "question-goal") {
-    return `${settings.questionTarget} attempted answers`;
+    return `Target Reps - ${settings.questionTarget} attempts`;
   }
 
-  return "Endless practice";
+  return "Free Training - Endless";
 }
 
 function getSessionBadgeLabel(settings) {
   const styleLabel =
     settings.questionStyle === "focus"
-      ? `${settings.focusFactor}s focus`
+      ? `x ${settings.focusFactor} focus`
       : "Mixed tables";
 
   if (settings.sessionType === "timed") {
-    return `${styleLabel} - ${settings.timeLimitMinutes} min`;
+    return `${styleLabel} - HIT ${settings.timeLimitMinutes}m`;
   }
 
   if (settings.sessionType === "question-goal") {
-    return `${styleLabel} - ${settings.questionTarget} attempted`;
+    return `${styleLabel} - ${settings.questionTarget} reps`;
   }
 
-  return `${styleLabel} - Endless`;
+  return `${styleLabel} - Free Training`;
 }
 
 function getSetupPreviewNote(settings) {
   if (settings.sessionType === "timed") {
-    return "Timed runs end when the clock runs out. Ten attempted today secures the slice.";
+    return `Push through a ${settings.timeLimitMinutes}-minute workout and see how many clean answers you can land.`;
   }
 
   if (settings.sessionType === "question-goal") {
-    return "Question-goal runs finish when you submit the target number of answers. Skips do not count toward the target.";
+    return `Answer ${settings.questionTarget} questions to finish the workout session. Skipping doesn't count!`;
   }
 
-  return "Endless runs keep going until you press Finish Session. Every 10 attempted answers fills a new color band.";
+  return "Train until you choose End Workout. Every 10 attempts starts a fresh colour bar.";
 }
 
 function getHeroMessage() {
@@ -650,38 +680,61 @@ function renderSetupPreview() {
   elements.setupPreviewType.textContent = getSessionTypeLabel(settings);
   elements.setupPreviewRange.textContent = `${settings.minFactor} through ${settings.maxFactor}`;
   elements.setupPreviewAdaptive.textContent = settings.adaptiveMode ? "On" : "Off";
+  elements.setupPreviewNegatives.textContent = settings.negativesMode ? "On" : "Off";
   elements.setupPreviewNote.textContent = getSetupPreviewNote(settings);
 }
 
 function createFact(left, right) {
-  const a = Math.min(left, right);
-  const b = Math.max(left, right);
-
+  const ordered = [left, right].sort((first, second) => first - second);
   return {
-    a,
-    b,
-    key: `${a}x${b}`,
-    answer: a * b,
+    a: ordered[0],
+    b: ordered[1],
+    key: `${ordered[0]}x${ordered[1]}`,
+    answer: left * right,
   };
 }
 
+function addFactVariant(map, left, right) {
+  const fact = createFact(left, right);
+  if (!map.has(fact.key)) {
+    map.set(fact.key, fact);
+  }
+}
+
+function addSignedVariants(map, leftMagnitude, rightMagnitude, includeNegatives) {
+  if (!includeNegatives) {
+    addFactVariant(map, leftMagnitude, rightMagnitude);
+    return;
+  }
+
+  [
+    [1, 1],
+    [-1, 1],
+    [1, -1],
+    [-1, -1],
+  ].forEach(([leftSign, rightSign]) => {
+    addFactVariant(map, leftMagnitude * leftSign, rightMagnitude * rightSign);
+  });
+}
+
 function buildPool(settings) {
-  const pool = [];
+  const map = new Map();
 
   if (settings.questionStyle === "focus") {
     for (let factor = settings.minFactor; factor <= settings.maxFactor; factor += 1) {
-      pool.push(createFact(settings.focusFactor, factor));
+      addSignedVariants(map, settings.focusFactor, factor, settings.negativesMode);
     }
-    return pool;
+
+    return Array.from(map.values());
   }
 
   for (let left = settings.minFactor; left <= settings.maxFactor; left += 1) {
     for (let right = left; right <= settings.maxFactor; right += 1) {
-      pool.push(createFact(left, right));
+      addSignedVariants(map, left, right, settings.negativesMode);
     }
   }
 
-  return pool;
+  return Array.from(map.values());
 }
 
 function randomiseDisplay(fact) {
@@ -762,11 +815,11 @@ function updateDailyRecordForAttempt(isCorrect) {
     record.correct += 1;
   }
   if (record.attempted >= DAILY_TARGET) {
-    record.sliceEarned = true;
+    record.attemptGoalEarned = true;
   }
   if (record.correct >= DAILY_TARGET) {
-    record.heartEarned = true;
-    record.sliceEarned = true;
+    record.accuracyGoalEarned = true;
+    record.attemptGoalEarned = true;
   }
   writeDailyRecord(dateKey, record);
 }
@@ -776,18 +829,18 @@ function updateDailyRecordForSessionCompletion() {
   const record = getDailyRecord(dateKey);
   record.sessionsCompleted += 1;
   if (record.attempted >= DAILY_TARGET) {
-    record.sliceEarned = true;
+    record.attemptGoalEarned = true;
   }
   if (record.correct >= DAILY_TARGET) {
-    record.heartEarned = true;
-    record.sliceEarned = true;
+    record.accuracyGoalEarned = true;
+    record.attemptGoalEarned = true;
   }
   writeDailyRecord(dateKey, record);
 }
 
-function getSliceDateKeys() {
+function getWorkoutDayKeys() {
   return Object.entries(state.progress.dailyRecords)
-    .filter(([, record]) => normaliseDailyRecord(record).sliceEarned)
+    .filter(([, record]) => normaliseDailyRecord(record).attemptGoalEarned)
     .map(([key]) => key)
     .sort();
 }
@@ -841,39 +894,15 @@ function calculateCurrentPracticeStreak(keys) {
 }
 
 function getPracticeStreakSummary() {
-  const sliceDateKeys = getSliceDateKeys();
+  const workoutDays = getWorkoutDayKeys();
   return {
-    current: calculateCurrentPracticeStreak(sliceDateKeys),
-    best: calculateBestPracticeStreak(sliceDateKeys),
+    current: calculateCurrentPracticeStreak(workoutDays),
+    best: calculateBestPracticeStreak(workoutDays),
   };
 }
 
-function getStreakEncouragement(streakCount) {
-  if (streakCount >= 30) {
-    return "A whole month of practice is a serious habit now.";
-  }
-
-  if (streakCount >= 14) {
-    return "This rhythm is starting to stick.";
-  }
-
-  if (streakCount >= 7) {
-    return "A full week is on the board.";
-  }
-
-  if (streakCount >= 3) {
-    return "Momentum is building nicely.";
-  }
-
-  if (streakCount >= 1) {
-    return "Nice start. Another day locks in the chain.";
-  }
-
-  return "Ten attempted answers today will start the next streak.";
-}
-
-function setIconFill(element, ratio) {
-  element.style.setProperty("--fill-ratio", `${Math.min(Math.max(ratio, 0), 1)}`);
+function setRewardProgress(element, ratio) {
+  element.style.setProperty("--reward-progress", `${Math.min(Math.max(ratio, 0), 1)}`);
 }
 
 function renderDailyProgress() {
@@ -883,28 +912,24 @@ function renderDailyProgress() {
   const attemptedRemaining = Math.max(0, DAILY_TARGET - todayRecord.attempted);
   const correctRemaining = Math.max(0, DAILY_TARGET - todayRecord.correct);
 
-  setIconFill(elements.sliceFill, attemptedRatio);
-  setIconFill(elements.heartFill, correctRatio);
+  setRewardProgress(elements.attemptBadge, attemptedRatio);
+  setRewardProgress(elements.accuracyBadge, correctRatio);
 
-  elements.sliceProgressLabel.textContent = `${Math.min(todayRecord.attempted, DAILY_TARGET)} / 10 attempted`;
-  elements.heartProgressLabel.textContent = `${Math.min(todayRecord.correct, DAILY_TARGET)} / 10 correct`;
-  elements.dailyProgressText.textContent = `${todayRecord.attempted} attempted | ${todayRecord.correct} correct`;
+  elements.attemptProgressLabel.textContent = `${Math.min(todayRecord.attempted, DAILY_TARGET)} / 10 attempted`;
+  elements.accuracyProgressLabel.textContent = `${Math.min(todayRecord.correct, DAILY_TARGET)} / 10 correct`;
 
-  if (todayRecord.sliceEarned && todayRecord.heartEarned) {
-    elements.dailyProgressStatus.textContent = "Slice secured. Heart glowing.";
-  } else if (todayRecord.sliceEarned) {
-    elements.dailyProgressStatus.textContent =
-      correctRemaining === 0
-        ? "Heart ready too."
-        : `${correctRemaining} more correct for the heart.`;
+  if (todayRecord.attemptGoalEarned && todayRecord.accuracyGoalEarned) {
+    elements.dailyProgressStatus.textContent = "Both goals locked in today.";
+  } else if (todayRecord.attemptGoalEarned) {
+    elements.dailyProgressStatus.textContent = `${correctRemaining} more correct to finish today strong.`;
   } else if (todayRecord.attempted > 0 || todayRecord.correct > 0) {
-    elements.dailyProgressStatus.textContent = `${attemptedRemaining} to the slice.`;
+    elements.dailyProgressStatus.textContent = `${attemptedRemaining} more attempts to lock in the first goal.`;
   } else {
     elements.dailyProgressStatus.textContent = "Two quick wins waiting today.";
   }
 
-  elements.sliceBadge.classList.toggle("is-earned", todayRecord.sliceEarned);
-  elements.heartBadge.classList.toggle("is-earned", todayRecord.heartEarned);
+  elements.attemptBadge.classList.toggle("is-earned", todayRecord.attemptGoalEarned);
+  elements.accuracyBadge.classList.toggle("is-earned", todayRecord.accuracyGoalEarned);
 }
 
 function renderQuestionTimer(value) {
@@ -948,7 +973,7 @@ function renderPracticeProgress() {
   const settings = state.settings || getCurrentSettingsPreview();
   let fillRatio = 0;
   let progressLabel = "Ready";
-  let fillColor = "linear-gradient(90deg, #ff8787 0%, #e2577d 100%)";
+  let fillColor = ENDLESS_COLORS[0];
 
   if (settings.sessionType === "question-goal") {
     fillRatio =
@@ -959,6 +984,7 @@ function renderPracticeProgress() {
   } else if (settings.sessionType === "timed") {
     const elapsedMs = getElapsedSessionMs();
     fillRatio = Math.min(elapsedMs / (settings.timeLimitMinutes * 60000), 1);
+    fillColor = "#c6452d";
     progressLabel = `${formatStopwatch(elapsedMs)} / ${formatStopwatch(
       settings.timeLimitMinutes * 60000,
     )}`;
@@ -1229,8 +1255,8 @@ function handleSubmit(event) {
     return;
   }
 
-  if (!/^\d+$/.test(rawValue)) {
-    setFeedback("Use digits only.", "error");
+  if (!/^-?\d+$/.test(rawValue)) {
+    setFeedback("Use whole numbers only.", "error");
     elements.answerInput.focus();
     return;
   }
@@ -1258,34 +1284,34 @@ function getTodayRewardSummary() {
   const attemptedRemaining = Math.max(0, DAILY_TARGET - todayRecord.attempted);
   const correctRemaining = Math.max(0, DAILY_TARGET - todayRecord.correct);
 
-  if (todayRecord.sliceEarned && todayRecord.heartEarned) {
-    return "Today's slice is secured and the heart is glowing.";
+  if (todayRecord.attemptGoalEarned && todayRecord.accuracyGoalEarned) {
+    return "Both daily goals are secured. The tracker is lit up for today.";
   }
 
-  if (todayRecord.sliceEarned) {
-    return `${correctRemaining} more correct for today's heart.`;
+  if (todayRecord.attemptGoalEarned) {
+    return `${correctRemaining} more correct to complete both daily goals.`;
   }
 
   if (todayRecord.attempted > 0 || todayRecord.correct > 0) {
-    return `${attemptedRemaining} more attempted for today's slice.`;
+    return `${attemptedRemaining} more attempts to secure today's first goal.`;
   }
 
-  return "Start a round to wake up today's rewards.";
+  return "Every rep counts. Ready for another set?";
 }
 
 function getResultsRewardStatus() {
   const todayRecord = getDailyRecord();
   const streakSummary = getPracticeStreakSummary();
 
-  if (todayRecord.sliceEarned && todayRecord.heartEarned) {
-    return `${streakSummary.current} day streak active.`;
+  if (todayRecord.attemptGoalEarned && todayRecord.accuracyGoalEarned) {
+    return `Current streak: ${formatCount(streakSummary.current, "day")}.`;
   }
 
-  if (todayRecord.sliceEarned) {
-    return `Slice secured. ${Math.max(0, DAILY_TARGET - todayRecord.correct)} more correct for the heart.`;
+  if (todayRecord.attemptGoalEarned) {
+    return `${Math.max(0, DAILY_TARGET - todayRecord.correct)} more correct to complete both goals today.`;
   }
 
-  return `${Math.max(0, DAILY_TARGET - todayRecord.attempted)} more attempted to secure today's slice.`;
+  return `${Math.max(0, DAILY_TARGET - todayRecord.attempted)} more attempts to secure today.`;
 }
 
 function renderResults(reason) {
@@ -1295,9 +1321,9 @@ function renderResults(reason) {
   if (reason === "timer") {
     elements.resultsTitle.textContent = "Time called.";
   } else if (state.settings.sessionType === "endless") {
-    elements.resultsTitle.textContent = "Endless run wrapped.";
+    elements.resultsTitle.textContent = "Free Training complete.";
   } else {
-    elements.resultsTitle.textContent = "Session complete.";
+    elements.resultsTitle.textContent = "Workout complete.";
   }
 
   elements.resultsSummary.textContent = getTodayRewardSummary();
@@ -1351,7 +1377,7 @@ function handleFinishSession() {
     return;
   }
 
-  const shouldFinish = window.confirm("End this endless session and view your results?");
+  const shouldFinish = window.confirm("End this workout and view your results?");
   if (!shouldFinish) {
     return;
   }
@@ -1433,7 +1459,7 @@ function renderCoachTip() {
 
   if (!totalAttempted) {
     elements.coachTip.innerHTML =
-      "<strong>Start simple.</strong> A short session is enough to give the trainer a baseline.";
+      "<strong>Start simple.</strong> A short workout is enough to give the trainer a baseline.";
     return;
   }
 
@@ -1445,62 +1471,82 @@ function renderCoachTip() {
 
   if (state.progress.bestStreak >= 15) {
     elements.coachTip.innerHTML =
-      "<strong>You have momentum.</strong> Push the range wider, try a timed run, or stretch things out with endless mode.";
+      "<strong>You have momentum.</strong> Push the range wider, try a timed workout, or stretch things out with Free Training.";
     return;
   }
 
   elements.coachTip.innerHTML =
-    "<strong>Consistency wins.</strong> Secure the daily slice first, then chase the heart with cleaner answers.";
+    "<strong>Consistency wins.</strong> Secure the attempt goal first, then chase the accuracy goal with cleaner answers.";
+}
+
+function parseFactKey(key) {
+  const [left, right] = key.split("x").map(Number);
+  return {
+    left,
+    right,
+    leftMagnitude: Math.abs(left),
+    rightMagnitude: Math.abs(right),
+  };
 }
 
 function getTableStatus(table) {
   if (!table.seenFacts) {
-    return { label: "Unseen", tone: "unseen" };
+    return { label: "Unknown", tone: "unseen" };
   }
 
-  if (table.accuracy >= 0.92 && table.seenFacts >= 6) {
-    return { label: "Confident", tone: "strong" };
+  if (table.accuracy >= 0.88 && table.seenFacts >= 6) {
+    return { label: "Strong!", tone: "strong" };
   }
 
-  if (table.accuracy >= 0.8) {
+  if (table.accuracy >= 0.72 && table.seenFacts >= 3) {
     return { label: "Building", tone: "steady" };
   }
 
-  if (table.accuracy >= 0.65) {
-    return { label: "Warming", tone: "warm" };
-  }
-
-  return { label: "Needs Reps", tone: "needs" };
+  return { label: "Need Reps", tone: "needs" };
 }
 
 function getTableStats() {
+  const factEntries = Object.entries(state.progress.facts).map(([key, progress]) => ({
+    key,
+    progress: getFactProgress(key),
+    ...parseFactKey(key),
+  }));
+
   return TABLE_FACTORS.map((factor) => {
-    const keys = TABLE_FACTORS.map((otherFactor) => createFact(factor, otherFactor).key);
-    const totals = keys.reduce(
-      (summary, key) => {
-        const progress = getFactProgress(key);
-        summary.attempts += progress.attempts;
-        summary.correct += progress.correct;
-        summary.misses += progress.misses;
-        summary.seenFacts += progress.attempts > 0 ? 1 : 0;
+    const relatedEntries = factEntries.filter(
+      (entry) => entry.leftMagnitude === factor || entry.rightMagnitude === factor,
+    );
+    const seenGroupKeys = new Set(
+      relatedEntries.map((entry) => {
+        const low = Math.min(entry.leftMagnitude, entry.rightMagnitude);
+        const high = Math.max(entry.leftMagnitude, entry.rightMagnitude);
+        return `${low}x${high}`;
+      }),
+    );
+    const totals = relatedEntries.reduce(
+      (summary, entry) => {
+        summary.attempts += entry.progress.attempts;
+        summary.correct += entry.progress.correct;
+        summary.misses += entry.progress.misses;
         return summary;
       },
       {
         attempts: 0,
         correct: 0,
         misses: 0,
-        seenFacts: 0,
       },
     );
 
     const accuracy = getAccuracy(totals.correct, totals.attempts);
+
     return {
       factor,
-      totalFacts: keys.length,
+      totalFacts: TABLE_FACTORS.length,
       accuracy,
+      seenFacts: seenGroupKeys.size,
       ...totals,
       ...getTableStatus({
-        ...totals,
+        seenFacts: seenGroupKeys.size,
         accuracy,
       }),
     };
@@ -1511,7 +1557,7 @@ function renderTableRadar() {
   if (!state.progress.totalAttempted) {
     elements.tableGrid.innerHTML = `
       <div class="table-card unseen">
-        <div class="table-name">Start a round</div>
+        <div class="table-name">Start a workout</div>
         <div class="fact-meta">The table radar fills in after you answer a few facts.</div>
       </div>
     `;
@@ -1524,14 +1570,14 @@ function renderTableRadar() {
         ? `${formatPercent(table.accuracy)} accuracy`
         : "No attempts yet";
       const detailLabel = table.attempts
-        ? `${table.seenFacts}/${table.totalFacts} facts seen`
-        : "Fresh table";
+        ? `${table.seenFacts}/${table.totalFacts} pairings seen`
+        : "Fresh range";
 
       return `
         <article class="table-card ${table.tone}">
           <div class="table-card-top">
             <div>
-              <div class="table-name">${table.factor}s</div>
+              <div class="table-name">x ${table.factor}</div>
               <div class="fact-meta">${detailLabel}</div>
             </div>
             <span class="table-pill ${table.tone}">${table.label}</span>
@@ -1541,7 +1587,7 @@ function renderTableRadar() {
           </div>
           <div class="table-card-stats">
             <span>${accuracyLabel}</span>
-            <span>${table.misses} misses logged</span>
+            <span>${table.misses} misses</span>
           </div>
         </article>
       `;
@@ -1553,7 +1599,7 @@ function renderRecent() {
   if (!state.session.recent.length) {
     elements.recentResults.innerHTML = `
       <div class="recent-item empty-state">
-        <div class="recent-meta">Recent answers from the latest session will appear here.</div>
+        <div class="recent-meta">Recent answers from the latest workout will appear here.</div>
       </div>
     `;
     return;
@@ -1583,21 +1629,50 @@ function renderRecent() {
     .join("");
 }
 
-function getCurrentMonthLabel() {
-  return new Date().toLocaleDateString(undefined, {
-    month: "long",
-    year: "numeric",
+function getAvailableMonthKeys() {
+  const monthKeys = new Set([getMonthKey(getCurrentMonthDate())]);
+
+  Object.entries(state.progress.dailyRecords).forEach(([dateKey, record]) => {
+    const normalised = normaliseDailyRecord(record);
+    if (normalised.attempted || normalised.correct || normalised.sessionsCompleted) {
+      monthKeys.add(getMonthKey(parseDateKey(dateKey)));
+    }
   });
+
+  return Array.from(monthKeys).sort();
 }
 
-function buildCalendarMarkup() {
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = today.getMonth();
-  const firstDay = new Date(year, month, 1);
+function ensureDisplayMonthKey() {
+  const availableMonthKeys = getAvailableMonthKeys();
+  if (!availableMonthKeys.includes(state.displayMonthKey)) {
+    state.displayMonthKey = availableMonthKeys[availableMonthKeys.length - 1];
+  }
+}
+
+function getMonthNavigationState() {
+  const availableMonthKeys = getAvailableMonthKeys();
+  const currentMonthKey = getMonthKey(getCurrentMonthDate());
+  const activeIndex = availableMonthKeys.indexOf(state.displayMonthKey);
+
+  return {
+    availableMonthKeys,
+    activeIndex,
+    canMovePrev: activeIndex > 0,
+    canMoveNext:
+      activeIndex > -1 &&
+      activeIndex < availableMonthKeys.length - 1 &&
+      state.displayMonthKey !== currentMonthKey,
+  };
+}
+
+function buildCalendarMarkup(monthDate) {
+  const year = monthDate.getFullYear();
+  const month = monthDate.getMonth();
+  const firstDay = new Date(year, month, 1, 12);
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const leadingBlankDays = firstDay.getDay();
   const cells = [];
+  const todayKey = getTodayDateKey();
 
   for (let index = 0; index < leadingBlankDays; index += 1) {
     cells.push('<div class="calendar-day empty"></div>');
@@ -1609,23 +1684,25 @@ function buildCalendarMarkup() {
     const record = getDailyRecord(dateKey);
     const classes = ["calendar-day"];
 
-    if (dateKey === getTodayDateKey()) {
+    if (dateKey === todayKey) {
       classes.push("today");
     }
-    if (record.sliceEarned) {
-      classes.push("has-slice");
+    if (record.attemptGoalEarned) {
+      classes.push("has-attempt-goal");
     }
-    if (record.heartEarned) {
-      classes.push("has-heart");
+    if (record.accuracyGoalEarned) {
+      classes.push("has-accuracy-goal");
     }
 
     cells.push(`
       <div class="${classes.join(" ")}">
         <div class="calendar-day-top">
           <span class="day-number">${day}</span>
+        </div>
+        <div class="calendar-day-body">
           <span class="day-icons">
-            ${record.sliceEarned ? '<span class="day-slice" aria-label="Slice earned"></span>' : ""}
-            ${record.heartEarned ? '<span class="day-heart" aria-label="Heart earned">&#9829;</span>' : ""}
+            ${record.attemptGoalEarned ? '<span class="day-attempt" aria-label="Attempt goal earned"><svg viewBox="0 0 72 72" role="presentation"><path d="M12 27h8l7 18H18a6 6 0 0 1-6-6v-6c0-3.3 2.7-6 6-6Zm48 0a6 6 0 0 1 6 6v6a6 6 0 0 1-6 6h-9l7-18h8ZM28 23h16l10 26H18l10-26Z"/></svg></span>' : ""}
+            ${record.accuracyGoalEarned ? '<span class="day-accuracy" aria-label="Accuracy goal earned"><svg viewBox="0 0 72 72" role="presentation"><path d="M36 10 48 16l14 2-4 13 3 15-13-4-12 8-12-8-13 4 3-15-4-13 14-2 12-6Z"/></svg></span>' : ""}
           </span>
         </div>
       </div>
@@ -1639,30 +1716,57 @@ function buildCalendarMarkup() {
   return cells.join("");
 }
 
-function renderCalendars() {
-  const monthLabel = getCurrentMonthLabel();
-  const calendarMarkup = buildCalendarMarkup();
+function renderMonthNavigation() {
+  ensureDisplayMonthKey();
+  const currentMonthDate = createMonthDateFromKey(state.displayMonthKey);
+  const navState = getMonthNavigationState();
+  const label = formatMonthLabel(currentMonthDate);
 
-  elements.currentMonthLabel.textContent = monthLabel;
-  elements.resultsMonthLabel.textContent = monthLabel;
+  elements.currentMonthLabel.textContent = label;
+  elements.resultsMonthLabel.textContent = label;
+
+  [
+    elements.progressMonthPrevButton,
+    elements.resultsMonthPrevButton,
+  ].forEach((button) => {
+    button.disabled = !navState.canMovePrev;
+  });
+
+  [
+    elements.progressMonthNextButton,
+    elements.resultsMonthNextButton,
+  ].forEach((button) => {
+    button.disabled = !navState.canMoveNext;
+  });
+}
+
+function renderCalendars() {
+  ensureDisplayMonthKey();
+  const displayMonthDate = createMonthDateFromKey(state.displayMonthKey);
+  const calendarMarkup = buildCalendarMarkup(displayMonthDate);
+
+  renderMonthNavigation();
   elements.calendarGrid.innerHTML = calendarMarkup;
   elements.resultsCalendarGrid.innerHTML = calendarMarkup;
 }
 
-function renderStreakPanel() {
-  const streakSummary = getPracticeStreakSummary();
-  const todayRecord = getDailyRecord();
-  let message = getStreakEncouragement(streakSummary.current);
-
-  if (todayRecord.sliceEarned && todayRecord.heartEarned) {
-    message = `Today's slice and heart are both secured. ${message}`;
-  } else if (todayRecord.sliceEarned) {
-    message = `Today's slice is secured. ${message}`;
+function shiftDisplayedMonth(direction) {
+  const navState = getMonthNavigationState();
+  if (
+    (direction < 0 && !navState.canMovePrev) ||
+    (direction > 0 && !navState.canMoveNext)
+  ) {
+    return;
   }
 
+  state.displayMonthKey = navState.availableMonthKeys[navState.activeIndex + direction];
+  renderCalendars();
+}
+
+function renderStreakPanel() {
+  const streakSummary = getPracticeStreakSummary();
   elements.currentPracticeStreak.textContent = `${streakSummary.current}`;
   elements.bestPracticeDayStreak.textContent = `${streakSummary.best}`;
-  elements.streakMessage.textContent = message;
 }
 
 function renderResultsCarousel() {
@@ -1694,6 +1798,7 @@ function resetProgress() {
   }
 
   state.progress = defaultProgress();
+  state.displayMonthKey = getMonthKey(getCurrentMonthDate());
   saveProgress();
   renderDailyProgress();
   renderOverall();
@@ -1708,6 +1813,7 @@ function resetProgress() {
 
 function initialise() {
   elements.heroMessage.textContent = getHeroMessage();
+  state.displayMonthKey = getMonthKey(getCurrentMonthDate());
 
   const savedSettings = loadSettingsSnapshot();
   applySettingsSnapshot(savedSettings);
@@ -1751,6 +1857,10 @@ function initialise() {
     }
   });
   elements.resetProgressButton.addEventListener("click", resetProgress);
+  elements.progressMonthPrevButton.addEventListener("click", () => shiftDisplayedMonth(-1));
+  elements.progressMonthNextButton.addEventListener("click", () => shiftDisplayedMonth(1));
+  elements.resultsMonthPrevButton.addEventListener("click", () => shiftDisplayedMonth(-1));
+  elements.resultsMonthNextButton.addEventListener("click", () => shiftDisplayedMonth(1));
   elements.resultsPrevButton.addEventListener("click", () => shiftResultsCarousel(-1));
   elements.resultsNextButton.addEventListener("click", () => shiftResultsCarousel(1));
 

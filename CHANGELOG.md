@@ -10,15 +10,18 @@ The format is inspired by Keep a Changelog and uses a simple project-friendly ve
 - Version 3 app shell with dedicated Setup, Practice, Results, and Progress screens.
 - Timed, question-goal, and endless session types with preset and custom limits.
 - Countdown start flow before every session begins.
-- Month-view daily reward calendar for the Results screen.
+- Shared month-view workout tracker calendar with disabled month navigation when no earlier data exists.
 - Phase 1 browser-local streak tracking and current-month practice calendar.
+- Negatives mode for signed integer multiplication while keeping the setup range magnitude-based.
+- Workout-themed header branding with rotating strength-building quotes.
 
 ### Changed
 - Refocused practice into a minimalist timed-answer interface with brief right/wrong feedback only.
-- Reworked daily rewards into a watermelon slice plus heart system that fills from daily attempted and correct totals.
+- Reworked daily rewards into attempt and accuracy goal cards that shade as progress builds and complete with stronger states.
 - Moved deeper insights like trouble spots, history, and table radar into Results and Progress instead of showing everything during practice.
 - Shifted the header into a slimmer intro band with compact daily progress and `Progress` / `Start!` navigation.
-- Swapped the palette to a watermelon-inspired color system.
+- Swapped the palette to a strength-focused workout theme.
+- Renamed the setup, preview, tracker, and log copy to match the workout framing.
 
 ### Planned
 - Learn mode with more detailed corrective feedback.

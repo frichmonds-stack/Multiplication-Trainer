@@ -1,20 +1,21 @@
-# Foo's Multiplication Trainer
+# Math Muscle Trainer
 
-A self-contained multiplication practice webapp built with plain HTML, CSS, and JavaScript.
+A strength-themed multiplication practice webapp built with plain HTML, CSS, and JavaScript.
 
 ## What it does
 
 - Uses a slimmer app-style shell with a separate header band and dedicated Setup, Practice, Results, and Progress screens
 - Supports mixed-table practice or a focused single-table mode
-- Supports timed runs, question-goal runs, and endless practice
+- Supports High Intensity Training, Target Reps, and Free Training session types
+- Supports positive and negative integer multiplication while keeping the practice range magnitude-based
 - Keeps the practice screen minimal with a question timer, session timer, countdown start, and quick right/wrong feedback
 - Uses adaptive question weighting to bring back new or missed facts more often
-- Tracks daily slice and heart rewards with browser-local streak history
-- Shows a current-month calendar for completed practice days and daily rewards
-- Shows a table-by-table radar so weak and strong tables are easy to spot
+- Tracks daily attempt and accuracy goals with browser-local workout history
+- Shows a shared month-view workout tracker calendar across Results and Progress
+- Shows a table-by-table radar so weak and strong multiplication facts are easy to spot
 - Remembers your preferred setup in the browser between visits
 - Saves long-term progress in the browser with localStorage
-- Uses a watermelon-inspired theme with rotating banner messages
+- Uses a workout-inspired theme with rotating strength-building banner messages
 
 ## Run it
 
