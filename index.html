@@ -6,7 +6,7 @@
     <title>Math Muscle Trainer</title>
     <meta
       name="description"
-      content="A strength-themed multiplication trainer with focused workout sessions, progress tracking, and browser-saved streaks."
+      content="A strength-themed multiplication trainer with focused workouts, progress tracking, and browser-saved streaks."
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -23,7 +23,7 @@
 
       <header class="page-header">
         <div class="hero-copy">
-          <p class="eyebrow">Novare Co. presents</p>
+          <p class="eyebrow">Novare Co. presents.</p>
           <div class="hero-title-row">
             <span class="hero-mark" aria-hidden="true">
               <svg viewBox="0 0 660 660" role="presentation">
@@ -34,10 +34,7 @@
             </span>
             <div class="hero-text-block">
               <h1>Math Muscle Trainer</h1>
-              <p class="intro">
-                <span class="quote-prefix">Thought for the day:</span>
-                <em id="heroMessage">Strength is built one steady rep at a time.</em>
-              </p>
+              <p class="hero-tagline">Grow your brain, begin your reign.</p>
             </div>
           </div>
         </div>
@@ -45,7 +42,10 @@
         <div class="hero-side">
           <nav class="shell-nav" aria-label="Primary">
             <button class="nav-button" type="button" data-view-target="progress">
-              Progress
+              My Progress
+            </button>
+            <button class="nav-button" type="button" id="optionsButton">
+              Options
             </button>
             <button
               class="nav-button nav-button-primary is-active"
@@ -59,31 +59,19 @@
           <section class="daily-widget card" aria-label="Today's workout tracker">
             <div class="daily-widget-top">
               <div>
-                <p class="section-kicker">Today</p>
                 <h2>Workout Tracker</h2>
               </div>
-              <span class="daily-progress-status" id="dailyProgressStatus">
-                Two quick wins waiting today.
-              </span>
+            </div>
+
+            <div class="daily-inspiration">
+              <span class="preview-label daily-inspiration-label">Today's Inspiration</span>
+              <p class="daily-inspiration-copy">
+                <em id="heroMessage">Strength is built one steady rep at a time.</em>
+              </p>
             </div>
 
             <div class="reward-strip">
               <article class="reward-mini reward-mini-attempt" id="attemptBadge">
-                <div class="reward-glyph-shell" aria-hidden="true">
-                  <svg class="reward-glyph" viewBox="0 0 72 72" role="presentation">
-                    <path
-                      d="M36 8 44.552 25.33 63.678 28.108 49.839 41.6 53.106 60.648 36 51.652 18.894 60.648 22.161 41.6 8.322 28.108 27.448 25.33Z"
-                    />
-                  </svg>
-                </div>
-
-                <div class="reward-mini-copy">
-                  <strong>Star</strong>
-                  <span id="attemptProgressLabel">0 / 10</span>
-                </div>
-              </article>
-
-              <article class="reward-mini reward-mini-accuracy" id="accuracyBadge">
                 <div class="reward-glyph-shell" aria-hidden="true">
                   <svg class="reward-glyph" viewBox="0 0 72 72" role="presentation">
                     <path
@@ -94,6 +82,21 @@
 
                 <div class="reward-mini-copy">
                   <strong>Heart</strong>
+                  <span id="attemptProgressLabel">0 / 10</span>
+                </div>
+              </article>
+
+              <article class="reward-mini reward-mini-accuracy" id="accuracyBadge">
+                <div class="reward-glyph-shell" aria-hidden="true">
+                  <svg class="reward-glyph" viewBox="0 0 72 72" role="presentation">
+                    <path
+                      d="M36 8 44.552 25.33 63.678 28.108 49.839 41.6 53.106 60.648 36 51.652 18.894 60.648 22.161 41.6 8.322 28.108 27.448 25.33Z"
+                    />
+                  </svg>
+                </div>
+
+                <div class="reward-mini-copy">
+                  <strong>Star</strong>
                   <span id="accuracyProgressLabel">0 / 10</span>
                 </div>
               </article>
@@ -110,7 +113,7 @@
                 <div class="section-heading compact">
                   <div>
                     <p class="section-kicker">Setup</p>
-                    <h2>Session Settings</h2>
+                    <h2>Workout Settings</h2>
                   </div>
                 </div>
 
@@ -121,46 +124,79 @@
                       <div class="field-grid compact-field-grid">
                         <label class="field centered-field">
                           <span>Minimum</span>
-                          <input id="minFactor" type="number" min="1" max="12" value="2" />
+                          <select id="minFactor">
+                            <option value="1">1</option>
+                            <option value="2" selected>2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="6">6</option>
+                            <option value="7">7</option>
+                            <option value="8">8</option>
+                            <option value="9">9</option>
+                            <option value="10">10</option>
+                            <option value="11">11</option>
+                            <option value="12">12</option>
+                          </select>
                         </label>
 
                         <label class="field centered-field">
                           <span>Maximum</span>
-                          <input id="maxFactor" type="number" min="1" max="12" value="12" />
+                          <select id="maxFactor">
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="6">6</option>
+                            <option value="7">7</option>
+                            <option value="8">8</option>
+                            <option value="9">9</option>
+                            <option value="10">10</option>
+                            <option value="11">11</option>
+                            <option value="12" selected>12</option>
+                          </select>
                         </label>
                       </div>
                     </div>
 
                     <div class="mini-toggle-stack">
-                      <label class="toggle compact-toggle bare-toggle">
-                        <span class="toggle-row">
-                          <input id="adaptiveMode" type="checkbox" checked />
-                          <span class="toggle-label">Adaptive Challenge</span>
-                          <span
-                            class="tooltip-dot"
-                            tabindex="0"
-                            data-tooltip="Bring back the facts that still wobble."
-                            aria-label="Adaptive Challenge help"
-                          >
-                            ?
-                          </span>
-                        </span>
-                      </label>
+                      <span class="field-helper option-stack-spacer" aria-hidden="true">
+                        Practice multiplications between...
+                      </span>
+                      <span class="option-stack-title">Options</span>
 
-                      <label class="toggle compact-toggle bare-toggle">
-                        <span class="toggle-row">
-                          <input id="negativesMode" type="checkbox" />
-                          <span class="toggle-label">Negatives</span>
-                          <span
-                            class="tooltip-dot"
-                            tabindex="0"
-                            data-tooltip="Mix in positive and negative integers."
-                            aria-label="Negatives help"
-                          >
-                            ?
+                      <div class="mini-toggle-list">
+                        <label class="toggle compact-toggle bare-toggle">
+                          <span class="toggle-row">
+                            <input id="adaptiveMode" type="checkbox" checked />
+                            <span class="toggle-label">Targeted</span>
+                            <span
+                              class="tooltip-dot"
+                              tabindex="0"
+                              data-tooltip="Brings back the facts that still need reps."
+                              aria-label="Targeted help"
+                            >
+                              ?
+                            </span>
                           </span>
-                        </span>
-                      </label>
+                        </label>
+
+                        <label class="toggle compact-toggle bare-toggle">
+                          <span class="toggle-row">
+                            <input id="negativesMode" type="checkbox" />
+                            <span class="toggle-label">Negatives</span>
+                            <span
+                              class="tooltip-dot"
+                              tabindex="0"
+                              data-tooltip="Mix in positive and negative integers."
+                              aria-label="Negatives help"
+                            >
+                              ?
+                            </span>
+                          </span>
+                        </label>
+                      </div>
                     </div>
                   </section>
 
@@ -173,12 +209,12 @@
                     >
                       <label class="choice-pill">
                         <input type="radio" name="questionStyle" value="mixed" checked />
-                        <span>Mixed Tables</span>
+                        <span>Full Circuit</span>
                       </label>
 
                       <label class="choice-pill">
                         <input type="radio" name="questionStyle" value="focus" />
-                        <span>Focus One Table</span>
+                        <span>Isolation</span>
                       </label>
                     </div>
                   </div>
@@ -202,11 +238,11 @@
                   </label>
 
                   <div class="field option-field">
-                    <span>Session Type</span>
+                    <span>Workout Type</span>
                     <div
                       class="choice-row centered-choice"
                       role="radiogroup"
-                      aria-label="Session type"
+                      aria-label="Workout type"
                     >
                       <label class="choice-pill session-choice">
                         <input type="radio" name="sessionType" value="timed" />
@@ -235,6 +271,50 @@
                           <strong>Free Training</strong>
                           <small>(Endless)</small>
                         </span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div class="field is-hidden" id="freeTrainingField">
+                    <span>Free Training Style</span>
+                    <div
+                      class="choice-row centered-choice"
+                      role="radiogroup"
+                      aria-label="Free training style"
+                    >
+                      <label class="choice-pill session-choice">
+                        <input type="radio" name="freeTrainingMode" value="zen" checked />
+                        <span class="choice-pill-copy">
+                          <strong>Zen Mode</strong>
+                          <small>(No Rules)</small>
+                        </span>
+                      </label>
+
+                      <label class="choice-pill session-choice">
+                        <input type="radio" name="freeTrainingMode" value="spar" />
+                        <span class="choice-pill-copy">
+                          <strong>Spar Mode</strong>
+                          <small>(3 Mistake Knockout)</small>
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div class="field is-hidden" id="sparTimingField">
+                    <span>Spar Round</span>
+                    <div
+                      class="choice-row choice-row-compact"
+                      role="radiogroup"
+                      aria-label="Spar round style"
+                    >
+                      <label class="choice-pill compact">
+                        <input type="radio" name="sparTiming" value="untimed" checked />
+                        <span>Untimed</span>
+                      </label>
+
+                      <label class="choice-pill compact">
+                        <input type="radio" name="sparTiming" value="timed" />
+                        <span>Timed</span>
                       </label>
                     </div>
                   </div>
@@ -323,11 +403,11 @@
                 <div class="preview-stack">
                   <article class="preview-item">
                     <span class="preview-label">Question Style</span>
-                    <strong class="preview-value" id="setupPreviewStyle">Mixed Tables</strong>
+                    <strong class="preview-value" id="setupPreviewStyle">Full Circuit</strong>
                   </article>
 
                   <article class="preview-item">
-                    <span class="preview-label">Session Type</span>
+                    <span class="preview-label">Workout Type</span>
                     <strong class="preview-value" id="setupPreviewType">
                       Target Reps - 20 attempts
                     </strong>
@@ -340,7 +420,7 @@
 
                   <div class="preview-pair">
                     <article class="preview-item compact-preview">
-                      <span class="preview-label">Adaptive Challenge</span>
+                      <span class="preview-label">Targeted</span>
                       <strong class="preview-value" id="setupPreviewAdaptive">On</strong>
                     </article>
 
@@ -352,11 +432,11 @@
                 </div>
 
                 <div class="coach-card preview-note" id="setupPreviewNote">
-                  Answer 20 questions to finish the workout session. Skipping doesn't count!
+                  Answer 20 questions to finish the workout. Skipping doesn't count!
                 </div>
 
                 <div class="button-row preview-actions">
-                  <button class="primary-button" type="submit" form="settingsForm">Work Out</button>
+                  <button class="primary-button" type="submit" form="settingsForm">Start</button>
                 </div>
               </section>
             </div>
@@ -375,11 +455,7 @@
             <section class="panel practice-panel">
               <div class="practice-topbar">
                 <span class="session-badge" id="sessionBadge">Ready to train</span>
-                <button
-                  class="ghost-button subtle-button is-hidden"
-                  type="button"
-                  id="finishSessionButton"
-                >
+                <button class="ghost-button subtle-button" type="button" id="finishSessionButton">
                   End Workout
                 </button>
               </div>
@@ -391,7 +467,7 @@
                 </div>
 
                 <div class="hud-card">
-                  <span class="hud-label">Session Timer</span>
+                  <span class="hud-label">Workout Timer</span>
                   <span class="hud-value" id="sessionTimer">0:00</span>
                 </div>
 
@@ -465,13 +541,9 @@
               <div class="results-carousel">
                 <section class="results-slide is-active" data-results-slide="summary">
                   <div class="slide-heading">
-                    <p class="section-kicker">Workout Summary</p>
-                    <h2 id="resultsTitle">Session complete.</h2>
+                    <p class="slide-subtitle">Workout Summary</p>
+                    <h2 id="resultsTitle">Great job on showing up today.</h2>
                   </div>
-
-                  <p class="results-summary" id="resultsSummary">
-                    Every rep counts. Ready for another set?
-                  </p>
 
                   <div class="stats-grid results-stats">
                     <div class="stat-block">
@@ -512,68 +584,101 @@
                     <button class="ghost-button" type="button" data-view-target="setup">
                       Adjust Workout
                     </button>
-                    <button class="ghost-button" type="button" data-view-target="progress">
-                      View Progress
-                    </button>
                   </div>
                 </section>
 
                 <section class="results-slide" data-results-slide="tracker">
-                  <div class="slide-heading tracker-slide-head">
-                    <div>
-                      <p class="section-kicker">Workout Tracker</p>
-                      <h2>This month</h2>
+                  <div class="tracker-layout">
+                    <div class="tracker-left-column">
+                      <div class="tracker-slide-head tracker-title-block">
+                        <p class="section-kicker">Workout Tracker</p>
+                        <h2>This month</h2>
+                      </div>
+
+                      <aside class="tracker-side-panel">
+                        <div class="tracker-stat-grid">
+                          <div class="stat-block compact-stat">
+                            <span class="stat-value" id="resultsCurrentPracticeStreak">0</span>
+                            <span class="stat-label">Current Streak</span>
+                          </div>
+
+                          <div class="stat-block compact-stat">
+                            <span class="stat-value" id="resultsBestPracticeDayStreak">0</span>
+                            <span class="stat-label">Best Streak</span>
+                          </div>
+                        </div>
+
+                        <div class="tracker-mini-grid">
+                          <div class="tracker-mini-card">
+                            <span class="tracker-mini-value" id="resultsMonthSessions">0</span>
+                            <span class="tracker-mini-label">Workouts</span>
+                          </div>
+                          <div class="tracker-mini-card">
+                            <span class="tracker-mini-value" id="resultsMonthHearts">0</span>
+                            <span class="tracker-mini-label">Hearts</span>
+                          </div>
+                          <div class="tracker-mini-card">
+                            <span class="tracker-mini-value" id="resultsMonthStars">0</span>
+                            <span class="tracker-mini-label">Stars</span>
+                          </div>
+                        </div>
+                      </aside>
                     </div>
 
-                    <div class="calendar-nav">
-                      <button
-                        class="calendar-nav-button"
-                        type="button"
-                        id="resultsMonthPrevButton"
-                        aria-label="Previous workout month"
-                      >
-                        &#8249;
-                      </button>
-                      <span class="section-note month-label" id="resultsMonthLabel">April 2026</span>
-                      <button
-                        class="calendar-nav-button"
-                        type="button"
-                        id="resultsMonthNextButton"
-                        aria-label="Next workout month"
-                      >
-                        &#8250;
-                      </button>
+                    <div class="tracker-calendar-wrap">
+                      <div class="tracker-calendar-head">
+                        <span class="preview-label">Month</span>
+                        <div class="calendar-nav">
+                          <button
+                            class="calendar-nav-button"
+                            type="button"
+                            id="resultsMonthPrevButton"
+                            aria-label="Previous workout month"
+                          >
+                            &#8249;
+                          </button>
+                          <span class="section-note month-label" id="resultsMonthLabel">April 2026</span>
+                          <button
+                            class="calendar-nav-button"
+                            type="button"
+                            id="resultsMonthNextButton"
+                            aria-label="Next workout month"
+                          >
+                            &#8250;
+                          </button>
+                        </div>
+                      </div>
+                      <div class="calendar-weekdays compact" aria-hidden="true">
+                        <span>Sun</span>
+                        <span>Mon</span>
+                        <span>Tue</span>
+                        <span>Wed</span>
+                        <span>Thu</span>
+                        <span>Fri</span>
+                        <span>Sat</span>
+                      </div>
+                      <div class="calendar-grid compact" id="resultsCalendarGrid"></div>
                     </div>
                   </div>
-
-                  <div class="coach-card reward-status-card" id="resultsRewardStatus"></div>
-
-                  <div class="calendar-weekdays compact" aria-hidden="true">
-                    <span>Sun</span>
-                    <span>Mon</span>
-                    <span>Tue</span>
-                    <span>Wed</span>
-                    <span>Thu</span>
-                    <span>Fri</span>
-                    <span>Sat</span>
-                  </div>
-                  <div class="calendar-grid compact" id="resultsCalendarGrid"></div>
                 </section>
 
-                <section class="results-slide" data-results-slide="trouble">
+                <section class="results-slide" data-results-slide="focus">
                   <div class="slide-heading">
-                    <p class="section-kicker">Trouble Spots</p>
-                    <h2>What to revisit next</h2>
+                    <p class="section-kicker">Next Focus</p>
+                    <h2>Where to build next</h2>
                   </div>
-                  <div class="insight-list" id="resultsTroubleList"></div>
-                </section>
 
-                <section class="results-slide" data-results-slide="recent">
-                  <div class="slide-heading">
-                    <p class="section-kicker">Recent Answers</p>
-                    <h2>How the last run felt</h2>
+                  <div class="focus-split">
+                    <section class="focus-panel">
+                      <h3 class="focus-panel-title">Recent Growth Opportunities</h3>
+                      <div class="focus-card-grid" id="resultsGrowthList"></div>
+                    </section>
+
+                    <section class="focus-panel">
+                      <h3 class="focus-panel-title">Priority Targets</h3>
+                      <div class="focus-card-grid" id="resultsPriorityList"></div>
+                    </section>
                   </div>
-                  <div class="recent-strip" id="recentResults"></div>
                 </section>
               </div>
             </section>
@@ -582,7 +687,7 @@
           <section class="screen" data-view="progress" id="progressScreen">
             <section class="panel carousel-panel progress-screen-panel">
               <div class="carousel-shell-head">
-                <p class="section-kicker">Progress</p>
+                <p class="section-kicker">My Progress</p>
                 <div class="carousel-actions">
                   <button
                     class="carousel-button"
@@ -606,7 +711,7 @@
               <div class="progress-carousel">
                 <section class="progress-slide is-active" data-progress-slide="overview">
                   <div class="slide-heading">
-                    <p class="section-kicker">Training Log</p>
+                    <p class="section-kicker">Workout Log</p>
                     <h2>Your progress so far</h2>
                   </div>
 
@@ -630,63 +735,96 @@
                       <span class="stat-value" id="overallBestPace">-</span>
                       <span class="stat-label">Fastest Avg</span>
                     </div>
+
+                    <div class="stat-block">
+                      <span class="stat-value" id="overallWorkoutCount">0</span>
+                      <span class="stat-label">Workouts Completed</span>
+                    </div>
+
+                    <div class="stat-block">
+                      <span class="stat-value" id="overallBestDayAttempts">0</span>
+                      <span class="stat-label">Most Attempts in a Day</span>
+                    </div>
                   </div>
                 </section>
 
                 <section class="progress-slide" data-progress-slide="tracker">
-                  <div class="tracker-slide-head">
-                    <div>
-                      <p class="section-kicker">Workout Tracker</p>
-                      <h2 class="stacked-heading">
-                        <span>Every.</span>
-                        <span>Moment.</span>
-                        <span>Counts.</span>
-                      </h2>
+                  <div class="tracker-layout">
+                    <div class="tracker-left-column">
+                      <div class="tracker-slide-head tracker-title-block">
+                        <p class="section-kicker">Workout Tracker</p>
+                        <h2 class="stacked-heading">
+                          <span>Every.</span>
+                          <span>Moment.</span>
+                          <span>Counts.</span>
+                        </h2>
+                      </div>
+
+                      <aside class="tracker-side-panel">
+                        <div class="tracker-stat-grid">
+                          <div class="stat-block compact-stat">
+                            <span class="stat-value" id="currentPracticeStreak">0</span>
+                            <span class="stat-label">Current Streak</span>
+                          </div>
+
+                          <div class="stat-block compact-stat">
+                            <span class="stat-value" id="bestPracticeDayStreak">0</span>
+                            <span class="stat-label">Best Streak</span>
+                          </div>
+                        </div>
+
+                        <div class="tracker-mini-grid">
+                          <div class="tracker-mini-card">
+                            <span class="tracker-mini-value" id="progressMonthSessions">0</span>
+                            <span class="tracker-mini-label">Workouts</span>
+                          </div>
+                          <div class="tracker-mini-card">
+                            <span class="tracker-mini-value" id="progressMonthHearts">0</span>
+                            <span class="tracker-mini-label">Hearts</span>
+                          </div>
+                          <div class="tracker-mini-card">
+                            <span class="tracker-mini-value" id="progressMonthStars">0</span>
+                            <span class="tracker-mini-label">Stars</span>
+                          </div>
+                        </div>
+                      </aside>
                     </div>
 
-                    <div class="calendar-nav calendar-nav-tall">
-                      <button
-                        class="calendar-nav-button"
-                        type="button"
-                        id="progressMonthPrevButton"
-                        aria-label="Previous workout month"
-                      >
-                        &#8249;
-                      </button>
-                      <span class="section-note month-label" id="currentMonthLabel">April 2026</span>
-                      <button
-                        class="calendar-nav-button"
-                        type="button"
-                        id="progressMonthNextButton"
-                        aria-label="Next workout month"
-                      >
-                        &#8250;
-                      </button>
+                    <div class="tracker-calendar-wrap">
+                      <div class="tracker-calendar-head">
+                        <span class="preview-label">Month</span>
+                        <div class="calendar-nav">
+                          <button
+                            class="calendar-nav-button"
+                            type="button"
+                            id="progressMonthPrevButton"
+                            aria-label="Previous workout month"
+                          >
+                            &#8249;
+                          </button>
+                          <span class="section-note month-label" id="currentMonthLabel">April 2026</span>
+                          <button
+                            class="calendar-nav-button"
+                            type="button"
+                            id="progressMonthNextButton"
+                            aria-label="Next workout month"
+                          >
+                            &#8250;
+                          </button>
+                        </div>
+                      </div>
+                      <div class="calendar-weekdays" aria-hidden="true">
+                        <span>Sun</span>
+                        <span>Mon</span>
+                        <span>Tue</span>
+                        <span>Wed</span>
+                        <span>Thu</span>
+                        <span>Fri</span>
+                        <span>Sat</span>
+                      </div>
+                      <div class="calendar-grid" id="calendarGrid"></div>
                     </div>
                   </div>
-
-                  <div class="streak-metrics">
-                    <div class="stat-block compact-stat">
-                      <span class="stat-value" id="currentPracticeStreak">0</span>
-                      <span class="stat-label">Current Streak</span>
-                    </div>
-
-                    <div class="stat-block compact-stat">
-                      <span class="stat-value" id="bestPracticeDayStreak">0</span>
-                      <span class="stat-label">Best Streak</span>
-                    </div>
-                  </div>
-
-                  <div class="calendar-weekdays" aria-hidden="true">
-                    <span>Sun</span>
-                    <span>Mon</span>
-                    <span>Tue</span>
-                    <span>Wed</span>
-                    <span>Thu</span>
-                    <span>Fri</span>
-                    <span>Sat</span>
-                  </div>
-                  <div class="calendar-grid" id="calendarGrid"></div>
                 </section>
 
                 <section class="progress-slide" data-progress-slide="facts">
@@ -698,13 +836,23 @@
                   <div class="table-grid" id="tableGrid"></div>
                 </section>
 
-                <section class="progress-slide" data-progress-slide="trouble">
+                <section class="progress-slide" data-progress-slide="focus">
                   <div class="slide-heading">
-                    <p class="section-kicker">Trouble Spots</p>
-                    <h2>Facts that still need reps</h2>
+                    <p class="section-kicker">Next Focus</p>
+                    <h2>Where to build next</h2>
                   </div>
 
-                  <div class="insight-list" id="progressTroubleList"></div>
+                  <div class="focus-split">
+                    <section class="focus-panel">
+                      <h3 class="focus-panel-title">Recent Growth Opportunities</h3>
+                      <div class="focus-card-grid" id="progressGrowthList"></div>
+                    </section>
+
+                    <section class="focus-panel">
+                      <h3 class="focus-panel-title">Priority Targets</h3>
+                      <div class="focus-card-grid" id="progressPriorityList"></div>
+                    </section>
+                  </div>
                 </section>
 
                 <section class="progress-slide" data-progress-slide="coach">
@@ -714,19 +862,38 @@
                   </div>
 
                   <div class="coach-card" id="coachTip"></div>
+                </section>
 
-                  <div class="roadmap-card">
-                    <p class="section-kicker">Future Updates</p>
-                    <p class="roadmap-copy">
-                      Learn mode, richer celebration art, bronze / silver / gold day
-                      tiers, and a leaderboard are marked for later iterations.
-                    </p>
+                <section class="progress-slide" data-progress-slide="records">
+                  <div class="slide-heading">
+                    <p class="section-kicker">Workout Records</p>
+                    <h2>How your workouts are stacking up</h2>
                   </div>
 
-                  <div class="button-row utility-actions">
-                    <button class="ghost-button" type="button" id="resetProgressButton">
-                      Reset Saved Progress
-                    </button>
+                  <div class="focus-split records-split">
+                    <section class="focus-panel">
+                      <div class="records-panel-head">
+                        <h3 class="focus-panel-title">Personal Bests</h3>
+                        <label class="records-filter">
+                          <span class="sr-only">Personal best mode</span>
+                          <select id="recordsModeSelect">
+                            <option value="timed">High Intensity Training</option>
+                            <option value="question-goal">Target Reps</option>
+                            <option value="zen">Zen Mode</option>
+                            <option value="spar">Spar Mode</option>
+                          </select>
+                        </label>
+                      </div>
+                      <div class="focus-card-grid single-column-grid" id="personalBestsList"></div>
+                    </section>
+
+                    <section class="focus-panel">
+                      <div class="records-panel-head records-panel-head-passive">
+                        <h3 class="focus-panel-title">Recent Workouts</h3>
+                        <span class="records-panel-spacer" aria-hidden="true"></span>
+                      </div>
+                      <div class="focus-card-grid single-column-grid" id="recentWorkoutsList"></div>
+                    </section>
                   </div>
                 </section>
               </div>
@@ -734,6 +901,78 @@
           </section>
         </main>
       </div>
+
+      <dialog class="options-dialog" id="optionsDialog">
+        <div class="options-dialog-head">
+          <div>
+            <p class="section-kicker">Options</p>
+            <h2>App Controls</h2>
+          </div>
+          <button class="carousel-button" type="button" id="optionsCloseButton" aria-label="Close options">
+            &#10005;
+          </button>
+        </div>
+
+        <div class="options-stack">
+          <button class="ghost-button options-reset-button" type="button" id="resetProgressButton">
+            Reset Saved Progress
+          </button>
+
+          <section class="options-card">
+            <p class="section-kicker">Version</p>
+            <p class="options-copy"><strong>v0.3.1</strong></p>
+          </section>
+
+          <section class="options-card">
+            <p class="section-kicker">Most Recent Updates</p>
+            <ul class="options-list">
+              <li>Dark workout theme and reworked app shell</li>
+              <li>Carousel-style Results and My Progress views</li>
+              <li>Timed, target, and endless workout types</li>
+              <li>Countdown start flow before each workout</li>
+              <li>Shared workout tracker calendar and daily rewards</li>
+            </ul>
+          </section>
+
+          <section class="options-card">
+            <p class="section-kicker">Future Updates</p>
+            <p class="options-copy">
+              Operation layer support, additional arithmetic modes, richer fact detail views, and stronger milestone celebrations are next on the roadmap.
+            </p>
+          </section>
+        </div>
+      </dialog>
+
+      <dialog class="options-dialog confirm-dialog" id="endWorkoutDialog">
+        <div class="options-dialog-head">
+          <div>
+            <p class="section-kicker">End Workout</p>
+            <h2>End workout?</h2>
+          </div>
+          <button
+            class="carousel-button"
+            type="button"
+            id="endWorkoutCloseButton"
+            aria-label="Close end workout dialog"
+          >
+            &#10005;
+          </button>
+        </div>
+
+        <div class="options-stack">
+          <p class="options-copy">
+            Your results will be saved and this workout will finish.
+          </p>
+          <div class="button-row confirm-actions">
+            <button class="ghost-button" type="button" id="cancelEndWorkoutButton">
+              Keep Going
+            </button>
+            <button class="primary-button" type="button" id="confirmEndWorkoutButton">
+              End Workout
+            </button>
+          </div>
+        </div>
+      </dialog>
     </div>
 
     <script src="app.js"></script>

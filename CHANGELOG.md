@@ -8,12 +8,16 @@ The format is inspired by Keep a Changelog and uses a simple project-friendly ve
 
 ### Added
 - Version 3 app shell with dedicated Setup, Practice, Results, and Progress screens.
-- Timed, question-goal, and endless session types with preset and custom limits.
-- Countdown start flow before every session begins.
+- Timed, question-goal, and endless workout types with preset and custom limits.
+- Countdown start flow before every workout begins.
 - Shared month-view workout tracker calendar with disabled month navigation when no earlier data exists.
 - Phase 1 browser-local streak tracking and current-month practice calendar.
 - Negatives mode for signed integer multiplication while keeping the setup range magnitude-based.
 - Workout-themed header branding with rotating strength-building quotes.
+- Zen Mode and Spar Mode variants under Free Training.
+- Personal best and recent workout tracking for completed workouts.
+- Options dialog with version info and recent updates.
+- Daily stat tracking for most attempts in a day.
 
 ### Changed
 - Refocused practice into a minimalist timed-answer interface with brief right/wrong feedback only.
@@ -23,12 +27,17 @@ The format is inspired by Keep a Changelog and uses a simple project-friendly ve
 - Swapped the palette to a darker strength-focused workout theme.
 - Renamed the setup, preview, tracker, and log copy to match the workout framing.
 - Converted both Results and Progress into carousel-style panels to cut down on scrolling.
+- Reworked Results and Progress to use synced tracker layouts, split focus panels, and a dedicated records slide.
+- Replaced the browser end-workout confirmation with a custom in-app modal.
+- Changed timed workout HUDs to count down remaining workout time instead of counting up.
+- Polished the setup alignment, hero sizing, carousel controls, tracker/calendar spacing, and split-panel balance for the next snapshot.
 
 ### Planned
 - Learn mode with more detailed corrective feedback.
-- Bronze / silver / gold daily effort tiers.
+- Additional arithmetic operations beyond multiplication.
 - Richer celebration artwork and milestone visuals.
 - Leaderboard support.
+- Deeper per-table fact drilldowns.
 
 ## [0.2.0] - 2026-04-19
 

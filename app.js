@@ -1,6 +1,7 @@
 const STORAGE_KEY = "multiplication-trainer-progress-v1";
 const SETTINGS_KEY = "multiplication-trainer-settings-v1";
 const HERO_MESSAGE_KEY = "multiplication-trainer-hero-message-v1";
+const RESULTS_MESSAGE_KEY_PREFIX = "multiplication-trainer-results-message-v1";
 const FACTOR_LIMIT = 12;
 const TABLE_FACTORS = Array.from({ length: FACTOR_LIMIT }, (_, index) => index + 1);
 const QUESTION_PRESETS = [10, 20, 30];
@@ -21,7 +22,7 @@ const ENDLESS_COLORS = [
 ];
 const HERO_MESSAGES = [
   "Strength is built one steady rep at a time.",
-  "Small sessions build strong recall.",
+  "Short workouts build strong recall.",
   "Every rep makes the next one lighter.",
   "Progress comes from showing up again.",
   "Strong habits are built in ordinary days.",
@@ -29,14 +30,46 @@ const HERO_MESSAGES = [
   "Discipline turns effort into strength.",
   "When you build your mind, you don't have to use your muscles",
 ];
+const RESULTS_TITLE_POOLS = {
+  completed: [
+    "Great job on showing up today.",
+    "Another workout in the books.",
+    "You put the work in today.",
+    "Showing up counts.",
+  ],
+  progress: [
+    "One step closer to better.",
+    "You're building real momentum.",
+    "You beat a previous mark.",
+    "Progress looks good on you.",
+  ],
+  strong: [
+    "Beast Mode.",
+    "Fire 🔥",
+    "You were locked in.",
+    "That effort showed.",
+  ],
+};
 
-const RESULTS_SLIDES = ["summary", "tracker", "trouble", "recent"];
-const PROGRESS_SLIDES = ["overview", "tracker", "facts", "trouble", "coach"];
+const OPERATION_CONFIG = {
+  multiplication: {
+    label: "Multiplication",
+    buildPool(settings) {
+      return buildMultiplicationPool(settings);
+    },
+  },
+};
+
+const RESULTS_SLIDES = ["summary", "tracker", "focus"];
+const PROGRESS_SLIDES = ["overview", "tracker", "facts", "focus", "records", "coach"];
 
 const elements = {
   screens: Array.from(document.querySelectorAll(".screen")),
   navButtons: Array.from(document.querySelectorAll(".nav-button")),
   viewButtons: Array.from(document.querySelectorAll("[data-view-target]")),
+  optionsButton: document.getElementById("optionsButton"),
+  optionsDialog: document.getElementById("optionsDialog"),
+  optionsCloseButton: document.getElementById("optionsCloseButton"),
   heroMessage: document.getElementById("heroMessage"),
   settingsForm: document.getElementById("settingsForm"),
   minFactor: document.getElementById("minFactor"),
@@ -45,6 +78,8 @@ const elements = {
   focusFactor: document.getElementById("focusFactor"),
   adaptiveMode: document.getElementById("adaptiveMode"),
   negativesMode: document.getElementById("negativesMode"),
+  freeTrainingField: document.getElementById("freeTrainingField"),
+  sparTimingField: document.getElementById("sparTimingField"),
   timeField: document.getElementById("timeField"),
   timeCustomField: document.getElementById("timeCustomField"),
   timeCustom: document.getElementById("timeCustom"),
@@ -73,7 +108,6 @@ const elements = {
   skipButton: document.getElementById("skipButton"),
   feedback: document.getElementById("feedback"),
   resultsTitle: document.getElementById("resultsTitle"),
-  resultsSummary: document.getElementById("resultsSummary"),
   resultQuestions: document.getElementById("resultQuestions"),
   resultCorrect: document.getElementById("resultCorrect"),
   resultAccuracy: document.getElementById("resultAccuracy"),
@@ -82,7 +116,11 @@ const elements = {
   resultSkipped: document.getElementById("resultSkipped"),
   repeatSessionButton: document.getElementById("repeatSessionButton"),
   resultsMonthLabel: document.getElementById("resultsMonthLabel"),
-  resultsRewardStatus: document.getElementById("resultsRewardStatus"),
+  resultsCurrentPracticeStreak: document.getElementById("resultsCurrentPracticeStreak"),
+  resultsBestPracticeDayStreak: document.getElementById("resultsBestPracticeDayStreak"),
+  resultsMonthSessions: document.getElementById("resultsMonthSessions"),
+  resultsMonthHearts: document.getElementById("resultsMonthHearts"),
+  resultsMonthStars: document.getElementById("resultsMonthStars"),
   resultsCalendarGrid: document.getElementById("resultsCalendarGrid"),
   resultsMonthPrevButton: document.getElementById("resultsMonthPrevButton"),
   resultsMonthNextButton: document.getElementById("resultsMonthNextButton"),
@@ -96,22 +134,34 @@ const elements = {
   overallAccuracy: document.getElementById("overallAccuracy"),
   overallBestStreak: document.getElementById("overallBestStreak"),
   overallBestPace: document.getElementById("overallBestPace"),
+  overallWorkoutCount: document.getElementById("overallWorkoutCount"),
+  overallBestDayAttempts: document.getElementById("overallBestDayAttempts"),
   currentPracticeStreak: document.getElementById("currentPracticeStreak"),
   bestPracticeDayStreak: document.getElementById("bestPracticeDayStreak"),
+  progressMonthSessions: document.getElementById("progressMonthSessions"),
+  progressMonthHearts: document.getElementById("progressMonthHearts"),
+  progressMonthStars: document.getElementById("progressMonthStars"),
   currentMonthLabel: document.getElementById("currentMonthLabel"),
   calendarGrid: document.getElementById("calendarGrid"),
   progressMonthPrevButton: document.getElementById("progressMonthPrevButton"),
   progressMonthNextButton: document.getElementById("progressMonthNextButton"),
   coachTip: document.getElementById("coachTip"),
-  resultsTroubleList: document.getElementById("resultsTroubleList"),
-  progressTroubleList: document.getElementById("progressTroubleList"),
+  resultsGrowthList: document.getElementById("resultsGrowthList"),
+  resultsPriorityList: document.getElementById("resultsPriorityList"),
+  progressGrowthList: document.getElementById("progressGrowthList"),
+  progressPriorityList: document.getElementById("progressPriorityList"),
   tableGrid: document.getElementById("tableGrid"),
-  recentResults: document.getElementById("recentResults"),
+  recordsModeSelect: document.getElementById("recordsModeSelect"),
+  personalBestsList: document.getElementById("personalBestsList"),
+  recentWorkoutsList: document.getElementById("recentWorkoutsList"),
   attemptBadge: document.getElementById("attemptBadge"),
   accuracyBadge: document.getElementById("accuracyBadge"),
   attemptProgressLabel: document.getElementById("attemptProgressLabel"),
   accuracyProgressLabel: document.getElementById("accuracyProgressLabel"),
-  dailyProgressStatus: document.getElementById("dailyProgressStatus"),
+  endWorkoutDialog: document.getElementById("endWorkoutDialog"),
+  endWorkoutCloseButton: document.getElementById("endWorkoutCloseButton"),
+  cancelEndWorkoutButton: document.getElementById("cancelEndWorkoutButton"),
+  confirmEndWorkoutButton: document.getElementById("confirmEndWorkoutButton"),
 };
 
 const state = {
@@ -143,6 +193,7 @@ function createEmptySession() {
     attempted: 0,
     correct: 0,
     skipped: 0,
+    sparStrikes: 0,
     streak: 0,
     bestStreak: 0,
     responseTimes: [],
@@ -173,11 +224,13 @@ function defaultProgress() {
     fastestAverageMs: null,
     facts: {},
     dailyRecords: {},
+    workoutHistory: [],
   };
 }
 
 function defaultSettingsSnapshot() {
   return {
+    operation: "multiplication",
     minFactor: 2,
     maxFactor: 12,
     questionStyle: "mixed",
@@ -185,6 +238,8 @@ function defaultSettingsSnapshot() {
     adaptiveMode: true,
     negativesMode: false,
     sessionType: "question-goal",
+    freeTrainingMode: "zen",
+    sparTiming: "untimed",
     questionPreset: "20",
     questionTarget: 20,
     timePreset: "3",
@@ -224,8 +279,46 @@ function normaliseDailyRecord(record) {
   };
 }
 
+function normaliseWorkoutRecord(record) {
+  const modeKey =
+    record?.modeKey === "timed" ||
+    record?.modeKey === "question-goal" ||
+    record?.modeKey === "zen" ||
+    record?.modeKey === "spar"
+      ? record.modeKey
+      : "question-goal";
+
+  return {
+    id: String(record?.id || `${record?.recordedAt || Date.now()}`),
+    modeKey,
+    modeLabel: String(record?.modeLabel || ""),
+    dateKey: String(record?.dateKey || getTodayDateKey()),
+    recordedAt: clampNumber(Number(record?.recordedAt), 0, Number.MAX_SAFE_INTEGER, Date.now()),
+    attempted: clampNumber(Number(record?.attempted), 0, 99999, 0),
+    correct: clampNumber(Number(record?.correct), 0, 99999, 0),
+    accuracy: clampNumber(Number(record?.accuracy), 0, 1, 0),
+    skipped: clampNumber(Number(record?.skipped), 0, 99999, 0),
+    bestStreak: clampNumber(Number(record?.bestStreak), 0, 99999, 0),
+    averageMs:
+      record?.averageMs === null || record?.averageMs === undefined
+        ? null
+        : clampNumber(Number(record.averageMs), 0, Number.MAX_SAFE_INTEGER, null),
+    reason: String(record?.reason || "goal"),
+    freeTrainingMode:
+      record?.freeTrainingMode === "spar" || record?.freeTrainingMode === "zen"
+        ? record.freeTrainingMode
+        : "zen",
+    sparTiming:
+      record?.sparTiming === "timed" || record?.sparTiming === "untimed"
+        ? record.sparTiming
+        : "untimed",
+    timeLimitMinutes: clampNumber(Number(record?.timeLimitMinutes), 0, 60, 0),
+  };
+}
+
 function sanitiseSettingsSnapshot(settings) {
   const defaults = defaultSettingsSnapshot();
+  const operation = OPERATION_CONFIG[settings?.operation] ? settings.operation : defaults.operation;
   const questionStyle =
     settings?.questionStyle === "focus" || settings?.mode === "focus"
       ? "focus"
@@ -239,6 +332,14 @@ function sanitiseSettingsSnapshot(settings) {
       : legacySessionLength === 0
         ? "endless"
         : defaults.sessionType;
+  const freeTrainingMode =
+    settings?.freeTrainingMode === "spar" || settings?.freeTrainingMode === "zen"
+      ? settings.freeTrainingMode
+      : defaults.freeTrainingMode;
+  const sparTiming =
+    settings?.sparTiming === "timed" || settings?.sparTiming === "untimed"
+      ? settings.sparTiming
+      : defaults.sparTiming;
   const rawMinFactor = clampNumber(
     Number(settings?.minFactor),
     1,
@@ -289,6 +390,7 @@ function sanitiseSettingsSnapshot(settings) {
         : "custom";
 
   return {
+    operation,
     minFactor,
     maxFactor,
     questionStyle,
@@ -302,6 +404,8 @@ function sanitiseSettingsSnapshot(settings) {
         ? settings.negativesMode
         : defaults.negativesMode,
     sessionType,
+    freeTrainingMode,
+    sparTiming,
     questionPreset,
     questionTarget,
     timePreset,
@@ -323,6 +427,9 @@ function loadProgress() {
         normaliseDailyRecord(record),
       ]),
     );
+    const workoutHistory = Array.isArray(parsed.workoutHistory)
+      ? parsed.workoutHistory.map(normaliseWorkoutRecord).slice(0, 50)
+      : [];
 
     return {
       ...defaultProgress(),
@@ -344,6 +451,7 @@ function loadProgress() {
       totalSignErrors: clampNumber(Number(parsed.totalSignErrors), 0, 999999, 0),
       facts: parsed.facts || {},
       dailyRecords,
+      workoutHistory,
     };
   } catch (error) {
     return defaultProgress();
@@ -446,6 +554,8 @@ function applySettingsSnapshot(settings) {
   elements.timeCustom.value = `${snapshot.timeLimitMinutes}`;
   setCheckedValue("questionStyle", snapshot.questionStyle);
   setCheckedValue("sessionType", snapshot.sessionType);
+  setCheckedValue("freeTrainingMode", snapshot.freeTrainingMode);
+  setCheckedValue("sparTiming", snapshot.sparTiming);
   setCheckedValue("questionPreset", snapshot.questionPreset);
   setCheckedValue("timePreset", snapshot.timePreset);
 }
@@ -459,6 +569,8 @@ function getFormSettingsSnapshot() {
     adaptiveMode: elements.adaptiveMode.checked,
     negativesMode: elements.negativesMode.checked,
     sessionType: getCheckedValue("sessionType"),
+    freeTrainingMode: getCheckedValue("freeTrainingMode"),
+    sparTiming: getCheckedValue("sparTiming"),
     questionPreset: getCheckedValue("questionPreset"),
     questionTarget: Number(elements.questionCustom.value),
     timePreset: getCheckedValue("timePreset"),
@@ -466,21 +578,40 @@ function getFormSettingsSnapshot() {
   });
 }
 
+function isSparMode(settings) {
+  return settings.sessionType === "endless" && settings.freeTrainingMode === "spar";
+}
+
+function usesSessionCountdown(settings) {
+  return settings.sessionType === "timed" || (isSparMode(settings) && settings.sparTiming === "timed");
+}
+
 function toggleSetupFields() {
   const questionStyle = getCheckedValue("questionStyle");
   const sessionType = getCheckedValue("sessionType");
+  const freeTrainingMode = getCheckedValue("freeTrainingMode");
+  const sparTiming = getCheckedValue("sparTiming");
   const questionPreset = getCheckedValue("questionPreset");
   const timePreset = getCheckedValue("timePreset");
 
   elements.focusField.classList.toggle("is-hidden", questionStyle !== "focus");
-  elements.timeField.classList.toggle("is-hidden", sessionType !== "timed");
+  elements.freeTrainingField.classList.toggle("is-hidden", sessionType !== "endless");
+  elements.sparTimingField.classList.toggle(
+    "is-hidden",
+    sessionType !== "endless" || freeTrainingMode !== "spar",
+  );
+  elements.timeField.classList.toggle(
+    "is-hidden",
+    !(sessionType === "timed" || (sessionType === "endless" && freeTrainingMode === "spar" && sparTiming === "timed")),
+  );
   elements.questionTargetField.classList.toggle(
     "is-hidden",
     sessionType !== "question-goal",
   );
   elements.timeCustomField.classList.toggle(
     "is-hidden",
-    sessionType !== "timed" || timePreset !== "custom",
+    !(sessionType === "timed" || (sessionType === "endless" && freeTrainingMode === "spar" && sparTiming === "timed")) ||
+      timePreset !== "custom",
   );
   elements.questionCustomField.classList.toggle(
     "is-hidden",
@@ -494,6 +625,8 @@ function readSettings() {
   const focusFactor = Number(elements.focusFactor.value);
   const questionStyle = getCheckedValue("questionStyle");
   const sessionType = getCheckedValue("sessionType");
+  const freeTrainingMode = getCheckedValue("freeTrainingMode");
+  const sparTiming = getCheckedValue("sparTiming");
   const questionPreset = getCheckedValue("questionPreset");
   const timePreset = getCheckedValue("timePreset");
   const adaptiveMode = elements.adaptiveMode.checked;
@@ -525,7 +658,7 @@ function readSettings() {
     }
   }
 
-  if (sessionType === "timed") {
+  if (sessionType === "timed" || (sessionType === "endless" && freeTrainingMode === "spar" && sparTiming === "timed")) {
     if (Number.isNaN(timeLimitMinutes) || timeLimitMinutes < 1 || timeLimitMinutes > 60) {
       return { error: "Choose a workout duration between 1 and 60 minutes." };
     }
@@ -539,6 +672,8 @@ function readSettings() {
     adaptiveMode,
     negativesMode,
     sessionType,
+    freeTrainingMode,
+    sparTiming,
     questionPreset,
     questionTarget,
     timePreset,
@@ -598,8 +733,14 @@ function formatMinutesLabel(minutes) {
 
 function getQuestionStyleLabel(settings) {
   return settings.questionStyle === "focus"
-    ? `Focus one table: x ${settings.focusFactor}`
-    : "Mixed tables";
+    ? `Isolation - x ${settings.focusFactor}`
+    : "Full Circuit";
+}
+
+function getQuestionStylePreviewLabel(settings) {
+  return settings.questionStyle === "focus"
+    ? "Isolation - Keeps the workout focused on one table."
+    : "Full Circuit - Mixes facts across your selected range.";
 }
 
 function getSessionTypeLabel(settings) {
@@ -611,14 +752,20 @@ function getSessionTypeLabel(settings) {
     return `Target Reps - ${settings.questionTarget} attempts`;
   }
 
-  return "Free Training - Endless";
+  if (settings.freeTrainingMode === "spar") {
+    return settings.sparTiming === "timed"
+      ? `Spar Mode - 3 strikes in ${formatMinutesLabel(settings.timeLimitMinutes)}`
+      : "Spar Mode - 3 mistake knockout";
+  }
+
+  return "Zen Mode - No rules";
 }
 
 function getSessionBadgeLabel(settings) {
   const styleLabel =
     settings.questionStyle === "focus"
-      ? `x ${settings.focusFactor} focus`
-      : "Mixed tables";
+      ? `Isolation x ${settings.focusFactor}`
+      : "Full Circuit";
 
   if (settings.sessionType === "timed") {
     return `${styleLabel} - HIT ${settings.timeLimitMinutes}m`;
@@ -628,7 +775,13 @@ function getSessionBadgeLabel(settings) {
     return `${styleLabel} - ${settings.questionTarget} reps`;
   }
 
-  return `${styleLabel} - Free Training`;
+  if (settings.freeTrainingMode === "spar") {
+    return settings.sparTiming === "timed"
+      ? `${styleLabel} - Spar ${settings.timeLimitMinutes}m`
+      : `${styleLabel} - Spar Mode`;
+  }
+
+  return `${styleLabel} - Zen Mode`;
 }
 
 function getSetupPreviewNote(settings) {
@@ -637,7 +790,13 @@ function getSetupPreviewNote(settings) {
   }
 
   if (settings.sessionType === "question-goal") {
-    return `Answer ${settings.questionTarget} questions to finish the workout session. Skipping doesn't count!`;
+    return `Answer ${settings.questionTarget} questions to finish the workout. Skipping doesn't count!`;
+  }
+
+  if (settings.freeTrainingMode === "spar") {
+    return settings.sparTiming === "timed"
+      ? `Stay in the round until three mistakes land or the timer runs out.`
+      : "Three mistakes and the round is over.";
   }
 
   return "Train on your own terms. No pressure.";
@@ -679,7 +838,7 @@ function showView(view) {
 
 function renderSetupPreview() {
   const settings = getCurrentSettingsPreview();
-  elements.setupPreviewStyle.textContent = getQuestionStyleLabel(settings);
+  elements.setupPreviewStyle.textContent = getQuestionStylePreviewLabel(settings);
   elements.setupPreviewType.textContent = getSessionTypeLabel(settings);
   elements.setupPreviewRange.textContent = `${settings.minFactor} through ${settings.maxFactor}`;
   elements.setupPreviewAdaptive.textContent = settings.adaptiveMode ? "On" : "Off";
@@ -704,6 +863,19 @@ function addFactVariant(map, left, right) {
   }
 }
 
+function getRotatingMessage(storageKey, messages) {
+  try {
+    const previousMessage = window.sessionStorage.getItem(storageKey);
+    const choices = messages.filter((message) => message !== previousMessage);
+    const pool = choices.length ? choices : messages;
+    const message = pool[Math.floor(Math.random() * pool.length)];
+    window.sessionStorage.setItem(storageKey, message);
+    return message;
+  } catch (error) {
+    return messages[Math.floor(Math.random() * messages.length)];
+  }
+}
+
 function addSignedVariants(map, leftMagnitude, rightMagnitude, includeNegatives) {
   if (!includeNegatives) {
     addFactVariant(map, leftMagnitude, rightMagnitude);
@@ -720,7 +892,7 @@ function addSignedVariants(map, leftMagnitude, rightMagnitude, includeNegatives)
   });
 }
 
-function buildPool(settings) {
+function buildMultiplicationPool(settings) {
   const map = new Map();
 
   if (settings.questionStyle === "focus") {
@@ -738,6 +910,10 @@ function buildPool(settings) {
   }
 
   return Array.from(map.values());
+}
+
+function buildPool(settings) {
+  return OPERATION_CONFIG[settings.operation]?.buildPool(settings) || [];
 }
 
 function randomiseDisplay(fact) {
@@ -831,6 +1007,10 @@ function updateDailyRecordForAttempt(isCorrect) {
 }
 
 function updateDailyRecordForSessionCompletion() {
+  if (!state.session.attempted && !state.session.skipped) {
+    return;
+  }
+
   const dateKey = getTodayDateKey();
   const record = getDailyRecord(dateKey);
   record.sessionsCompleted += 1;
@@ -915,24 +1095,12 @@ function renderDailyProgress() {
   const todayRecord = getDailyRecord();
   const attemptedRatio = Math.min(todayRecord.attempted / DAILY_TARGET, 1);
   const correctRatio = Math.min(todayRecord.correct / DAILY_TARGET, 1);
-  const attemptedRemaining = Math.max(0, DAILY_TARGET - todayRecord.attempted);
-  const correctRemaining = Math.max(0, DAILY_TARGET - todayRecord.correct);
 
   setRewardProgress(elements.attemptBadge, attemptedRatio);
   setRewardProgress(elements.accuracyBadge, correctRatio);
 
   elements.attemptProgressLabel.textContent = `${Math.min(todayRecord.attempted, DAILY_TARGET)} / 10`;
   elements.accuracyProgressLabel.textContent = `${Math.min(todayRecord.correct, DAILY_TARGET)} / 10`;
-
-  if (todayRecord.attemptGoalEarned && todayRecord.accuracyGoalEarned) {
-    elements.dailyProgressStatus.textContent = "Both goals locked in today.";
-  } else if (todayRecord.attemptGoalEarned) {
-    elements.dailyProgressStatus.textContent = `${correctRemaining} more correct for the heart.`;
-  } else if (todayRecord.attempted > 0 || todayRecord.correct > 0) {
-    elements.dailyProgressStatus.textContent = `${attemptedRemaining} more attempts for the star.`;
-  } else {
-    elements.dailyProgressStatus.textContent = "Two quick wins waiting today.";
-  }
 
   elements.attemptBadge.classList.toggle("is-earned", todayRecord.attemptGoalEarned);
   elements.accuracyBadge.classList.toggle("is-earned", todayRecord.accuracyGoalEarned);
@@ -965,10 +1133,9 @@ function renderSessionTimer() {
 
   const elapsedMs = getElapsedSessionMs();
 
-  if (state.settings.sessionType === "timed") {
-    elements.sessionTimer.textContent = `${formatStopwatch(elapsedMs)} / ${formatStopwatch(
-      state.settings.timeLimitMinutes * 60000,
-    )}`;
+  if (usesSessionCountdown(state.settings)) {
+    const remainingMs = Math.max(0, state.settings.timeLimitMinutes * 60000 - elapsedMs);
+    elements.sessionTimer.textContent = formatStopwatch(remainingMs);
     return;
   }
 
@@ -987,13 +1154,17 @@ function renderPracticeProgress() {
         ? Math.min(state.session.attempted / settings.questionTarget, 1)
         : 0;
     progressLabel = `${state.session.attempted} / ${settings.questionTarget} attempted`;
+  } else if (isSparMode(settings)) {
+    fillRatio = Math.min(state.session.sparStrikes / 3, 1);
+    fillColor = "#c6452d";
+    progressLabel = `${state.session.sparStrikes} / 3 strikes`;
   } else if (settings.sessionType === "timed") {
     const elapsedMs = getElapsedSessionMs();
     fillRatio = Math.min(elapsedMs / (settings.timeLimitMinutes * 60000), 1);
     fillColor = "#c6452d";
-    progressLabel = `${formatStopwatch(elapsedMs)} / ${formatStopwatch(
-      settings.timeLimitMinutes * 60000,
-    )}`;
+    progressLabel = `${formatStopwatch(
+      Math.max(0, settings.timeLimitMinutes * 60000 - elapsedMs),
+    )} left`;
   } else {
     const completedBands = Math.floor(state.session.attempted / DAILY_TARGET);
     const withinBand = state.session.attempted % DAILY_TARGET;
@@ -1028,7 +1199,7 @@ function askNextQuestion() {
   elements.answerInput.value = "";
   elements.answerInput.disabled = false;
   elements.checkButton.disabled = false;
-  elements.skipButton.disabled = false;
+  elements.skipButton.disabled = isSparMode(state.settings);
   elements.answerInput.focus();
   setFeedback("");
   renderQuestionTimer(0);
@@ -1047,10 +1218,7 @@ function updateLiveTimers() {
   renderSessionTimer();
   renderPracticeProgress();
 
-  if (
-    state.settings.sessionType === "timed" &&
-    sessionElapsedMs >= state.settings.timeLimitMinutes * 60000
-  ) {
+  if (usesSessionCountdown(state.settings) && sessionElapsedMs >= state.settings.timeLimitMinutes * 60000) {
     completeSession("timer");
   }
 }
@@ -1077,10 +1245,6 @@ function beginPracticeSession() {
   state.sessionEndedAt = 0;
 
   showView("practice");
-  elements.finishSessionButton.classList.toggle(
-    "is-hidden",
-    state.settings.sessionType !== "endless",
-  );
   renderSessionTimer();
   renderPracticeProgress();
   renderDailyProgress();
@@ -1130,7 +1294,6 @@ function startSession(settings) {
 
   saveSettingsSnapshot(settings);
   elements.sessionBadge.textContent = getSessionBadgeLabel(settings);
-  elements.finishSessionButton.classList.add("is-hidden");
   elements.answerInput.disabled = true;
   elements.checkButton.disabled = true;
   elements.skipButton.disabled = true;
@@ -1145,13 +1308,22 @@ function startSession(settings) {
 }
 
 function isSessionComplete() {
-  return (
-    state.settings.sessionType === "question-goal" &&
-    state.session.attempted >= state.settings.questionTarget
-  );
+  if (state.settings.sessionType === "question-goal") {
+    return state.session.attempted >= state.settings.questionTarget;
+  }
+
+  if (isSparMode(state.settings)) {
+    return state.session.sparStrikes >= 3;
+  }
+
+  return false;
 }
 
 function finishSessionProgress() {
+  if (!state.session.attempted && !state.session.skipped) {
+    return;
+  }
+
   const accuracy = getAccuracy(state.session.correct, state.session.attempted);
   const averageMs = average(state.session.responseTimes);
 
@@ -1165,6 +1337,76 @@ function finishSessionProgress() {
   }
 
   state.progress.sessionsCompleted += 1;
+}
+
+function getWorkoutModeKey(settings) {
+  if (settings.sessionType === "timed") {
+    return "timed";
+  }
+
+  if (settings.sessionType === "question-goal") {
+    return "question-goal";
+  }
+
+  return settings.freeTrainingMode === "spar" ? "spar" : "zen";
+}
+
+function getWorkoutModeLabelFromSettings(settings) {
+  const modeKey = getWorkoutModeKey(settings);
+  if (modeKey === "timed") {
+    return "High Intensity Training";
+  }
+  if (modeKey === "question-goal") {
+    return "Target Reps";
+  }
+  if (modeKey === "spar") {
+    return settings.sparTiming === "timed" ? "Spar Mode (Timed)" : "Spar Mode";
+  }
+  return "Zen Mode";
+}
+
+function getWorkoutModeLabel(record) {
+  if (record.modeLabel) {
+    return record.modeLabel;
+  }
+
+  if (record.modeKey === "timed") {
+    return "High Intensity Training";
+  }
+  if (record.modeKey === "question-goal") {
+    return "Target Reps";
+  }
+  if (record.modeKey === "spar") {
+    return record.sparTiming === "timed" ? "Spar Mode (Timed)" : "Spar Mode";
+  }
+  return "Zen Mode";
+}
+
+function appendWorkoutHistory(reason) {
+  if (!state.session.attempted && !state.session.skipped) {
+    return;
+  }
+
+  const averageMs = average(state.session.responseTimes);
+  const record = normaliseWorkoutRecord({
+    id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    modeKey: getWorkoutModeKey(state.settings),
+    modeLabel: getWorkoutModeLabelFromSettings(state.settings),
+    dateKey: getTodayDateKey(),
+    recordedAt: Date.now(),
+    attempted: state.session.attempted,
+    correct: state.session.correct,
+    accuracy: getAccuracy(state.session.correct, state.session.attempted),
+    skipped: state.session.skipped,
+    bestStreak: state.session.bestStreak,
+    averageMs,
+    reason,
+    freeTrainingMode: state.settings.freeTrainingMode,
+    sparTiming: state.settings.sparTiming,
+    timeLimitMinutes: usesSessionCountdown(state.settings) ? state.settings.timeLimitMinutes : 0,
+  });
+
+  state.progress.workoutHistory = [record, ...state.progress.workoutHistory].slice(0, 50);
 }
 
 function updateFactProgress(question, isCorrect, responseTimeMs) {
@@ -1202,6 +1444,7 @@ function updateFactProgress(question, isCorrect, responseTimeMs) {
 
 function registerRecentAnswer(answerValue, evaluation, skipped, responseTimeMs) {
   state.session.recent.unshift({
+    key: state.currentQuestion.key,
     equation: `${state.currentQuestion.left} x ${state.currentQuestion.right}`,
     answer: state.currentQuestion.answer,
     provided: answerValue,
@@ -1216,10 +1459,14 @@ function registerRecentAnswer(answerValue, evaluation, skipped, responseTimeMs) 
 function registerAnswer(evaluation, answerValue, options = {}) {
   const skipped = Boolean(options.skipped);
   const responseTimeMs = skipped ? null : window.performance.now() - state.questionStartedAt;
+  const sparMode = isSparMode(state.settings);
 
   if (skipped) {
     state.session.skipped += 1;
     state.session.streak = 0;
+    if (sparMode) {
+      state.session.sparStrikes += 1;
+    }
     registerRecentAnswer("Skipped", null, true, null);
   } else {
     const isCorrect = Boolean(evaluation.isCorrect);
@@ -1233,6 +1480,9 @@ function registerAnswer(evaluation, answerValue, options = {}) {
     state.progress.totalMagnitudeCorrect += evaluation.magnitudeCorrect ? 1 : 0;
     state.progress.totalSignCorrect += evaluation.signCorrect ? 1 : 0;
     state.progress.totalSignErrors += evaluation.signError ? 1 : 0;
+    if (sparMode && !isCorrect) {
+      state.session.sparStrikes += 1;
+    }
     updateDailyRecordForAttempt(isCorrect);
     updateFactProgress(state.currentQuestion, evaluation, responseTimeMs);
     registerRecentAnswer(answerValue, evaluation, false, responseTimeMs);
@@ -1255,7 +1505,7 @@ function queueNextQuestion(delay) {
     }
 
     if (isSessionComplete()) {
-      completeSession("goal");
+      completeSession(isSparMode(state.settings) ? "knockout" : "goal");
       return;
     }
 
@@ -1316,55 +1566,72 @@ function getTodayRewardSummary() {
   const correctRemaining = Math.max(0, DAILY_TARGET - todayRecord.correct);
 
   if (todayRecord.attemptGoalEarned && todayRecord.accuracyGoalEarned) {
-    return "Both daily goals are secured. The tracker is lit up for today.";
+    return "Both goals locked in today.";
   }
 
   if (todayRecord.attemptGoalEarned) {
-    return `${correctRemaining} more correct to complete both daily goals.`;
+    return `${correctRemaining} more correct to lock in both goals.`;
   }
 
   if (todayRecord.attempted > 0 || todayRecord.correct > 0) {
-    return `${attemptedRemaining} more attempts to secure today's first goal.`;
+    return `${attemptedRemaining} more attempts to lock in today's first goal.`;
   }
 
   return "Every rep counts. Ready for another set?";
 }
 
-function getResultsRewardStatus() {
-  const todayRecord = getDailyRecord();
-  const streakSummary = getPracticeStreakSummary();
-
-  if (todayRecord.attemptGoalEarned && todayRecord.accuracyGoalEarned) {
-    return `Current streak: ${formatCount(streakSummary.current, "day")}.`;
-  }
-
-  if (todayRecord.attemptGoalEarned) {
-    return `${Math.max(0, DAILY_TARGET - todayRecord.correct)} more correct to complete both goals today.`;
-  }
-
-  return `${Math.max(0, DAILY_TARGET - todayRecord.attempted)} more attempts to secure today.`;
-}
-
 function renderResults(reason) {
   const accuracy = getAccuracy(state.session.correct, state.session.attempted);
   const averageMs = average(state.session.responseTimes);
+  const latestRecord = state.progress.workoutHistory[0] || null;
+  const previousModeRecords = latestRecord
+    ? state.progress.workoutHistory
+        .slice(1)
+        .filter((record) => record.modeKey === latestRecord.modeKey)
+        .sort((left, right) => compareWorkoutRecords(left, right, latestRecord.modeKey))
+    : [];
+  const improved =
+    Boolean(latestRecord) &&
+    previousModeRecords.length > 0 &&
+    compareWorkoutRecords(latestRecord, previousModeRecords[0], latestRecord.modeKey) < 0;
+  const strongPerformance =
+    accuracy >= 0.9 ||
+    (state.session.correct === state.session.attempted && state.session.attempted >= 8) ||
+    state.session.bestStreak >= 10;
 
-  if (reason === "timer") {
-    elements.resultsTitle.textContent = "Time called.";
-  } else if (state.settings.sessionType === "endless") {
-    elements.resultsTitle.textContent = "Free Training complete.";
-  } else {
-    elements.resultsTitle.textContent = "Workout complete.";
+  let titleMessage = getRotatingMessage(
+    `${RESULTS_MESSAGE_KEY_PREFIX}-completed`,
+    RESULTS_TITLE_POOLS.completed,
+  );
+  let highlightTitle = false;
+
+  if (improved) {
+    titleMessage = getRotatingMessage(
+      `${RESULTS_MESSAGE_KEY_PREFIX}-progress`,
+      RESULTS_TITLE_POOLS.progress,
+    );
+    highlightTitle = true;
+  } else if (strongPerformance) {
+    titleMessage = getRotatingMessage(
+      `${RESULTS_MESSAGE_KEY_PREFIX}-strong`,
+      RESULTS_TITLE_POOLS.strong,
+    );
+    highlightTitle = true;
   }
 
-  elements.resultsSummary.textContent = getTodayRewardSummary();
+  if (reason === "manual" && !improved && !strongPerformance) {
+    titleMessage = "You still showed up today.";
+  }
+
+  elements.resultsTitle.textContent = titleMessage;
+  elements.resultsTitle.classList.toggle("results-title-highlight", highlightTitle);
+
   elements.resultQuestions.textContent = `${state.session.attempted}`;
   elements.resultCorrect.textContent = `${state.session.correct}`;
   elements.resultAccuracy.textContent = formatPercent(accuracy);
   elements.resultPace.textContent = formatQuestionDuration(averageMs);
   elements.resultBestStreak.textContent = `${state.session.bestStreak}`;
   elements.resultSkipped.textContent = `${state.session.skipped}`;
-  elements.resultsRewardStatus.textContent = getResultsRewardStatus();
 }
 
 function completeSession(reason = "manual") {
@@ -1382,20 +1649,20 @@ function completeSession(reason = "manual") {
   elements.answerInput.disabled = true;
   elements.checkButton.disabled = true;
   elements.skipButton.disabled = true;
-  elements.finishSessionButton.classList.add("is-hidden");
 
   updateDailyRecordForSessionCompletion();
   finishSessionProgress();
+  appendWorkoutHistory(reason);
   saveProgress();
 
   renderQuestionTimer("Done");
   renderSessionTimer();
   renderDailyProgress();
   renderOverall();
-  renderTroubleSpots();
+  renderFocusAreas();
+  renderWorkoutHistory();
   renderCoachTip();
   renderTableRadar();
-  renderRecent();
   renderCalendars();
   renderStreakPanel();
   renderResults(reason);
@@ -1405,24 +1672,123 @@ function completeSession(reason = "manual") {
 }
 
 function handleFinishSession() {
-  if (!state.active || state.settings.sessionType !== "endless" || state.countingDown) {
+  if (!state.active || state.countingDown) {
     return;
   }
 
-  const shouldFinish = window.confirm("End this workout and view your results?");
-  if (!shouldFinish) {
-    return;
-  }
-
-  completeSession("manual");
+  elements.endWorkoutDialog.showModal();
 }
 
 function renderOverall() {
   const accuracy = getAccuracy(state.progress.totalCorrect, state.progress.totalAttempted);
+  const bestAttemptsInDay = Object.values(state.progress.dailyRecords).reduce(
+    (best, record) => Math.max(best, normaliseDailyRecord(record).attempted),
+    0,
+  );
   elements.overallAnswered.textContent = `${state.progress.totalAttempted}`;
   elements.overallAccuracy.textContent = formatPercent(accuracy);
   elements.overallBestStreak.textContent = `${state.progress.bestStreak}`;
   elements.overallBestPace.textContent = formatQuestionDuration(state.progress.fastestAverageMs);
+  elements.overallWorkoutCount.textContent = `${state.progress.sessionsCompleted}`;
+  elements.overallBestDayAttempts.textContent = `${bestAttemptsInDay}`;
+}
+
+function getRecordsModeSortValue(record, modeKey) {
+  if (modeKey === "timed") {
+    return [record.correct, record.accuracy, record.attempted, -(record.averageMs ?? Number.MAX_SAFE_INTEGER)];
+  }
+
+  if (modeKey === "question-goal") {
+    return [record.accuracy, -(record.averageMs ?? Number.MAX_SAFE_INTEGER), record.correct, record.bestStreak];
+  }
+
+  if (modeKey === "spar") {
+    return [record.correct, record.attempted, record.accuracy, record.bestStreak];
+  }
+
+  return [record.correct, record.attempted, record.accuracy, record.bestStreak];
+}
+
+function compareWorkoutRecords(left, right, modeKey) {
+  const leftValues = getRecordsModeSortValue(left, modeKey);
+  const rightValues = getRecordsModeSortValue(right, modeKey);
+
+  for (let index = 0; index < leftValues.length; index += 1) {
+    if (leftValues[index] !== rightValues[index]) {
+      return rightValues[index] - leftValues[index];
+    }
+  }
+
+  return right.recordedAt - left.recordedAt;
+}
+
+function renderPersonalBests() {
+  if (!elements.personalBestsList || !elements.recordsModeSelect) {
+    return;
+  }
+
+  const selectedMode = elements.recordsModeSelect.value || "timed";
+  const bests = state.progress.workoutHistory
+    .filter((record) => record.modeKey === selectedMode)
+    .sort((left, right) => compareWorkoutRecords(left, right, selectedMode))
+    .slice(0, 3);
+
+  if (!bests.length) {
+    elements.personalBestsList.innerHTML = `
+      <div class="focus-card empty-state">
+        <div class="fact-meta">No records yet for this mode. Knock out a few workouts to set the board.</div>
+      </div>
+    `;
+    return;
+  }
+
+  elements.personalBestsList.innerHTML = bests
+    .map((record, index) => `
+      <article class="focus-card record-card">
+        <div class="focus-card-top">
+          <div class="fact-name">#${index + 1} ${getWorkoutModeLabel(record)}</div>
+          <div class="focus-chip">${record.correct} correct</div>
+        </div>
+        <div class="fact-meta">${record.attempted} attempts | ${formatPercent(record.accuracy)} accuracy</div>
+        <div class="fact-meta">${record.averageMs === null ? "No pace yet" : `${formatQuestionDuration(record.averageMs)} avg pace`}</div>
+      </article>
+    `)
+    .join("");
+}
+
+function renderRecentWorkouts() {
+  if (!elements.recentWorkoutsList) {
+    return;
+  }
+
+  const recent = state.progress.workoutHistory.slice(0, 5);
+
+  if (!recent.length) {
+    elements.recentWorkoutsList.innerHTML = `
+      <div class="focus-card empty-state">
+        <div class="fact-meta">Your latest workouts will appear here once you finish a few rounds.</div>
+      </div>
+    `;
+    return;
+  }
+
+  elements.recentWorkoutsList.innerHTML = recent
+    .map((record) => `
+      <article class="focus-card record-card">
+        <div class="focus-card-top">
+          <div class="fact-name">${getWorkoutModeLabel(record)}</div>
+          <div class="focus-chip subtle-chip">${record.dateKey}</div>
+        </div>
+        <div class="fact-meta">${record.correct} correct out of ${record.attempted} attempts</div>
+        <div class="fact-meta">${formatPercent(record.accuracy)} accuracy${record.averageMs === null ? "" : ` | ${formatQuestionDuration(record.averageMs)} avg pace`}</div>
+      </article>
+    `)
+    .join("");
+}
+
+function renderWorkoutHistory() {
+  renderPersonalBests();
+  renderRecentWorkouts();
 }
 
 function getTroubleFacts(limit = 5) {
@@ -1441,15 +1807,15 @@ function getTroubleFacts(limit = 5) {
     .slice(0, limit);
 }
 
-function renderTroubleList(target, troubleFacts) {
+function renderPriorityList(target, troubleFacts) {
   if (!target) {
     return;
   }
 
   if (!troubleFacts.length) {
     target.innerHTML = `
-      <div class="insight-item empty-state">
-        <div class="fact-meta">No trouble spots yet. A few more answers will give the trainer something to rank.</div>
+      <div class="focus-card empty-state">
+        <div class="fact-meta">No priority targets yet. Your recent facts are holding together well.</div>
       </div>
     `;
     return;
@@ -1458,31 +1824,90 @@ function renderTroubleList(target, troubleFacts) {
   target.innerHTML = troubleFacts
     .map((fact) => {
       const [a, b] = fact.key.split("x");
-      const masteryPercent = Math.round(fact.mastery * 100);
 
       return `
-        <article class="insight-item">
-          <div class="insight-top">
-            <div>
-              <div class="fact-name">${a} x ${b}</div>
-              <div class="fact-meta">${fact.correct} correct out of ${fact.attempts} attempts</div>
-            </div>
-            <div class="fact-meta">${fact.misses} misses</div>
+        <article class="focus-card">
+          <div class="focus-card-top">
+            <div class="fact-name">${a} x ${b}</div>
+            <div class="focus-chip">Priority</div>
           </div>
-          <div class="bar-track" aria-hidden="true">
-            <div class="bar-fill" style="width: ${masteryPercent}%"></div>
-          </div>
-          <div class="fact-meta">${masteryPercent}% mastery</div>
+          <div class="fact-meta">${fact.correct} / ${fact.attempts} correct</div>
+          <div class="fact-meta">${Math.round(fact.mastery * 100)}% accuracy</div>
         </article>
       `;
     })
     .join("");
 }
 
-function renderTroubleSpots() {
+function parseEquationKey(equation) {
+  const match = equation.match(/(-?\d+)\s*x\s*(-?\d+)/i);
+  if (!match) {
+    return null;
+  }
+
+  return createFact(Number(match[1]), Number(match[2])).key;
+}
+
+function getGrowthOpportunityItems(limit = 4) {
+  return state.session.recent
+    .filter((item) => !item.isCorrect)
+    .map((item) => {
+      const key = item.key || parseEquationKey(item.equation);
+      const progress = key ? getFactProgress(key) : null;
+      return {
+        ...item,
+        progress,
+      };
+    })
+    .slice(0, limit);
+}
+
+function renderGrowthList(target, items) {
+  if (!target) {
+    return;
+  }
+
+  if (!items.length) {
+    target.innerHTML = `
+      <div class="focus-card empty-state">
+        <div class="fact-meta">No recent growth opportunities from the last run. Nice work.</div>
+      </div>
+    `;
+    return;
+  }
+
+  target.innerHTML = items
+    .map((item) => {
+      const summary = item.skipped
+        ? "Skipped this round"
+        : `You said ${item.provided}, answer ${item.answer}`;
+      const history =
+        item.progress && item.progress.attempts
+          ? `${item.progress.correct} / ${item.progress.attempts} correct so far`
+          : "Fresh fact";
+
+      return `
+        <article class="focus-card">
+          <div class="focus-card-top">
+            <div class="fact-name">${item.equation}</div>
+            <div class="focus-chip subtle-chip">Recent</div>
+          </div>
+          <div class="fact-meta">${summary}</div>
+          <div class="fact-meta">${history}</div>
+        </article>
+      `;
+    })
+    .join("");
+}
+
+function renderFocusAreas() {
   const troubleFacts = getTroubleFacts();
-  renderTroubleList(elements.resultsTroubleList, troubleFacts);
-  renderTroubleList(elements.progressTroubleList, troubleFacts);
+  const growthItems = getGrowthOpportunityItems();
+
+  renderGrowthList(elements.resultsGrowthList, growthItems);
+  renderGrowthList(elements.progressGrowthList, growthItems);
+  renderPriorityList(elements.resultsPriorityList, troubleFacts);
+  renderPriorityList(elements.progressPriorityList, troubleFacts);
 }
 
 function renderCoachTip() {
@@ -1552,7 +1977,7 @@ function getTableStats() {
       relatedEntries.map((entry) => {
         const low = Math.min(entry.leftMagnitude, entry.rightMagnitude);
         const high = Math.max(entry.leftMagnitude, entry.rightMagnitude);
-        return `${low}x${high}`;
+      return `${low}x${high}`;
       }),
     );
     const totals = relatedEntries.reduce(
@@ -1602,59 +2027,22 @@ function renderTableRadar() {
         ? `${formatPercent(table.accuracy)} accuracy`
         : "No attempts yet";
       const detailLabel = table.attempts
-        ? `${table.seenFacts}/${table.totalFacts} pairings seen`
+        ? `${table.seenFacts}/${table.totalFacts} facts`
         : "Fresh range";
 
       return `
         <article class="table-card ${table.tone}">
           <div class="table-card-top">
-            <div>
-              <div class="table-name">x ${table.factor}</div>
-              <div class="fact-meta">${detailLabel}</div>
-            </div>
+            <div class="table-name">x ${table.factor}</div>
             <span class="table-pill ${table.tone}">${table.label}</span>
           </div>
+          <div class="fact-meta table-card-middle">${detailLabel}</div>
           <div class="bar-track" aria-hidden="true">
             <div class="bar-fill ${table.tone}" style="width: ${Math.round(table.accuracy * 100)}%"></div>
           </div>
           <div class="table-card-stats">
             <span>${accuracyLabel}</span>
-            <span>${table.misses} misses</span>
           </div>
-        </article>
-      `;
-    })
-    .join("");
-}
-
-function renderRecent() {
-  if (!state.session.recent.length) {
-    elements.recentResults.innerHTML = `
-      <div class="recent-item empty-state">
-        <div class="recent-meta">Recent answers from the latest workout will appear here.</div>
-      </div>
-    `;
-    return;
-  }
-
-  elements.recentResults.innerHTML = state.session.recent
-    .map((item) => {
-      const toneClass = item.isCorrect ? "correct" : "incorrect";
-      const pillLabel = item.isCorrect ? "Right" : item.skipped ? "Skipped" : "Wrong";
-      const detail = item.skipped
-        ? `Correct answer: ${item.answer}`
-        : `You said ${item.provided}, answer ${item.answer}`;
-      const speed =
-        item.responseTimeMs === null ? "No timer" : formatQuestionDuration(item.responseTimeMs);
-
-      return `
-        <article class="recent-item ${toneClass}">
-          <div class="recent-top">
-            <div class="recent-equation">${item.equation}</div>
-            <span class="recent-pill ${toneClass}">${pillLabel}</span>
-          </div>
-          <div class="recent-meta">${detail}</div>
-          <div class="recent-meta">${speed}</div>
         </article>
       `;
     })
@@ -1733,8 +2121,8 @@ function buildCalendarMarkup(monthDate) {
         </div>
         <div class="calendar-day-body">
           <span class="day-icons">
-            ${record.attemptGoalEarned ? '<span class="day-attempt" aria-label="Star earned"><svg viewBox="0 0 72 72" role="presentation"><path d="M36 8 44.552 25.33 63.678 28.108 49.839 41.6 53.106 60.648 36 51.652 18.894 60.648 22.161 41.6 8.322 28.108 27.448 25.33Z"/></svg></span>' : ""}
-            ${record.accuracyGoalEarned ? '<span class="day-accuracy" aria-label="Heart earned"><svg viewBox="0 0 72 72" role="presentation"><path d="M36 57.024 14.448 35.472c-5.304-5.304-5.304-13.896 0-19.2 5.304-5.304 13.896-5.304 19.2 0L36 18.624l2.352-2.352c5.304-5.304 13.896-5.304 19.2 0 5.304 5.304 5.304 13.896 0 19.2Z"/></svg></span>' : ""}
+            ${record.attemptGoalEarned ? '<span class="day-attempt" aria-label="Heart earned"><svg viewBox="0 0 72 72" role="presentation"><path d="M36 57.024 14.448 35.472c-5.304-5.304-5.304-13.896 0-19.2 5.304-5.304 13.896-5.304 19.2 0L36 18.624l2.352-2.352c5.304-5.304 13.896-5.304 19.2 0 5.304 5.304 5.304 13.896 0 19.2Z"/></svg></span>' : ""}
+            ${record.accuracyGoalEarned ? '<span class="day-accuracy" aria-label="Star earned"><svg viewBox="0 0 72 72" role="presentation"><path d="M36 8 44.552 25.33 63.678 28.108 49.839 41.6 53.106 60.648 36 51.652 18.894 60.648 22.161 41.6 8.322 28.108 27.448 25.33Z"/></svg></span>' : ""}
           </span>
         </div>
       </div>
@@ -1782,6 +2170,37 @@ function renderCalendars() {
   elements.resultsCalendarGrid.innerHTML = calendarMarkup;
 }
 
+function getDisplayedMonthSummary() {
+  ensureDisplayMonthKey();
+  const displayMonthDate = createMonthDateFromKey(state.displayMonthKey);
+  const monthKey = getMonthKey(displayMonthDate);
+
+  return Object.entries(state.progress.dailyRecords).reduce(
+    (summary, [dateKey, record]) => {
+      if (getMonthKey(parseDateKey(dateKey)) !== monthKey) {
+        return summary;
+      }
+
+      const normalised = normaliseDailyRecord(record);
+      if (normalised.sessionsCompleted > 0) {
+        summary.sessions += normalised.sessionsCompleted;
+      }
+      if (normalised.attemptGoalEarned) {
+        summary.hearts += 1;
+      }
+      if (normalised.accuracyGoalEarned) {
+        summary.stars += 1;
+      }
+      return summary;
+    },
+    {
+      sessions: 0,
+      hearts: 0,
+      stars: 0,
+    },
+  );
+}
+
 function shiftDisplayedMonth(direction) {
   const navState = getMonthNavigationState();
   if (
@@ -1797,8 +2216,18 @@ function shiftDisplayedMonth(direction) {
 
 function renderStreakPanel() {
   const streakSummary = getPracticeStreakSummary();
+  const monthSummary = getDisplayedMonthSummary();
+
   elements.currentPracticeStreak.textContent = `${streakSummary.current}`;
   elements.bestPracticeDayStreak.textContent = `${streakSummary.best}`;
+  elements.resultsCurrentPracticeStreak.textContent = `${streakSummary.current}`;
+  elements.resultsBestPracticeDayStreak.textContent = `${streakSummary.best}`;
+  elements.progressMonthSessions.textContent = `${monthSummary.sessions}`;
+  elements.progressMonthHearts.textContent = `${monthSummary.hearts}`;
+  elements.progressMonthStars.textContent = `${monthSummary.stars}`;
+  elements.resultsMonthSessions.textContent = `${monthSummary.sessions}`;
+  elements.resultsMonthHearts.textContent = `${monthSummary.hearts}`;
+  elements.resultsMonthStars.textContent = `${monthSummary.stars}`;
 }
 
 function renderResultsCarousel() {
@@ -1847,6 +2276,21 @@ function shiftProgressCarousel(direction) {
   renderProgressCarousel();
 }
 
+function registerBackdropClose(dialog) {
+  dialog.addEventListener("click", (event) => {
+    const bounds = dialog.getBoundingClientRect();
+    const isInside =
+      event.clientX >= bounds.left &&
+      event.clientX <= bounds.right &&
+      event.clientY >= bounds.top &&
+      event.clientY <= bounds.bottom;
+
+    if (!isInside) {
+      dialog.close();
+    }
+  });
+}
+
 function handleSettingsChange() {
   toggleSetupFields();
   renderSetupPreview();
@@ -1864,10 +2308,10 @@ function resetProgress() {
   saveProgress();
   renderDailyProgress();
   renderOverall();
-  renderTroubleSpots();
+  renderFocusAreas();
+  renderWorkoutHistory();
   renderCoachTip();
   renderTableRadar();
-  renderRecent();
   renderCalendars();
   renderStreakPanel();
   renderProgressCarousel();
@@ -1884,10 +2328,9 @@ function initialise() {
   renderSetupPreview();
   renderDailyProgress();
   renderOverall();
-  renderTroubleSpots();
+  renderFocusAreas();
   renderCoachTip();
   renderTableRadar();
-  renderRecent();
   renderCalendars();
   renderStreakPanel();
   renderResultsCarousel();
@@ -1920,7 +2363,26 @@ function initialise() {
       startSession(state.settings);
     }
   });
+  elements.optionsButton.addEventListener("click", () => {
+    elements.optionsDialog.showModal();
+  });
+  elements.optionsCloseButton.addEventListener("click", () => {
+    elements.optionsDialog.close();
+  });
+  elements.endWorkoutCloseButton.addEventListener("click", () => {
+    elements.endWorkoutDialog.close();
+  });
+  elements.cancelEndWorkoutButton.addEventListener("click", () => {
+    elements.endWorkoutDialog.close();
+  });
+  elements.confirmEndWorkoutButton.addEventListener("click", () => {
+    elements.endWorkoutDialog.close();
+    completeSession("manual");
+  });
+  registerBackdropClose(elements.optionsDialog);
+  registerBackdropClose(elements.endWorkoutDialog);
   elements.resetProgressButton.addEventListener("click", resetProgress);
+  elements.recordsModeSelect.addEventListener("change", renderPersonalBests);
   elements.progressMonthPrevButton.addEventListener("click", () => shiftDisplayedMonth(-1));
   elements.progressMonthNextButton.addEventListener("click", () => shiftDisplayedMonth(1));
   elements.resultsMonthPrevButton.addEventListener("click", () => shiftDisplayedMonth(-1));
