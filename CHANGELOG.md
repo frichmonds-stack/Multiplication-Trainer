@@ -6,8 +6,13 @@ The format is inspired by Keep a Changelog and uses a simple project-friendly ve
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-04-22
+
 ### Added
 - Version 3 app shell with dedicated Setup, Practice, Results, and Progress screens.
+- Learn / Techniques mode with a first-pass `10x` lesson flow.
+- A mini lesson sequence for the `10x` table covering the rule, flipped order, pattern building, guided practice, quick check, and open-ended follow-up practice.
+- A compact cog-style options control in the main nav.
 - Timed, question-goal, and endless workout types with preset and custom limits.
 - Countdown start flow before every workout begins.
 - Shared month-view workout tracker calendar with disabled month navigation when no earlier data exists.
@@ -21,6 +26,7 @@ The format is inspired by Keep a Changelog and uses a simple project-friendly ve
 
 ### Changed
 - Refocused practice into a minimalist timed-answer interface with brief right/wrong feedback only.
+- Expanded the main nav so learning sits alongside workouts and progress as a first-class destination.
 - Reworked daily rewards into star and heart cards that shade as progress builds and complete with stronger states.
 - Moved deeper insights like trouble spots, history, and fact tracking into Results and Progress instead of showing everything during practice.
 - Shifted the header into a slimmer intro band with compact daily progress and `Progress` / `Work Out` navigation.
@@ -33,7 +39,7 @@ The format is inspired by Keep a Changelog and uses a simple project-friendly ve
 - Polished the setup alignment, hero sizing, carousel controls, tracker/calendar spacing, and split-panel balance for the next snapshot.
 
 ### Planned
-- Learn mode with more detailed corrective feedback.
+- Additional table techniques beyond `10x`.
 - Additional arithmetic operations beyond multiplication.
 - Richer celebration artwork and milestone visuals.
 - Leaderboard support.

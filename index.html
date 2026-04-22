@@ -41,11 +41,26 @@
 
         <div class="hero-side">
           <nav class="shell-nav" aria-label="Primary">
+            <button
+              class="utility-button"
+              type="button"
+              id="optionsButton"
+              aria-label="Open options"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true" role="presentation">
+                <path
+                  d="M9.6 2h4.8l.54 2.44c.53.18 1.03.39 1.5.65l2.33-.94 2.4 4.16-1.8 1.73c.05.32.08.64.08.96s-.03.64-.08.96l1.8 1.73-2.4 4.16-2.33-.94c-.47.26-.97.47-1.5.65L14.4 22H9.6l-.54-2.44a8.494 8.494 0 0 1-1.5-.65l-2.33.94-2.4-4.16 1.8-1.73A6.89 6.89 0 0 1 4.56 13c0-.32.03-.64.08-.96l-1.8-1.73 2.4-4.16 2.33.94c.47-.26.97-.47 1.5-.65ZM12 8.4A3.6 3.6 0 1 0 12 15.6 3.6 3.6 0 0 0 12 8.4Z"
+                />
+              </svg>
+            </button>
             <button class="nav-button" type="button" data-view-target="progress">
               My Progress
             </button>
-            <button class="nav-button" type="button" id="optionsButton">
-              Options
+            <button class="nav-button" type="button" data-view-target="techniques">
+              <span class="nav-button-stack">
+                <strong>Learn</strong>
+                <small>Techniques</small>
+              </span>
             </button>
             <button
               class="nav-button nav-button-primary is-active"
@@ -438,6 +453,29 @@
                 <div class="button-row preview-actions">
                   <button class="primary-button" type="submit" form="settingsForm">Start</button>
                 </div>
+              </section>
+            </div>
+          </section>
+
+          <section class="screen" data-view="techniques" id="techniquesScreen">
+            <div class="screen-grid techniques-grid">
+              <section class="panel techniques-library-panel">
+                <div class="section-heading compact">
+                  <div>
+                    <p class="section-kicker">Learn</p>
+                    <h2>Techniques</h2>
+                  </div>
+                </div>
+
+                <p class="techniques-copy">
+                  Learn one table trick at a time, then lock it in with calm reps.
+                </p>
+
+                <div class="technique-table-grid" id="techniqueTableGrid"></div>
+              </section>
+
+              <section class="panel techniques-lesson-panel">
+                <div id="techniqueLessonShell"></div>
               </section>
             </div>
           </section>
@@ -920,16 +958,16 @@
 
           <section class="options-card">
             <p class="section-kicker">Version</p>
-            <p class="options-copy"><strong>v0.3.1</strong></p>
+            <p class="options-copy"><strong>v0.4.0</strong></p>
           </section>
 
           <section class="options-card">
             <p class="section-kicker">Most Recent Updates</p>
             <ul class="options-list">
+              <li>New Learn / Techniques mode with a 10x lesson flow</li>
               <li>Dark workout theme and reworked app shell</li>
               <li>Carousel-style Results and My Progress views</li>
               <li>Timed, target, and endless workout types</li>
-              <li>Countdown start flow before each workout</li>
               <li>Shared workout tracker calendar and daily rewards</li>
             </ul>
           </section>
@@ -969,6 +1007,37 @@
             </button>
             <button class="primary-button" type="button" id="confirmEndWorkoutButton">
               End Workout
+            </button>
+          </div>
+        </div>
+      </dialog>
+
+      <dialog class="options-dialog confirm-dialog" id="exitTechniqueDialog">
+        <div class="options-dialog-head">
+          <div>
+            <p class="section-kicker">Exit Lesson</p>
+            <h2>Leave this technique?</h2>
+          </div>
+          <button
+            class="carousel-button"
+            type="button"
+            id="exitTechniqueCloseButton"
+            aria-label="Close exit lesson dialog"
+          >
+            &#10005;
+          </button>
+        </div>
+
+        <div class="options-stack">
+          <p class="options-copy">
+            You can come back later. This lesson will restart from the beginning next time.
+          </p>
+          <div class="button-row confirm-actions">
+            <button class="ghost-button" type="button" id="cancelExitTechniqueButton">
+              Keep Learning
+            </button>
+            <button class="primary-button" type="button" id="confirmExitTechniqueButton">
+              Exit Lesson
             </button>
           </div>
         </div>

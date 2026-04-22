@@ -58,6 +58,12 @@ Use it for:
 - Review the current UX and identify what feels strong versus confusing.
 - Decide on the next round of redesign goals before editing UI structure again.
 - Add more important decisions here as they come up.
+- Add a competitive mode called `Flex`.
+- Possible `Flex` directions:
+  - points-based scoring for highest score
+  - a short pressure timer that resets after each correct answer
+  - timer expiry ends the run immediately
+  - focus on speed, streaks, and competitive chaining
 
 ## Session Notes
 
@@ -70,3 +76,36 @@ Use it for:
 - Results heading should feel more alive and can rotate based on workout outcome.
 - Future settings direction, not yet built: full manual controls with preset buttons that snap the controls into recommended combinations.
 - Snapshot polish pass focused on heading hierarchy, tracker alignment, split-panel dividers, carousel controls, and terminology consistency.
+
+### 2026-04-22
+
+- New major feature direction: add a teaching mode for single-table tricks.
+- Current naming direction: `Learn / Techniques`.
+- First lesson to build and refine: `10x`.
+- Core teaching rule for `10x`: place the `0`.
+- Lesson flow decision:
+  - rule screen
+  - flip-order screen showing the answer stays the same
+  - pattern screen
+  - guided practice
+  - quick check
+  - continue practicing
+- Pattern screen notes:
+  - show `1 x 10` through `12 x 10`
+  - some rows complete
+  - some answer stems blank
+  - some factors blank
+  - keep the `0` color-linked throughout
+- Guided practice notes:
+  - no timers or pressure
+  - use wording like `place the 0`
+  - include both `n x 10` and `10 x n`
+- Quick check notes:
+  - wrong answers should stay on the same fact
+  - clear the typed answer
+  - offer hint/help
+  - finish after 5 correct total
+- Continue practice notes:
+  - keep practicing the same table lesson
+  - generate questions in either direction
+- Other tables should appear in the UI but stay greyed out with `Coming Soon` until their lessons exist.

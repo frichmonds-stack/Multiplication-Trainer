@@ -62,6 +62,29 @@ const OPERATION_CONFIG = {
 
 const RESULTS_SLIDES = ["summary", "tracker", "focus"];
 const PROGRESS_SLIDES = ["overview", "tracker", "facts", "focus", "records", "coach"];
+const TECHNIQUE_TABLE = 10;
+const TECHNIQUE_STEPS = [
+  { id: "rule", label: "Rule" },
+  { id: "switch", label: "Flip" },
+  { id: "pattern", label: "Pattern" },
+  { id: "guided", label: "Guided" },
+  { id: "quick-check", label: "Check" },
+  { id: "practice", label: "Practice" },
+];
+const TECHNIQUE_PATTERN_ROWS = [
+  { factor: 1, blank: null },
+  { factor: 2, blank: "answer" },
+  { factor: 3, blank: null },
+  { factor: 4, blank: "factor" },
+  { factor: 5, blank: "answer" },
+  { factor: 6, blank: null },
+  { factor: 7, blank: "answer" },
+  { factor: 8, blank: "factor" },
+  { factor: 9, blank: null },
+  { factor: 10, blank: "answer" },
+  { factor: 11, blank: "factor" },
+  { factor: 12, blank: "answer" },
+];
 
 const elements = {
   screens: Array.from(document.querySelectorAll(".screen")),
@@ -154,6 +177,8 @@ const elements = {
   recordsModeSelect: document.getElementById("recordsModeSelect"),
   personalBestsList: document.getElementById("personalBestsList"),
   recentWorkoutsList: document.getElementById("recentWorkoutsList"),
+  techniqueTableGrid: document.getElementById("techniqueTableGrid"),
+  techniqueLessonShell: document.getElementById("techniqueLessonShell"),
   attemptBadge: document.getElementById("attemptBadge"),
   accuracyBadge: document.getElementById("accuracyBadge"),
   attemptProgressLabel: document.getElementById("attemptProgressLabel"),
@@ -162,6 +187,10 @@ const elements = {
   endWorkoutCloseButton: document.getElementById("endWorkoutCloseButton"),
   cancelEndWorkoutButton: document.getElementById("cancelEndWorkoutButton"),
   confirmEndWorkoutButton: document.getElementById("confirmEndWorkoutButton"),
+  exitTechniqueDialog: document.getElementById("exitTechniqueDialog"),
+  exitTechniqueCloseButton: document.getElementById("exitTechniqueCloseButton"),
+  cancelExitTechniqueButton: document.getElementById("cancelExitTechniqueButton"),
+  confirmExitTechniqueButton: document.getElementById("confirmExitTechniqueButton"),
 };
 
 const state = {
@@ -182,6 +211,8 @@ const state = {
   progressSlideIndex: 0,
   displayMonthKey: "",
   session: createEmptySession(),
+  technique: createTechniqueState(),
+  pendingTechniqueView: null,
 };
 
 function formatCount(value, singular, plural = `${singular}s`) {
@@ -198,6 +229,39 @@ function createEmptySession() {
     bestStreak: 0,
     responseTimes: [],
     recent: [],
+  };
+}
+
+function createTechniqueState(table = TECHNIQUE_TABLE) {
+  const patternInputs = {};
+
+  TECHNIQUE_PATTERN_ROWS.forEach((row) => {
+    if (row.blank) {
+      patternInputs[row.factor] = "";
+    }
+  });
+
+  return {
+    selectedTable: table,
+    stage: TECHNIQUE_STEPS[0].id,
+    patternInputs,
+    patternErrors: {},
+    patternFeedback: { message: "", tone: "" },
+    guidedQuestions: createGuidedTechniqueQuestions(table),
+    guidedIndex: 0,
+    guidedHintVisible: false,
+    guidedFeedback: { message: "", tone: "" },
+    guidedSolved: false,
+    quickCheckCorrect: 0,
+    quickCheckQuestion: createTechniqueQuestion(table),
+    quickCheckHintVisible: false,
+    quickCheckFeedback: { message: "", tone: "" },
+    quickCheckSolved: false,
+    quickCheckHintOffered: false,
+    practiceQuestion: createTechniqueQuestion(table),
+    practiceHintVisible: false,
+    practiceFeedback: { message: "", tone: "" },
+    practiceSolved: false,
   };
 }
 
@@ -815,6 +879,625 @@ function getHeroMessage() {
   }
 }
 
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function formatTechniqueNumber(value) {
+  return escapeHtml(value).replaceAll("0", '<span class="technique-zero">0</span>');
+}
+
+function formatTechniqueEquation(left, right) {
+  return `${formatTechniqueNumber(left)} x ${formatTechniqueNumber(right)}`;
+}
+
+function createTechniqueQuestion(table = TECHNIQUE_TABLE, forceReversed = null) {
+  const reversed =
+    typeof forceReversed === "boolean" ? forceReversed : Math.random() > 0.5;
+  const otherFactor = TABLE_FACTORS[Math.floor(Math.random() * TABLE_FACTORS.length)];
+
+  return {
+    table,
+    otherFactor,
+    left: reversed ? table : otherFactor,
+    right: reversed ? otherFactor : table,
+    reversed,
+    answer: otherFactor * table,
+  };
+}
+
+function createGuidedTechniqueQuestions(table = TECHNIQUE_TABLE) {
+  const shuffledFactors = [...TABLE_FACTORS].sort(() => Math.random() - 0.5);
+  const selectedFactors = shuffledFactors.slice(0, 4);
+
+  return [
+    {
+      table,
+      otherFactor: selectedFactors[0],
+      left: selectedFactors[0],
+      right: table,
+      reversed: false,
+      answer: selectedFactors[0] * table,
+    },
+    {
+      table,
+      otherFactor: selectedFactors[1],
+      left: selectedFactors[1],
+      right: table,
+      reversed: false,
+      answer: selectedFactors[1] * table,
+    },
+    {
+      table,
+      otherFactor: selectedFactors[2],
+      left: table,
+      right: selectedFactors[2],
+      reversed: true,
+      answer: selectedFactors[2] * table,
+    },
+    {
+      table,
+      otherFactor: selectedFactors[3],
+      left: table,
+      right: selectedFactors[3],
+      reversed: true,
+      answer: selectedFactors[3] * table,
+    },
+  ];
+}
+
+function getTechniqueStageMeta(stage) {
+  switch (stage) {
+    case "rule":
+      return {
+        kicker: "10x Technique",
+        title: "Place the 0.",
+      };
+    case "switch":
+      return {
+        kicker: "10x Technique",
+        title: "The order can flip.",
+      };
+    case "pattern":
+      return {
+        kicker: "10x Technique",
+        title: "Finish the pattern.",
+      };
+    case "guided":
+      return {
+        kicker: "10x Technique",
+        title: "Try it with support.",
+      };
+    case "quick-check":
+      return {
+        kicker: "10x Technique",
+        title: "Show that the trick sticks.",
+      };
+    default:
+      return {
+        kicker: "10x Technique",
+        title: "Keep practicing the 10x table.",
+      };
+  }
+}
+
+function getTechniqueStageIndex(stage) {
+  return TECHNIQUE_STEPS.findIndex((step) => step.id === stage);
+}
+
+function advanceTechniqueStage() {
+  const currentIndex = getTechniqueStageIndex(state.technique.stage);
+  const nextStep = TECHNIQUE_STEPS[currentIndex + 1];
+  if (nextStep) {
+    state.technique.stage = nextStep.id;
+  }
+}
+
+function retreatTechniqueStage() {
+  const currentIndex = getTechniqueStageIndex(state.technique.stage);
+  const previousStep = TECHNIQUE_STEPS[currentIndex - 1];
+  if (previousStep) {
+    state.technique.stage = previousStep.id;
+  }
+}
+
+function isTechniqueAvailable(table) {
+  return table === TECHNIQUE_TABLE;
+}
+
+function resetTechniqueState(table = TECHNIQUE_TABLE) {
+  state.technique = createTechniqueState(table);
+}
+
+function getTechniqueHintMarkup(question) {
+  return `The other number is <strong>${escapeHtml(
+    question.otherFactor,
+  )}</strong>. Place the <span class="technique-zero">0</span> after it.`;
+}
+
+function getTechniqueTableGridMarkup() {
+  return TABLE_FACTORS.map((factor) => {
+    const available = isTechniqueAvailable(factor);
+    const classes = ["technique-card"];
+    if (available) {
+      classes.push("is-active");
+    }
+
+    return `
+      <button
+        class="${classes.join(" ")}"
+        type="button"
+        data-technique-select="${factor}"
+        ${available ? "" : "disabled"}
+      >
+        <span class="technique-card-pill">${available ? "Ready" : "Coming Soon"}</span>
+        <strong>x ${factor}</strong>
+        <span class="technique-card-note">
+          ${available ? "Learn the 10x shortcut and build confidence first." : "This table technique is planned next."}
+        </span>
+      </button>
+    `;
+  }).join("");
+}
+
+function getTechniqueStagePillsMarkup() {
+  return TECHNIQUE_STEPS.map(
+    (step) => `
+      <span class="technique-stage-pill ${step.id === state.technique.stage ? "is-active" : ""}">
+        ${step.label}
+      </span>
+    `,
+  ).join("");
+}
+
+function getTechniquePatternRowMarkup(row) {
+  const inputValue = escapeHtml(state.technique.patternInputs[row.factor] || "");
+  const inputClass = state.technique.patternErrors[row.factor] ? " is-error" : "";
+
+  if (row.blank === "answer") {
+    return `
+      <div class="technique-pattern-row">
+        <span>${escapeHtml(row.factor)} x ${formatTechniqueNumber(TECHNIQUE_TABLE)} =</span>
+        <input
+          class="technique-inline-input${inputClass}"
+          type="text"
+          name="pattern-${row.factor}"
+          inputmode="numeric"
+          pattern="[0-9]*"
+          value="${inputValue}"
+          aria-label="Missing digits before the zero in ${row.factor} times 10"
+          ${row.factor === 2 ? 'data-technique-autofocus="true"' : ""}
+        />
+        <span><span class="technique-zero">0</span></span>
+      </div>
+    `;
+  }
+
+  if (row.blank === "factor") {
+    return `
+      <div class="technique-pattern-row">
+        <input
+          class="technique-inline-input${inputClass}"
+          type="text"
+          name="pattern-${row.factor}"
+          inputmode="numeric"
+          pattern="[0-9]*"
+          value="${inputValue}"
+          aria-label="Missing factor for the ${row.factor}0 answer"
+          data-technique-autofocus="true"
+        />
+        <span>x ${formatTechniqueNumber(TECHNIQUE_TABLE)} = ${formatTechniqueNumber(
+          row.factor * TECHNIQUE_TABLE,
+        )}</span>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="technique-pattern-row">
+      <span>${escapeHtml(row.factor)} x ${formatTechniqueNumber(TECHNIQUE_TABLE)} = ${formatTechniqueNumber(
+        row.factor * TECHNIQUE_TABLE,
+      )}</span>
+    </div>
+  `;
+}
+
+function renderTechniqueRuleStage() {
+  return `
+    <section class="technique-lesson-card">
+      <p class="technique-helper">
+        When one number is ${formatTechniqueNumber(
+          TECHNIQUE_TABLE,
+        )}, keep the other number and place the gold <span class="technique-zero">0</span>.
+      </p>
+      <div class="technique-rule-grid">
+        <article class="technique-example-card">
+          <p class="technique-equation">7 x ${formatTechniqueNumber(TECHNIQUE_TABLE)} = 7<span class="technique-zero">0</span></p>
+          <p class="technique-caption">Keep the 7. Place the gold 0.</p>
+        </article>
+        <article class="technique-example-card">
+          <p class="technique-equation">12 x ${formatTechniqueNumber(TECHNIQUE_TABLE)} = 12<span class="technique-zero">0</span></p>
+          <p class="technique-caption">The 12 stays. The 0 gets placed after it.</p>
+        </article>
+      </div>
+      <div class="technique-action-row technique-action-row-end">
+        <button class="primary-button" type="button" data-technique-action="next-stage">
+          See the flip
+        </button>
+      </div>
+    </section>
+  `;
+}
+
+function renderTechniqueSwitchStage() {
+  return `
+    <section class="technique-lesson-card">
+      <p class="technique-helper">
+        The order can flip around, but the answer stays the same.
+      </p>
+      <div class="technique-switch-grid">
+        <article class="technique-switch-card">
+          <p class="technique-equation">6 x ${formatTechniqueNumber(TECHNIQUE_TABLE)} = 6<span class="technique-zero">0</span></p>
+          <p class="technique-caption">Start with the 6, then place the 0.</p>
+        </article>
+        <article class="technique-switch-card">
+          <p class="technique-equation">${formatTechniqueNumber(TECHNIQUE_TABLE)} x 6 = 6<span class="technique-zero">0</span></p>
+          <p class="technique-caption">The 6 is still the number that matters.</p>
+        </article>
+        <article class="technique-switch-card">
+          <p class="technique-equation">9 x ${formatTechniqueNumber(TECHNIQUE_TABLE)} = 9<span class="technique-zero">0</span></p>
+          <p class="technique-caption">Same idea.</p>
+        </article>
+        <article class="technique-switch-card">
+          <p class="technique-equation">${formatTechniqueNumber(TECHNIQUE_TABLE)} x 9 = 9<span class="technique-zero">0</span></p>
+          <p class="technique-caption">Same answer.</p>
+        </article>
+      </div>
+      <div class="technique-action-row">
+        <button class="ghost-button" type="button" data-technique-action="prev-stage">
+          Back
+        </button>
+        <button class="primary-button" type="button" data-technique-action="next-stage">
+          Finish the pattern
+        </button>
+      </div>
+    </section>
+  `;
+}
+
+function renderTechniquePatternStage() {
+  const feedback = state.technique.patternFeedback;
+
+  return `
+    <form class="technique-lesson-card" data-technique-form="pattern" autocomplete="off">
+      <p class="technique-helper">
+        Some facts are already finished. Fill the missing spaces and keep the gold <span class="technique-zero">0</span> pattern going.
+      </p>
+      <div class="technique-pattern-grid">
+        ${TECHNIQUE_PATTERN_ROWS.map(getTechniquePatternRowMarkup).join("")}
+      </div>
+      <p class="technique-feedback ${feedback.tone}">${feedback.message}</p>
+      <div class="technique-action-row">
+        <button class="ghost-button" type="button" data-technique-action="prev-stage">
+          Back
+        </button>
+        <div class="technique-side-actions">
+          <button class="ghost-button" type="button" data-technique-action="reset-pattern">
+            Clear Blanks
+          </button>
+          <button class="primary-button" type="submit">
+            Check Pattern
+          </button>
+        </div>
+      </div>
+    </form>
+  `;
+}
+
+function renderTechniqueGuidedStage() {
+  const question = state.technique.guidedQuestions[state.technique.guidedIndex];
+  const feedback = state.technique.guidedFeedback;
+  const isLastQuestion =
+    state.technique.guidedIndex === state.technique.guidedQuestions.length - 1;
+
+  return `
+    <form class="technique-lesson-card technique-question-shell" data-technique-form="guided" autocomplete="off">
+      <div class="technique-question-meta">
+        <span class="technique-progress-copy">Guided question ${
+          state.technique.guidedIndex + 1
+        } of ${state.technique.guidedQuestions.length}</span>
+        <span class="technique-progress-copy">No timer. Just place the 0.</span>
+      </div>
+      <p class="technique-question">${formatTechniqueEquation(question.left, question.right)} = ?</p>
+      <div class="technique-input-row">
+        <label class="answer-field">
+          <span class="sr-only">Technique answer</span>
+          <input
+            type="text"
+            name="techniqueAnswer"
+            inputmode="numeric"
+            pattern="[0-9]*"
+            placeholder="Type the full answer"
+            data-technique-autofocus="true"
+          />
+        </label>
+        <button class="primary-button" type="submit">
+          Check Answer
+        </button>
+      </div>
+      ${
+        state.technique.guidedHintVisible
+          ? `<div class="technique-hint">${getTechniqueHintMarkup(question)}</div>`
+          : ""
+      }
+      <p class="technique-feedback ${feedback.tone}">${feedback.message}</p>
+      <div class="technique-action-row">
+        <button class="ghost-button" type="button" data-technique-action="prev-stage">
+          Back
+        </button>
+        <div class="technique-side-actions">
+          ${
+            !state.technique.guidedHintVisible && !state.technique.guidedSolved
+              ? `
+                <button class="ghost-button" type="button" data-technique-action="show-guided-hint">
+                  Show Hint
+                </button>
+              `
+              : ""
+          }
+          ${
+            state.technique.guidedSolved
+              ? `
+                <button class="primary-button" type="button" data-technique-action="next-guided">
+                  ${isLastQuestion ? "Go to Quick Check" : "Next Guided Question"}
+                </button>
+              `
+              : ""
+          }
+        </div>
+      </div>
+    </form>
+  `;
+}
+
+function renderTechniqueQuickCheckStage() {
+  const question = state.technique.quickCheckQuestion;
+  const feedback = state.technique.quickCheckFeedback;
+  const reachedGoal = state.technique.quickCheckCorrect >= 5;
+  const hintAvailable =
+    state.technique.quickCheckHintVisible || state.technique.quickCheckHintOffered;
+
+  return `
+    <form class="technique-lesson-card technique-question-shell" data-technique-form="quick-check" autocomplete="off">
+      <div class="technique-question-meta">
+        <span class="technique-progress-copy">Correct answers: ${
+          state.technique.quickCheckCorrect
+        } / 5</span>
+        <span class="technique-progress-copy">If you miss, the same fact stays put.</span>
+      </div>
+      <p class="technique-question">${formatTechniqueEquation(question.left, question.right)} = ?</p>
+      <div class="technique-input-row">
+        <label class="answer-field">
+          <span class="sr-only">Quick check answer</span>
+          <input
+            type="text"
+            name="techniqueAnswer"
+            inputmode="numeric"
+            pattern="[0-9]*"
+            placeholder="Type the full answer"
+            data-technique-autofocus="true"
+          />
+        </label>
+        <button class="primary-button" type="submit">
+          Check Answer
+        </button>
+      </div>
+      ${
+        state.technique.quickCheckHintVisible
+          ? `<div class="technique-hint">${getTechniqueHintMarkup(question)}</div>`
+          : ""
+      }
+      <p class="technique-feedback ${feedback.tone}">${feedback.message}</p>
+      <div class="technique-action-row">
+        <button class="ghost-button" type="button" data-technique-action="prev-stage">
+          Back
+        </button>
+        <div class="technique-side-actions">
+          ${
+            hintAvailable && !state.technique.quickCheckSolved && !state.technique.quickCheckHintVisible
+              ? `
+                <button class="ghost-button" type="button" data-technique-action="show-quick-hint">
+                  Hint
+                </button>
+              `
+              : ""
+          }
+          ${
+            state.technique.quickCheckSolved
+              ? `
+                <button class="primary-button" type="button" data-technique-action="next-quick">
+                  ${reachedGoal ? "Continue Practicing" : "Next Check"}
+                </button>
+              `
+              : ""
+          }
+        </div>
+      </div>
+    </form>
+  `;
+}
+
+function renderTechniquePracticeStage() {
+  const question = state.technique.practiceQuestion;
+  const feedback = state.technique.practiceFeedback;
+
+  return `
+    <form class="technique-lesson-card technique-question-shell" data-technique-form="practice" autocomplete="off">
+      <div class="technique-question-meta">
+        <span class="technique-progress-copy">Continue practicing the 10x table.</span>
+        <span class="technique-progress-copy">Questions can flip either way now.</span>
+      </div>
+      <p class="technique-question">${formatTechniqueEquation(question.left, question.right)} = ?</p>
+      <div class="technique-input-row">
+        <label class="answer-field">
+          <span class="sr-only">Practice answer</span>
+          <input
+            type="text"
+            name="techniqueAnswer"
+            inputmode="numeric"
+            pattern="[0-9]*"
+            placeholder="Type the full answer"
+            data-technique-autofocus="true"
+          />
+        </label>
+        <button class="primary-button" type="submit">
+          Check Answer
+        </button>
+      </div>
+      ${
+        state.technique.practiceHintVisible
+          ? `<div class="technique-hint">${getTechniqueHintMarkup(question)}</div>`
+          : ""
+      }
+      <p class="technique-feedback ${feedback.tone}">${feedback.message}</p>
+      <div class="technique-action-row">
+        <button class="ghost-button" type="button" data-technique-action="restart-technique">
+          Restart Lesson
+        </button>
+        <div class="technique-side-actions">
+          ${
+            !state.technique.practiceHintVisible && !state.technique.practiceSolved
+              ? `
+                <button class="ghost-button" type="button" data-technique-action="show-practice-hint">
+                  Show Hint
+                </button>
+              `
+              : ""
+          }
+          ${
+            state.technique.practiceSolved
+              ? `
+                <button class="primary-button" type="button" data-technique-action="next-practice">
+                  Next Practice Question
+                </button>
+              `
+              : ""
+          }
+        </div>
+      </div>
+    </form>
+  `;
+}
+
+function getTechniqueStageMarkup() {
+  if (state.technique.stage === "rule") {
+    return renderTechniqueRuleStage();
+  }
+
+  if (state.technique.stage === "switch") {
+    return renderTechniqueSwitchStage();
+  }
+
+  if (state.technique.stage === "pattern") {
+    return renderTechniquePatternStage();
+  }
+
+  if (state.technique.stage === "guided") {
+    return renderTechniqueGuidedStage();
+  }
+
+  if (state.technique.stage === "quick-check") {
+    return renderTechniqueQuickCheckStage();
+  }
+
+  return renderTechniquePracticeStage();
+}
+
+function focusTechniqueField() {
+  const target = elements.techniqueLessonShell?.querySelector("[data-technique-autofocus]");
+  if (target) {
+    window.requestAnimationFrame(() => {
+      target.focus();
+      if (typeof target.select === "function") {
+        target.select();
+      }
+    });
+  }
+}
+
+function renderTechniqueScreen() {
+  if (!elements.techniqueTableGrid || !elements.techniqueLessonShell) {
+    return;
+  }
+
+  const stageMeta = getTechniqueStageMeta(state.technique.stage);
+
+  elements.techniqueTableGrid.innerHTML = getTechniqueTableGridMarkup();
+  elements.techniqueLessonShell.innerHTML = `
+    <div class="technique-shell">
+      <div class="technique-shell-head">
+        <div>
+          <p class="section-kicker">${stageMeta.kicker}</p>
+          <h2>${stageMeta.title}</h2>
+        </div>
+        <div class="technique-side-actions">
+          <button class="ghost-button subtle-button" type="button" data-technique-action="exit">
+            Exit Lesson
+          </button>
+        </div>
+      </div>
+      <div class="technique-stage-pills">${getTechniqueStagePillsMarkup()}</div>
+      ${getTechniqueStageMarkup()}
+    </div>
+  `;
+
+  focusTechniqueField();
+}
+
+function openTechniqueExitDialog(targetView) {
+  state.pendingTechniqueView = targetView;
+  if (!elements.exitTechniqueDialog.open) {
+    elements.exitTechniqueDialog.showModal();
+  }
+}
+
+function cancelTechniqueExit() {
+  state.pendingTechniqueView = null;
+  elements.exitTechniqueDialog.close();
+}
+
+function confirmTechniqueExit() {
+  const targetView = state.pendingTechniqueView || "setup";
+  state.pendingTechniqueView = null;
+  elements.exitTechniqueDialog.close();
+  resetTechniqueState(state.technique.selectedTable);
+  renderTechniqueScreen();
+  showView(targetView);
+}
+
+function requestView(targetView) {
+  if (state.active || !targetView) {
+    return;
+  }
+
+  if (state.view === "techniques" && targetView !== "techniques") {
+    openTechniqueExitDialog(targetView);
+    return;
+  }
+
+  if (targetView === "techniques" && state.view !== "techniques") {
+    resetTechniqueState(state.technique.selectedTable);
+    renderTechniqueScreen();
+  }
+
+  showView(targetView);
+}
+
 function viewMatchesButton(view, buttonTarget) {
   if (buttonTarget === "setup") {
     return ["setup", "countdown", "practice", "results"].includes(view);
@@ -834,6 +1517,261 @@ function showView(view) {
     button.classList.toggle("is-active", viewMatchesButton(view, button.dataset.viewTarget));
     button.disabled = state.active;
   });
+
+  elements.optionsButton.disabled = state.active;
+}
+
+function submitTechniquePattern(form) {
+  const formData = new FormData(form);
+  const nextInputs = {};
+  const errors = {};
+
+  TECHNIQUE_PATTERN_ROWS.forEach((row) => {
+    if (!row.blank) {
+      return;
+    }
+
+    const value = String(formData.get(`pattern-${row.factor}`) || "").trim();
+    nextInputs[row.factor] = value;
+
+    if (value !== `${row.factor}`) {
+      errors[row.factor] = true;
+    }
+  });
+
+  state.technique.patternInputs = nextInputs;
+  state.technique.patternErrors = errors;
+
+  if (Object.keys(errors).length) {
+    state.technique.patternFeedback = {
+      message: "A few blanks still need another look. Use the gold 0 as your clue.",
+      tone: "error",
+    };
+    renderTechniqueScreen();
+    return;
+  }
+
+  state.technique.patternFeedback = {
+    message: "",
+    tone: "",
+  };
+  advanceTechniqueStage();
+  renderTechniqueScreen();
+}
+
+function submitGuidedTechniqueAnswer(form) {
+  const question = state.technique.guidedQuestions[state.technique.guidedIndex];
+  const answer = String(new FormData(form).get("techniqueAnswer") || "").trim();
+
+  if (answer === `${question.answer}`) {
+    state.technique.guidedSolved = true;
+    state.technique.guidedHintVisible = false;
+    state.technique.guidedFeedback = {
+      message: "Nice. You placed the 0 in the right spot.",
+      tone: "success",
+    };
+  } else {
+    state.technique.guidedSolved = false;
+    state.technique.guidedFeedback = {
+      message: "Not yet. Keep the same fact and use the hint if you need it.",
+      tone: "error",
+    };
+  }
+
+  renderTechniqueScreen();
+}
+
+function submitQuickCheckAnswer(form) {
+  const question = state.technique.quickCheckQuestion;
+  const answer = String(new FormData(form).get("techniqueAnswer") || "").trim();
+
+  if (answer === `${question.answer}`) {
+    state.technique.quickCheckCorrect += 1;
+    state.technique.quickCheckSolved = true;
+    state.technique.quickCheckHintVisible = false;
+    state.technique.quickCheckHintOffered = false;
+    state.technique.quickCheckFeedback = {
+      message:
+        state.technique.quickCheckCorrect >= 5
+          ? "Strong work. You hit the 5-correct mark."
+          : "Correct. Keep that pattern going.",
+      tone: "success",
+    };
+  } else {
+    state.technique.quickCheckSolved = false;
+    state.technique.quickCheckHintVisible = false;
+    state.technique.quickCheckHintOffered = true;
+    state.technique.quickCheckFeedback = {
+      message: "Wrong this time. The same fact stays here, and you can ask for a hint.",
+      tone: "error",
+    };
+  }
+
+  renderTechniqueScreen();
+}
+
+function submitTechniquePracticeAnswer(form) {
+  const question = state.technique.practiceQuestion;
+  const answer = String(new FormData(form).get("techniqueAnswer") || "").trim();
+
+  if (answer === `${question.answer}`) {
+    state.technique.practiceSolved = true;
+    state.technique.practiceHintVisible = false;
+    state.technique.practiceFeedback = {
+      message: "Correct. Keep the table feeling easy.",
+      tone: "success",
+    };
+  } else {
+    state.technique.practiceSolved = false;
+    state.technique.practiceFeedback = {
+      message: "Not yet. Stay with the same fact and use the hint if you want support.",
+      tone: "error",
+    };
+  }
+
+  renderTechniqueScreen();
+}
+
+function handleTechniqueLessonSubmit(event) {
+  const form = event.target;
+
+  if (!(form instanceof HTMLFormElement) || !form.dataset.techniqueForm) {
+    return;
+  }
+
+  event.preventDefault();
+
+  if (form.dataset.techniqueForm === "pattern") {
+    submitTechniquePattern(form);
+    return;
+  }
+
+  if (form.dataset.techniqueForm === "guided") {
+    submitGuidedTechniqueAnswer(form);
+    return;
+  }
+
+  if (form.dataset.techniqueForm === "quick-check") {
+    submitQuickCheckAnswer(form);
+    return;
+  }
+
+  if (form.dataset.techniqueForm === "practice") {
+    submitTechniquePracticeAnswer(form);
+  }
+}
+
+function handleTechniqueAction(action) {
+  if (action === "next-stage") {
+    advanceTechniqueStage();
+    renderTechniqueScreen();
+    return;
+  }
+
+  if (action === "prev-stage") {
+    retreatTechniqueStage();
+    renderTechniqueScreen();
+    return;
+  }
+
+  if (action === "reset-pattern") {
+    const blankInputs = createTechniqueState(state.technique.selectedTable).patternInputs;
+    state.technique.patternInputs = blankInputs;
+    state.technique.patternErrors = {};
+    state.technique.patternFeedback = { message: "", tone: "" };
+    renderTechniqueScreen();
+    return;
+  }
+
+  if (action === "show-guided-hint") {
+    state.technique.guidedHintVisible = true;
+    renderTechniqueScreen();
+    return;
+  }
+
+  if (action === "next-guided") {
+    if (state.technique.guidedIndex >= state.technique.guidedQuestions.length - 1) {
+      state.technique.stage = "quick-check";
+    } else {
+      state.technique.guidedIndex += 1;
+    }
+
+    state.technique.guidedSolved = false;
+    state.technique.guidedHintVisible = false;
+    state.technique.guidedFeedback = { message: "", tone: "" };
+    renderTechniqueScreen();
+    return;
+  }
+
+  if (action === "show-quick-hint") {
+    state.technique.quickCheckHintVisible = true;
+    renderTechniqueScreen();
+    return;
+  }
+
+  if (action === "next-quick") {
+    if (state.technique.quickCheckCorrect >= 5) {
+      state.technique.stage = "practice";
+    } else {
+      state.technique.quickCheckQuestion = createTechniqueQuestion(state.technique.selectedTable);
+      state.technique.quickCheckSolved = false;
+      state.technique.quickCheckHintVisible = false;
+      state.technique.quickCheckHintOffered = false;
+      state.technique.quickCheckFeedback = { message: "", tone: "" };
+    }
+
+    renderTechniqueScreen();
+    return;
+  }
+
+  if (action === "show-practice-hint") {
+    state.technique.practiceHintVisible = true;
+    renderTechniqueScreen();
+    return;
+  }
+
+  if (action === "next-practice") {
+    state.technique.practiceQuestion = createTechniqueQuestion(state.technique.selectedTable);
+    state.technique.practiceSolved = false;
+    state.technique.practiceHintVisible = false;
+    state.technique.practiceFeedback = { message: "", tone: "" };
+    renderTechniqueScreen();
+    return;
+  }
+
+  if (action === "restart-technique") {
+    resetTechniqueState(state.technique.selectedTable);
+    renderTechniqueScreen();
+    return;
+  }
+
+  if (action === "exit") {
+    openTechniqueExitDialog("setup");
+  }
+}
+
+function handleTechniqueLessonClick(event) {
+  const actionButton = event.target.closest("[data-technique-action]");
+  if (!actionButton) {
+    return;
+  }
+
+  handleTechniqueAction(actionButton.dataset.techniqueAction);
+}
+
+function handleTechniqueTableClick(event) {
+  const button = event.target.closest("[data-technique-select]");
+  if (!button) {
+    return;
+  }
+
+  const table = Number(button.dataset.techniqueSelect);
+  if (!isTechniqueAvailable(table)) {
+    return;
+  }
+
+  resetTechniqueState(table);
+  renderTechniqueScreen();
 }
 
 function renderSetupPreview() {
@@ -2338,6 +3276,7 @@ function initialise() {
   renderPracticeProgress();
   renderSessionTimer();
   renderQuestionTimer(0);
+  renderTechniqueScreen();
   setFeedback("");
   showView("setup");
 
@@ -2369,6 +3308,9 @@ function initialise() {
   elements.optionsCloseButton.addEventListener("click", () => {
     elements.optionsDialog.close();
   });
+  elements.exitTechniqueCloseButton.addEventListener("click", cancelTechniqueExit);
+  elements.cancelExitTechniqueButton.addEventListener("click", cancelTechniqueExit);
+  elements.confirmExitTechniqueButton.addEventListener("click", confirmTechniqueExit);
   elements.endWorkoutCloseButton.addEventListener("click", () => {
     elements.endWorkoutDialog.close();
   });
@@ -2381,6 +3323,10 @@ function initialise() {
   });
   registerBackdropClose(elements.optionsDialog);
   registerBackdropClose(elements.endWorkoutDialog);
+  registerBackdropClose(elements.exitTechniqueDialog);
+  elements.exitTechniqueDialog.addEventListener("close", () => {
+    state.pendingTechniqueView = null;
+  });
   elements.resetProgressButton.addEventListener("click", resetProgress);
   elements.recordsModeSelect.addEventListener("change", renderPersonalBests);
   elements.progressMonthPrevButton.addEventListener("click", () => shiftDisplayedMonth(-1));
@@ -2398,15 +3344,15 @@ function initialise() {
     });
   });
 
+  elements.techniqueTableGrid.addEventListener("click", handleTechniqueTableClick);
+  elements.techniqueLessonShell.addEventListener("click", handleTechniqueLessonClick);
+  elements.techniqueLessonShell.addEventListener("submit", handleTechniqueLessonSubmit);
+
   elements.viewButtons.forEach((button) => {
     button.addEventListener("click", () => {
-      if (state.active) {
-        return;
-      }
-
       const targetView = button.dataset.viewTarget;
       if (targetView) {
-        showView(targetView);
+        requestView(targetView);
       }
     });
   });

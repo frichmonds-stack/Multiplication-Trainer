@@ -5,6 +5,7 @@ A strength-themed multiplication practice webapp built with plain HTML, CSS, and
 ## What it does
 
 - Uses a slimmer app-style shell with a separate header band and dedicated Setup, Practice, Results, and Progress screens
+- Adds a Learn / Techniques mode with a first `10x` lesson for learning a table trick before drilling it
 - Supports mixed-table practice or a focused single-table mode
 - Supports High Intensity Training, Target Reps, Zen Mode, and Spar Mode workout types
 - Supports positive and negative integer multiplication while keeping the practice range magnitude-based
@@ -16,6 +17,7 @@ A strength-themed multiplication practice webapp built with plain HTML, CSS, and
 - Shows a fact tracker so weaker and stronger multiplication facts are easy to spot
 - Includes personal bests, recent workouts, and daily record stats like most attempts in a day
 - Uses a custom in-app end-workout modal instead of the browser confirm popup
+- Uses a matching in-app lesson exit modal for leaving a technique mid-way
 - Remembers your preferred setup in the browser between visits
 - Saves long-term progress in the browser with localStorage
 - Uses a dark workout-inspired theme with rotating strength-building banner messages
