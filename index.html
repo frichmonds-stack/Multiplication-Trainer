@@ -23,7 +23,6 @@
 
       <header class="page-header">
         <div class="hero-copy">
-          <p class="eyebrow">Novare Co. presents.</p>
           <div class="hero-title-row">
             <span class="hero-mark" aria-hidden="true">
               <svg viewBox="0 0 660 660" role="presentation">
@@ -33,8 +32,12 @@
               </svg>
             </span>
             <div class="hero-text-block">
-              <h1>Math Muscle Trainer</h1>
-              <p class="hero-tagline">Grow your brain, begin your reign.</p>
+              <p class="eyebrow">Novare Co. presents</p>
+              <h1>
+                <span>Math Muscle</span>
+                <span>Trainer</span>
+              </h1>
+              <p class="hero-tagline">Grow your brain &amp; begin your reign.</p>
             </div>
           </div>
         </div>
@@ -58,8 +61,8 @@
             </button>
             <button class="nav-button" type="button" data-view-target="techniques">
               <span class="nav-button-stack">
-                <strong>Learn</strong>
-                <small>Techniques</small>
+                <span>Learn</span>
+                <span>Techniques</span>
               </span>
             </button>
             <button
@@ -133,10 +136,109 @@
                 </div>
 
                 <form id="settingsForm" class="settings-form">
-                  <section class="range-options-block">
-                    <div class="range-block">
-                      <span class="field-helper">Practice multiplications between...</span>
-                      <div class="field-grid compact-field-grid">
+                  <div class="field option-field">
+                    <span>Workout Type</span>
+                    <div
+                      class="choice-row centered-choice workout-type-grid"
+                      role="radiogroup"
+                      aria-label="Workout type"
+                    >
+                      <label class="choice-pill session-choice">
+                        <input type="radio" name="sessionType" value="timed" />
+                        <span class="choice-pill-copy">
+                          <strong>High Intensity Training</strong>
+                          <small>(Timed)</small>
+                        </span>
+                      </label>
+
+                      <label class="choice-pill session-choice">
+                        <input
+                          type="radio"
+                          name="sessionType"
+                          value="question-goal"
+                          checked
+                        />
+                        <span class="choice-pill-copy">
+                          <strong>Target Reps</strong>
+                          <small>(Attempt Goal)</small>
+                        </span>
+                      </label>
+
+                      <label class="choice-pill session-choice">
+                        <input type="radio" name="sessionType" value="endless" />
+                        <span class="choice-pill-copy">
+                          <strong>Free Training</strong>
+                          <small>(Endless)</small>
+                        </span>
+                      </label>
+
+                      <label class="choice-pill session-choice">
+                        <input type="radio" name="sessionType" value="isolation" />
+                        <span class="choice-pill-copy">
+                          <strong>Isolation Training</strong>
+                          <small>(Single Table Drill)</small>
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div class="field option-field">
+                    <span>Workout Options</span>
+                    <div class="setup-option-list">
+                      <label class="toggle compact-toggle bare-toggle">
+                        <span class="toggle-row">
+                          <input id="adaptiveMode" type="checkbox" checked />
+                          <span class="toggle-label">Targeted</span>
+                          <span
+                            class="tooltip-dot"
+                            tabindex="0"
+                            data-tooltip="Brings back the facts that still need reps."
+                            aria-label="Targeted help"
+                          >
+                            ?
+                          </span>
+                        </span>
+                      </label>
+
+                      <label class="toggle compact-toggle bare-toggle">
+                        <span class="toggle-row">
+                          <input id="negativesMode" type="checkbox" />
+                          <span class="toggle-label">Negatives</span>
+                          <span
+                            class="tooltip-dot"
+                            tabindex="0"
+                            data-tooltip="Mix in positive and negative integers."
+                            aria-label="Negatives help"
+                          >
+                            ?
+                          </span>
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <section class="field option-field extra-options-field">
+                    <div class="field is-hidden" id="isolationField">
+                      <span>Isolation Target</span>
+                      <label class="field centered-field">
+                        <span>Times table</span>
+                        <select id="focusFactor">
+                          <option value="1">x 1</option>
+                          <option value="2">x 2</option>
+                          <option value="3">x 3</option>
+                          <option value="4">x 4</option>
+                          <option value="5">x 5</option>
+                          <option value="6">x 6</option>
+                          <option value="7" selected>x 7</option>
+                          <option value="8">x 8</option>
+                          <option value="9">x 9</option>
+                          <option value="10">x 10</option>
+                          <option value="11">x 11</option>
+                          <option value="12">x 12</option>
+                        </select>
+                      </label>
+
+                      <div class="field-grid compact-field-grid isolation-range-grid">
                         <label class="field centered-field">
                           <span>Minimum</span>
                           <select id="minFactor">
@@ -175,235 +277,121 @@
                       </div>
                     </div>
 
-                    <div class="mini-toggle-stack">
-                      <span class="field-helper option-stack-spacer" aria-hidden="true">
-                        Practice multiplications between...
-                      </span>
-                      <span class="option-stack-title">Options</span>
-
-                      <div class="mini-toggle-list">
-                        <label class="toggle compact-toggle bare-toggle">
-                          <span class="toggle-row">
-                            <input id="adaptiveMode" type="checkbox" checked />
-                            <span class="toggle-label">Targeted</span>
-                            <span
-                              class="tooltip-dot"
-                              tabindex="0"
-                              data-tooltip="Brings back the facts that still need reps."
-                              aria-label="Targeted help"
-                            >
-                              ?
-                            </span>
+                    <div class="field is-hidden" id="freeTrainingField">
+                      <span>Free Training Style</span>
+                      <div
+                        class="choice-row centered-choice"
+                        role="radiogroup"
+                        aria-label="Free training style"
+                      >
+                        <label class="choice-pill session-choice">
+                          <input type="radio" name="freeTrainingMode" value="zen" checked />
+                          <span class="choice-pill-copy">
+                            <strong>Zen Mode</strong>
+                            <small>(No Rules)</small>
                           </span>
                         </label>
 
-                        <label class="toggle compact-toggle bare-toggle">
-                          <span class="toggle-row">
-                            <input id="negativesMode" type="checkbox" />
-                            <span class="toggle-label">Negatives</span>
-                            <span
-                              class="tooltip-dot"
-                              tabindex="0"
-                              data-tooltip="Mix in positive and negative integers."
-                              aria-label="Negatives help"
-                            >
-                              ?
-                            </span>
+                        <label class="choice-pill session-choice">
+                          <input type="radio" name="freeTrainingMode" value="spar" />
+                          <span class="choice-pill-copy">
+                            <strong>Spar Mode</strong>
+                            <small>(3 Mistake Knockout)</small>
                           </span>
                         </label>
                       </div>
                     </div>
+
+                    <div class="field is-hidden" id="sparTimingField">
+                      <span>Spar Round</span>
+                      <div
+                        class="choice-row choice-row-compact"
+                        role="radiogroup"
+                        aria-label="Spar round style"
+                      >
+                        <label class="choice-pill compact">
+                          <input type="radio" name="sparTiming" value="untimed" checked />
+                          <span>Untimed</span>
+                        </label>
+
+                        <label class="choice-pill compact">
+                          <input type="radio" name="sparTiming" value="timed" />
+                          <span>Timed</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    <div class="field is-hidden" id="timeField">
+                      <span>Workout Duration</span>
+                      <div
+                        class="choice-row choice-row-compact"
+                        role="radiogroup"
+                        aria-label="Workout duration"
+                      >
+                        <label class="choice-pill compact">
+                          <input type="radio" name="timePreset" value="1" />
+                          <span>1 min</span>
+                        </label>
+
+                        <label class="choice-pill compact">
+                          <input type="radio" name="timePreset" value="3" checked />
+                          <span>3 min</span>
+                        </label>
+
+                        <label class="choice-pill compact">
+                          <input type="radio" name="timePreset" value="5" />
+                          <span>5 min</span>
+                        </label>
+
+                        <label class="choice-pill compact">
+                          <input type="radio" name="timePreset" value="custom" />
+                          <span>Custom</span>
+                        </label>
+                      </div>
+
+                      <label class="field centered-field nested-field is-hidden" id="timeCustomField">
+                        <span>Custom minutes (1-60)</span>
+                        <input id="timeCustom" type="number" min="1" max="60" value="8" />
+                      </label>
+                    </div>
+
+                    <div class="field is-hidden" id="questionTargetField">
+                      <span>Attempt Goal</span>
+                      <div
+                        class="choice-row choice-row-compact"
+                        role="radiogroup"
+                        aria-label="Attempt goal"
+                      >
+                        <label class="choice-pill compact">
+                          <input type="radio" name="questionPreset" value="10" />
+                          <span>10</span>
+                        </label>
+
+                        <label class="choice-pill compact">
+                          <input type="radio" name="questionPreset" value="20" checked />
+                          <span>20</span>
+                        </label>
+
+                        <label class="choice-pill compact">
+                          <input type="radio" name="questionPreset" value="30" />
+                          <span>30</span>
+                        </label>
+
+                        <label class="choice-pill compact">
+                          <input type="radio" name="questionPreset" value="custom" />
+                          <span>Custom</span>
+                        </label>
+                      </div>
+
+                      <label
+                        class="field centered-field nested-field is-hidden"
+                        id="questionCustomField"
+                      >
+                        <span>Custom attempt goal (5-200)</span>
+                        <input id="questionCustom" type="number" min="5" max="200" value="40" />
+                      </label>
+                    </div>
                   </section>
-
-                  <div class="field option-field">
-                    <span>Question Style</span>
-                    <div
-                      class="choice-row centered-choice"
-                      role="radiogroup"
-                      aria-label="Question style"
-                    >
-                      <label class="choice-pill">
-                        <input type="radio" name="questionStyle" value="mixed" checked />
-                        <span>Full Circuit</span>
-                      </label>
-
-                      <label class="choice-pill">
-                        <input type="radio" name="questionStyle" value="focus" />
-                        <span>Isolation</span>
-                      </label>
-                    </div>
-                  </div>
-
-                  <label class="field centered-field is-hidden" id="focusField">
-                    <span>Focus table</span>
-                    <select id="focusFactor">
-                      <option value="1">x 1</option>
-                      <option value="2">x 2</option>
-                      <option value="3">x 3</option>
-                      <option value="4">x 4</option>
-                      <option value="5">x 5</option>
-                      <option value="6">x 6</option>
-                      <option value="7" selected>x 7</option>
-                      <option value="8">x 8</option>
-                      <option value="9">x 9</option>
-                      <option value="10">x 10</option>
-                      <option value="11">x 11</option>
-                      <option value="12">x 12</option>
-                    </select>
-                  </label>
-
-                  <div class="field option-field">
-                    <span>Workout Type</span>
-                    <div
-                      class="choice-row centered-choice"
-                      role="radiogroup"
-                      aria-label="Workout type"
-                    >
-                      <label class="choice-pill session-choice">
-                        <input type="radio" name="sessionType" value="timed" />
-                        <span class="choice-pill-copy">
-                          <strong>High Intensity Training</strong>
-                          <small>(Timed)</small>
-                        </span>
-                      </label>
-
-                      <label class="choice-pill session-choice">
-                        <input
-                          type="radio"
-                          name="sessionType"
-                          value="question-goal"
-                          checked
-                        />
-                        <span class="choice-pill-copy">
-                          <strong>Target Reps</strong>
-                          <small>(Attempt Goal)</small>
-                        </span>
-                      </label>
-
-                      <label class="choice-pill session-choice">
-                        <input type="radio" name="sessionType" value="endless" />
-                        <span class="choice-pill-copy">
-                          <strong>Free Training</strong>
-                          <small>(Endless)</small>
-                        </span>
-                      </label>
-                    </div>
-                  </div>
-
-                  <div class="field is-hidden" id="freeTrainingField">
-                    <span>Free Training Style</span>
-                    <div
-                      class="choice-row centered-choice"
-                      role="radiogroup"
-                      aria-label="Free training style"
-                    >
-                      <label class="choice-pill session-choice">
-                        <input type="radio" name="freeTrainingMode" value="zen" checked />
-                        <span class="choice-pill-copy">
-                          <strong>Zen Mode</strong>
-                          <small>(No Rules)</small>
-                        </span>
-                      </label>
-
-                      <label class="choice-pill session-choice">
-                        <input type="radio" name="freeTrainingMode" value="spar" />
-                        <span class="choice-pill-copy">
-                          <strong>Spar Mode</strong>
-                          <small>(3 Mistake Knockout)</small>
-                        </span>
-                      </label>
-                    </div>
-                  </div>
-
-                  <div class="field is-hidden" id="sparTimingField">
-                    <span>Spar Round</span>
-                    <div
-                      class="choice-row choice-row-compact"
-                      role="radiogroup"
-                      aria-label="Spar round style"
-                    >
-                      <label class="choice-pill compact">
-                        <input type="radio" name="sparTiming" value="untimed" checked />
-                        <span>Untimed</span>
-                      </label>
-
-                      <label class="choice-pill compact">
-                        <input type="radio" name="sparTiming" value="timed" />
-                        <span>Timed</span>
-                      </label>
-                    </div>
-                  </div>
-
-                  <div class="field is-hidden" id="timeField">
-                    <span>Workout Duration</span>
-                    <div
-                      class="choice-row choice-row-compact"
-                      role="radiogroup"
-                      aria-label="Workout duration"
-                    >
-                      <label class="choice-pill compact">
-                        <input type="radio" name="timePreset" value="1" />
-                        <span>1 min</span>
-                      </label>
-
-                      <label class="choice-pill compact">
-                        <input type="radio" name="timePreset" value="3" checked />
-                        <span>3 min</span>
-                      </label>
-
-                      <label class="choice-pill compact">
-                        <input type="radio" name="timePreset" value="5" />
-                        <span>5 min</span>
-                      </label>
-
-                      <label class="choice-pill compact">
-                        <input type="radio" name="timePreset" value="custom" />
-                        <span>Custom</span>
-                      </label>
-                    </div>
-
-                    <label class="field centered-field nested-field is-hidden" id="timeCustomField">
-                      <span>Custom minutes (1-60)</span>
-                      <input id="timeCustom" type="number" min="1" max="60" value="8" />
-                    </label>
-                  </div>
-
-                  <div class="field" id="questionTargetField">
-                    <span>Attempt Goal</span>
-                    <div
-                      class="choice-row choice-row-compact"
-                      role="radiogroup"
-                      aria-label="Attempt goal"
-                    >
-                      <label class="choice-pill compact">
-                        <input type="radio" name="questionPreset" value="10" />
-                        <span>10</span>
-                      </label>
-
-                      <label class="choice-pill compact">
-                        <input type="radio" name="questionPreset" value="20" checked />
-                        <span>20</span>
-                      </label>
-
-                      <label class="choice-pill compact">
-                        <input type="radio" name="questionPreset" value="30" />
-                        <span>30</span>
-                      </label>
-
-                      <label class="choice-pill compact">
-                        <input type="radio" name="questionPreset" value="custom" />
-                        <span>Custom</span>
-                      </label>
-                    </div>
-
-                    <label
-                      class="field centered-field nested-field is-hidden"
-                      id="questionCustomField"
-                    >
-                      <span>Custom attempt goal (5-200)</span>
-                      <input id="questionCustom" type="number" min="5" max="200" value="40" />
-                    </label>
-                  </div>
                 </form>
               </section>
 
@@ -417,8 +405,8 @@
 
                 <div class="preview-stack">
                   <article class="preview-item">
-                    <span class="preview-label">Question Style</span>
-                    <strong class="preview-value" id="setupPreviewStyle">Full Circuit</strong>
+                    <span class="preview-label">Workout Focus</span>
+                    <strong class="preview-value" id="setupPreviewStyle">Standard mixed facts</strong>
                   </article>
 
                   <article class="preview-item">
@@ -458,26 +446,9 @@
           </section>
 
           <section class="screen" data-view="techniques" id="techniquesScreen">
-            <div class="screen-grid techniques-grid">
-              <section class="panel techniques-library-panel">
-                <div class="section-heading compact">
-                  <div>
-                    <p class="section-kicker">Learn</p>
-                    <h2>Techniques</h2>
-                  </div>
-                </div>
-
-                <p class="techniques-copy">
-                  Learn one table trick at a time, then lock it in with calm reps.
-                </p>
-
-                <div class="technique-table-grid" id="techniqueTableGrid"></div>
-              </section>
-
-              <section class="panel techniques-lesson-panel">
-                <div id="techniqueLessonShell"></div>
-              </section>
-            </div>
+            <section class="panel techniques-screen-panel">
+              <div id="techniqueScreenShell"></div>
+            </section>
           </section>
 
           <section class="screen" data-view="countdown" id="countdownScreen">
@@ -485,7 +456,7 @@
               <p class="section-kicker">Get Ready</p>
               <p class="countdown-copy">Type the answer to the times tables.</p>
               <p class="countdown-subcopy">Starting in...</p>
-              <div class="countdown-number" id="countdownNumber">3</div>
+              <div class="countdown-number" id="countdownNumber" aria-live="assertive">3</div>
             </section>
           </section>
 
@@ -523,7 +494,7 @@
               </div>
 
               <div class="problem-wrap minimalist">
-                <div class="problem-text" id="problemText">Ready when you are.</div>
+                <div class="problem-text" id="problemText" aria-live="polite">Ready when you are.</div>
               </div>
 
               <form id="answerForm" class="answer-form" autocomplete="off">
@@ -556,24 +527,25 @@
             <section class="panel carousel-panel results-screen-panel">
               <div class="carousel-shell-head">
                 <p class="section-kicker">Results</p>
-                <div class="carousel-actions">
-                  <button
-                    class="carousel-button"
-                    type="button"
-                    id="resultsPrevButton"
-                    aria-label="Previous results panel"
-                  >
-                    &#8249;
-                  </button>
-                  <button
-                    class="carousel-button"
-                    type="button"
-                    id="resultsNextButton"
-                    aria-label="Next results panel"
-                  >
-                    &#8250;
-                  </button>
-                </div>
+              </div>
+
+              <div class="carousel-actions carousel-actions-floating" aria-label="Results navigation">
+                <button
+                  class="carousel-button"
+                  type="button"
+                  id="resultsPrevButton"
+                  aria-label="Previous results panel"
+                >
+                  &#8249;
+                </button>
+                <button
+                  class="carousel-button"
+                  type="button"
+                  id="resultsNextButton"
+                  aria-label="Next results panel"
+                >
+                  &#8250;
+                </button>
               </div>
 
               <div class="results-carousel">
@@ -706,15 +678,20 @@
                     <h2>Where to build next</h2>
                   </div>
 
-                  <div class="focus-split">
-                    <section class="focus-panel">
-                      <h3 class="focus-panel-title">Recent Growth Opportunities</h3>
-                      <div class="focus-card-grid" id="resultsGrowthList"></div>
+                  <div class="focus-columns">
+                    <section class="focus-panel focus-column">
+                      <h3 class="focus-panel-title">Positive Progress</h3>
+                      <div class="focus-card-grid single-column-grid" id="resultsWinsList"></div>
                     </section>
 
-                    <section class="focus-panel">
+                    <section class="focus-panel focus-column">
                       <h3 class="focus-panel-title">Priority Targets</h3>
-                      <div class="focus-card-grid" id="resultsPriorityList"></div>
+                      <div class="focus-card-grid single-column-grid" id="resultsPriorityList"></div>
+                    </section>
+
+                    <section class="focus-panel focus-column">
+                      <h3 class="focus-panel-title">Growth Opportunities</h3>
+                      <div class="focus-card-grid single-column-grid" id="resultsGrowthList"></div>
                     </section>
                   </div>
                 </section>
@@ -726,24 +703,25 @@
             <section class="panel carousel-panel progress-screen-panel">
               <div class="carousel-shell-head">
                 <p class="section-kicker">My Progress</p>
-                <div class="carousel-actions">
-                  <button
-                    class="carousel-button"
-                    type="button"
-                    id="progressPrevButton"
-                    aria-label="Previous progress panel"
-                  >
-                    &#8249;
-                  </button>
-                  <button
-                    class="carousel-button"
-                    type="button"
-                    id="progressNextButton"
-                    aria-label="Next progress panel"
-                  >
-                    &#8250;
-                  </button>
-                </div>
+              </div>
+
+              <div class="carousel-actions carousel-actions-floating" aria-label="Progress navigation">
+                <button
+                  class="carousel-button"
+                  type="button"
+                  id="progressPrevButton"
+                  aria-label="Previous progress panel"
+                >
+                  &#8249;
+                </button>
+                <button
+                  class="carousel-button"
+                  type="button"
+                  id="progressNextButton"
+                  aria-label="Next progress panel"
+                >
+                  &#8250;
+                </button>
               </div>
 
               <div class="progress-carousel">
@@ -880,15 +858,20 @@
                     <h2>Where to build next</h2>
                   </div>
 
-                  <div class="focus-split">
-                    <section class="focus-panel">
-                      <h3 class="focus-panel-title">Recent Growth Opportunities</h3>
-                      <div class="focus-card-grid" id="progressGrowthList"></div>
+                  <div class="focus-columns">
+                    <section class="focus-panel focus-column">
+                      <h3 class="focus-panel-title">Positive Progress</h3>
+                      <div class="focus-card-grid single-column-grid" id="progressWinsList"></div>
                     </section>
 
-                    <section class="focus-panel">
+                    <section class="focus-panel focus-column">
                       <h3 class="focus-panel-title">Priority Targets</h3>
-                      <div class="focus-card-grid" id="progressPriorityList"></div>
+                      <div class="focus-card-grid single-column-grid" id="progressPriorityList"></div>
+                    </section>
+
+                    <section class="focus-panel focus-column">
+                      <h3 class="focus-panel-title">Growth Opportunities</h3>
+                      <div class="focus-card-grid single-column-grid" id="progressGrowthList"></div>
                     </section>
                   </div>
                 </section>
@@ -917,6 +900,7 @@
                           <select id="recordsModeSelect">
                             <option value="timed">High Intensity Training</option>
                             <option value="question-goal">Target Reps</option>
+                            <option value="isolation">Isolation Training</option>
                             <option value="zen">Zen Mode</option>
                             <option value="spar">Spar Mode</option>
                           </select>
@@ -958,13 +942,13 @@
 
           <section class="options-card">
             <p class="section-kicker">Version</p>
-            <p class="options-copy"><strong>v0.4.0</strong></p>
+            <p class="options-copy"><strong id="appVersion">v0.5.1</strong></p>
           </section>
 
           <section class="options-card">
             <p class="section-kicker">Most Recent Updates</p>
             <ul class="options-list">
-              <li>New Learn / Techniques mode with a 10x lesson flow</li>
+              <li>New two-screen Learn / Techniques flow with a stronger 10x lesson</li>
               <li>Dark workout theme and reworked app shell</li>
               <li>Carousel-style Results and My Progress views</li>
               <li>Timed, target, and endless workout types</li>
@@ -987,14 +971,6 @@
             <p class="section-kicker">End Workout</p>
             <h2>End workout?</h2>
           </div>
-          <button
-            class="carousel-button"
-            type="button"
-            id="endWorkoutCloseButton"
-            aria-label="Close end workout dialog"
-          >
-            &#10005;
-          </button>
         </div>
 
         <div class="options-stack">
@@ -1018,14 +994,6 @@
             <p class="section-kicker">Exit Lesson</p>
             <h2>Leave this technique?</h2>
           </div>
-          <button
-            class="carousel-button"
-            type="button"
-            id="exitTechniqueCloseButton"
-            aria-label="Close exit lesson dialog"
-          >
-            &#10005;
-          </button>
         </div>
 
         <div class="options-stack">

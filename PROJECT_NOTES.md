@@ -58,12 +58,24 @@ Use it for:
 - Review the current UX and identify what feels strong versus confusing.
 - Decide on the next round of redesign goals before editing UI structure again.
 - Add more important decisions here as they come up.
+- Build in sound as part of the next major update (answer feedback cues, milestone chimes, and a mute toggle).
+- Add a touch ergonomics pass for iPad/mobile with minimum tap targets around `44x44px` (prefer `48-56px` for primary controls).
+- iPad optimization plan for next major update:
+  - Add a dedicated tablet breakpoint band (target `768-1180px`) and avoid collapsing to single-column too early.
+  - Keep two-column layouts on iPad where useful (`header`, `setup`, `progress`, `records`) instead of using phone rules.
+  - Preserve compact right-rail sizing/anchoring for top nav + Workout Tracker so it aligns with lower panels in both portrait and landscape.
+  - Ensure touch ergonomics: minimum tap targets around `44x44px` (prefer `48-56px` for primary controls) with spacing between adjacent controls.
+  - Add orientation-aware tweaks for grids (e.g., techniques cards and warm-up pattern rows) so density stays readable on iPad portrait.
+  - Add iPad Safari polish: use dynamic viewport units where needed and support safe-area insets (`env(safe-area-inset-*)`).
+  - Add a lightweight visual/performance pass for tablet devices (reduce heavy blur/shadow where needed without changing theme direction).
+  - Add a focused QA pass on iPad resolutions before release (portrait + landscape, touch hit testing, carousel controls, keyboard/input flow).
 - Add a competitive mode called `Flex`.
 - Possible `Flex` directions:
   - points-based scoring for highest score
   - a short pressure timer that resets after each correct answer
   - timer expiry ends the run immediately
   - focus on speed, streaks, and competitive chaining
+- After the current structural refinement settles, do a dedicated motion pass for screen transitions, lesson-step transitions, carousel movement, and subtle reveal/feedback animations.
 
 ## Session Notes
 
@@ -76,6 +88,11 @@ Use it for:
 - Results heading should feel more alive and can rotate based on workout outcome.
 - Future settings direction, not yet built: full manual controls with preset buttons that snap the controls into recommended combinations.
 - Snapshot polish pass focused on heading hierarchy, tracker alignment, split-panel dividers, carousel controls, and terminology consistency.
+- Updated hero tagline to `Grow your brain & begin your reign.`
+- Techniques mode now needs to scale as a reusable teaching system, so the lesson labels were generalized to `Idea #1` and `Idea #2`.
+- `Guided` was renamed to `Assisted Reps` and `Check` was renamed to `Solo Reps` to keep the workout language consistent.
+- Warm Up in techniques should feel active and teacher-like, so blanks can auto-check and vary slightly from run to run.
+- Lesson completion should lead into a celebration moment, with optional further practice rather than forcing the learner straight on.
 
 ### 2026-04-22
 
@@ -109,3 +126,12 @@ Use it for:
   - keep practicing the same table lesson
   - generate questions in either direction
 - Other tables should appear in the UI but stay greyed out with `Coming Soon` until their lessons exist.
+
+### 2026-04-23
+
+- Started the next refinement pass with accessibility and interaction polish rather than layout restructuring.
+- Added keyboard support for carousel navigation (`Left`/`Right`) and faster escape routes (`Escape`) for dialogs and lesson exit flow.
+- Added active/hidden accessibility state syncing (`aria-current`, `aria-hidden`) for screens and carousel slides.
+- Added subtle motion polish with reduced-motion support to keep the app feeling lively without forcing animation-heavy behavior.
+- Removed duplicate `app.js` definitions that could drift over time (results title overrides and technique stage metadata).
+- Captured a note for the next major update: add optional sound design with a mute control.

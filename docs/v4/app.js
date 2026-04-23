@@ -2,6 +2,7 @@ const STORAGE_KEY = "multiplication-trainer-progress-v1";
 const SETTINGS_KEY = "multiplication-trainer-settings-v1";
 const HERO_MESSAGE_KEY = "multiplication-trainer-hero-message-v1";
 const RESULTS_MESSAGE_KEY_PREFIX = "multiplication-trainer-results-message-v1";
+const APP_VERSION = "v0.5.1";
 const FACTOR_LIMIT = 12;
 const TABLE_FACTORS = Array.from({ length: FACTOR_LIMIT }, (_, index) => index + 1);
 const QUESTION_PRESETS = [10, 20, 30];
@@ -25,10 +26,13 @@ const HERO_MESSAGES = [
   "Short workouts build strong recall.",
   "Every rep makes the next one lighter.",
   "Progress comes from showing up again.",
-  "Strong habits are built in ordinary days.",
+  "Strong habits are built on ordinary days.",
+  "Hard work beats talent alone",
+  "Productive struggle unleashes potential",
   "The weight gets lighter when the pattern gets familiar.",
   "Discipline turns effort into strength.",
   "When you build your mind, you don't have to use your muscles",
+  "When the going gets tough, the tough get going.",
 ];
 const RESULTS_TITLE_POOLS = {
   completed: [
@@ -45,7 +49,7 @@ const RESULTS_TITLE_POOLS = {
   ],
   strong: [
     "Beast Mode.",
-    "Fire 🔥",
+    "Fire.",
     "You were locked in.",
     "That effort showed.",
   ],
@@ -62,6 +66,16 @@ const OPERATION_CONFIG = {
 
 const RESULTS_SLIDES = ["summary", "tracker", "focus"];
 const PROGRESS_SLIDES = ["overview", "tracker", "facts", "focus", "records", "coach"];
+const TECHNIQUE_TABLE = 10;
+const TECHNIQUE_COMPLETION_GOAL = 5;
+const TECHNIQUE_AUTO_ADVANCE_MS = 1000;
+const TECHNIQUE_STEPS = [
+  { id: "rule", label: "Idea #1" },
+  { id: "switch", label: "Idea #2" },
+  { id: "pattern", label: "Warm Up" },
+  { id: "guided", label: "Assisted Reps" },
+  { id: "quick-check", label: "Solo Reps" },
+];
 
 const elements = {
   screens: Array.from(document.querySelectorAll(".screen")),
@@ -70,11 +84,12 @@ const elements = {
   optionsButton: document.getElementById("optionsButton"),
   optionsDialog: document.getElementById("optionsDialog"),
   optionsCloseButton: document.getElementById("optionsCloseButton"),
+  appVersion: document.getElementById("appVersion"),
   heroMessage: document.getElementById("heroMessage"),
   settingsForm: document.getElementById("settingsForm"),
   minFactor: document.getElementById("minFactor"),
   maxFactor: document.getElementById("maxFactor"),
-  focusField: document.getElementById("focusField"),
+  isolationField: document.getElementById("isolationField"),
   focusFactor: document.getElementById("focusFactor"),
   adaptiveMode: document.getElementById("adaptiveMode"),
   negativesMode: document.getElementById("negativesMode"),
@@ -147,21 +162,26 @@ const elements = {
   progressMonthNextButton: document.getElementById("progressMonthNextButton"),
   coachTip: document.getElementById("coachTip"),
   resultsGrowthList: document.getElementById("resultsGrowthList"),
+  resultsWinsList: document.getElementById("resultsWinsList"),
   resultsPriorityList: document.getElementById("resultsPriorityList"),
   progressGrowthList: document.getElementById("progressGrowthList"),
+  progressWinsList: document.getElementById("progressWinsList"),
   progressPriorityList: document.getElementById("progressPriorityList"),
   tableGrid: document.getElementById("tableGrid"),
   recordsModeSelect: document.getElementById("recordsModeSelect"),
   personalBestsList: document.getElementById("personalBestsList"),
   recentWorkoutsList: document.getElementById("recentWorkoutsList"),
+  techniqueScreenShell: document.getElementById("techniqueScreenShell"),
   attemptBadge: document.getElementById("attemptBadge"),
   accuracyBadge: document.getElementById("accuracyBadge"),
   attemptProgressLabel: document.getElementById("attemptProgressLabel"),
   accuracyProgressLabel: document.getElementById("accuracyProgressLabel"),
   endWorkoutDialog: document.getElementById("endWorkoutDialog"),
-  endWorkoutCloseButton: document.getElementById("endWorkoutCloseButton"),
   cancelEndWorkoutButton: document.getElementById("cancelEndWorkoutButton"),
   confirmEndWorkoutButton: document.getElementById("confirmEndWorkoutButton"),
+  exitTechniqueDialog: document.getElementById("exitTechniqueDialog"),
+  cancelExitTechniqueButton: document.getElementById("cancelExitTechniqueButton"),
+  confirmExitTechniqueButton: document.getElementById("confirmExitTechniqueButton"),
 };
 
 const state = {
@@ -176,12 +196,15 @@ const state = {
   sessionEndedAt: 0,
   lastQuestionKey: null,
   advanceTimeoutId: null,
+  techniqueAdvanceTimeoutId: null,
   countdownTimeoutId: null,
   hudIntervalId: null,
   resultsSlideIndex: 0,
   progressSlideIndex: 0,
   displayMonthKey: "",
   session: createEmptySession(),
+  technique: createTechniqueState(),
+  pendingTechniqueView: null,
 };
 
 function formatCount(value, singular, plural = `${singular}s`) {
@@ -198,6 +221,73 @@ function createEmptySession() {
     bestStreak: 0,
     responseTimes: [],
     recent: [],
+  };
+}
+
+function createTechniquePatternRows(table = TECHNIQUE_TABLE) {
+  // Warm-up progression: first row anchored with solved examples, then gradually harder blanks.
+  const blankAssignments = new Map([
+    [1, null],
+    [2, null],
+    [3, "answer-stem"],
+    [4, "factor"],
+    [5, "answer-stem"],
+    [6, "table"],
+    [7, "factor"],
+    [8, "answer-full"],
+    [9, "answer-full"],
+    [10, "answer-full"],
+    [11, "factor"],
+    [12, "answer-full"],
+  ]);
+
+  return TABLE_FACTORS.map((factor) => {
+    const blank = blankAssignments.get(factor) || null;
+    return {
+      factor,
+      blank,
+      value: "",
+      status: "idle",
+      expected:
+        blank === "answer-full"
+          ? `${factor * table}`
+          : blank === "answer-stem"
+          ? `${factor}`
+          : blank === "factor"
+            ? `${factor}`
+            : blank === "table"
+              ? `${table}`
+              : "",
+    };
+  });
+}
+
+function createTechniqueState(table = TECHNIQUE_TABLE, mode = "menu") {
+  return {
+    selectedTable: table,
+    mode,
+    stage: TECHNIQUE_STEPS[0].id,
+    patternRows: createTechniquePatternRows(table),
+    patternFeedback: { message: "", tone: "" },
+    guidedQuestions: createGuidedTechniqueQuestions(table),
+    guidedIndex: 0,
+    guidedAnswer: "",
+    guidedHintVisible: false,
+    guidedFeedback: { message: "", tone: "" },
+    guidedSolved: false,
+    quickCheckCorrect: 0,
+    quickCheckQuestion: createTechniqueQuestion(table),
+    quickCheckAnswer: "",
+    quickCheckHintVisible: false,
+    quickCheckFeedback: { message: "", tone: "" },
+    quickCheckSolved: false,
+    quickCheckHintOffered: false,
+    practiceQuestion: createTechniqueQuestion(table),
+    practiceAnswer: "",
+    practiceHintVisible: false,
+    practiceFeedback: { message: "", tone: "" },
+    practiceSolved: false,
+    focusFieldName: "",
   };
 }
 
@@ -225,6 +315,7 @@ function defaultProgress() {
     facts: {},
     dailyRecords: {},
     workoutHistory: [],
+    techniques: {},
   };
 }
 
@@ -233,7 +324,6 @@ function defaultSettingsSnapshot() {
     operation: "multiplication",
     minFactor: 2,
     maxFactor: 12,
-    questionStyle: "mixed",
     focusFactor: 7,
     adaptiveMode: true,
     negativesMode: false,
@@ -283,6 +373,7 @@ function normaliseWorkoutRecord(record) {
   const modeKey =
     record?.modeKey === "timed" ||
     record?.modeKey === "question-goal" ||
+    record?.modeKey === "isolation" ||
     record?.modeKey === "zen" ||
     record?.modeKey === "spar"
       ? record.modeKey
@@ -313,25 +404,38 @@ function normaliseWorkoutRecord(record) {
         ? record.sparTiming
         : "untimed",
     timeLimitMinutes: clampNumber(Number(record?.timeLimitMinutes), 0, 60, 0),
+    focusFactor: clampNumber(Number(record?.focusFactor), 1, FACTOR_LIMIT, 7),
+    minFactor: Math.min(
+      clampNumber(Number(record?.minFactor), 1, FACTOR_LIMIT, 2),
+      clampNumber(Number(record?.maxFactor), 1, FACTOR_LIMIT, FACTOR_LIMIT),
+    ),
+    maxFactor: Math.max(
+      clampNumber(Number(record?.minFactor), 1, FACTOR_LIMIT, 2),
+      clampNumber(Number(record?.maxFactor), 1, FACTOR_LIMIT, FACTOR_LIMIT),
+    ),
   };
 }
 
 function sanitiseSettingsSnapshot(settings) {
   const defaults = defaultSettingsSnapshot();
   const operation = OPERATION_CONFIG[settings?.operation] ? settings.operation : defaults.operation;
-  const questionStyle =
-    settings?.questionStyle === "focus" || settings?.mode === "focus"
-      ? "focus"
-      : "mixed";
+  const legacyIsolationMode = settings?.questionStyle === "focus" || settings?.mode === "focus";
+  const hasLegacyQuestionStyle = typeof settings?.questionStyle === "string";
   const legacySessionLength = Number(settings?.sessionLength);
-  const sessionType =
+  let sessionType = defaults.sessionType;
+  if (
     settings?.sessionType === "timed" ||
     settings?.sessionType === "question-goal" ||
-    settings?.sessionType === "endless"
-      ? settings.sessionType
-      : legacySessionLength === 0
-        ? "endless"
-        : defaults.sessionType;
+    settings?.sessionType === "endless" ||
+    settings?.sessionType === "isolation"
+  ) {
+    sessionType = settings.sessionType;
+  } else if (legacySessionLength === 0) {
+    sessionType = "endless";
+  }
+  if (hasLegacyQuestionStyle && legacyIsolationMode) {
+    sessionType = "isolation";
+  }
   const freeTrainingMode =
     settings?.freeTrainingMode === "spar" || settings?.freeTrainingMode === "zen"
       ? settings.freeTrainingMode
@@ -352,8 +456,8 @@ function sanitiseSettingsSnapshot(settings) {
     FACTOR_LIMIT,
     defaults.maxFactor,
   );
-  const minFactor = Math.min(rawMinFactor, rawMaxFactor);
-  const maxFactor = Math.max(rawMinFactor, rawMaxFactor);
+  const minFactorNormalised = Math.min(rawMinFactor, rawMaxFactor);
+  const maxFactorNormalised = Math.max(rawMinFactor, rawMaxFactor);
   const focusFactor = clampNumber(
     Number(settings?.focusFactor),
     1,
@@ -388,12 +492,14 @@ function sanitiseSettingsSnapshot(settings) {
       : TIME_PRESETS.includes(Number(settings?.timePreset))
         ? `${Number(settings.timePreset)}`
         : "custom";
+  const useIsolationControls = sessionType === "isolation";
+  const minFactor = useIsolationControls ? minFactorNormalised : defaults.minFactor;
+  const maxFactor = useIsolationControls ? maxFactorNormalised : defaults.maxFactor;
 
   return {
     operation,
     minFactor,
     maxFactor,
-    questionStyle,
     focusFactor,
     adaptiveMode:
       typeof settings?.adaptiveMode === "boolean"
@@ -452,6 +558,7 @@ function loadProgress() {
       facts: parsed.facts || {},
       dailyRecords,
       workoutHistory,
+      techniques: parsed.techniques || {},
     };
   } catch (error) {
     return defaultProgress();
@@ -533,6 +640,26 @@ function formatMonthLabel(date) {
   });
 }
 
+function formatRecordDateLabel(record) {
+  const hasDateKey =
+    typeof record?.dateKey === "string" && /^\d{4}-\d{2}-\d{2}$/.test(record.dateKey);
+  const sourceDate = hasDateKey
+    ? parseDateKey(record.dateKey)
+    : Number.isFinite(Number(record?.recordedAt))
+      ? new Date(Number(record.recordedAt))
+      : null;
+
+  if (!sourceDate || Number.isNaN(sourceDate.getTime())) {
+    return String(record?.dateKey || "");
+  }
+
+  return sourceDate.toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
 function getCheckedValue(name) {
   return document.querySelector(`input[name="${name}"]:checked`)?.value || "";
 }
@@ -552,19 +679,18 @@ function applySettingsSnapshot(settings) {
   elements.negativesMode.checked = snapshot.negativesMode;
   elements.questionCustom.value = `${snapshot.questionTarget}`;
   elements.timeCustom.value = `${snapshot.timeLimitMinutes}`;
-  setCheckedValue("questionStyle", snapshot.questionStyle);
   setCheckedValue("sessionType", snapshot.sessionType);
   setCheckedValue("freeTrainingMode", snapshot.freeTrainingMode);
   setCheckedValue("sparTiming", snapshot.sparTiming);
   setCheckedValue("questionPreset", snapshot.questionPreset);
   setCheckedValue("timePreset", snapshot.timePreset);
+  syncIsolationRangeControls();
 }
 
 function getFormSettingsSnapshot() {
   return sanitiseSettingsSnapshot({
     minFactor: Number(elements.minFactor.value),
     maxFactor: Number(elements.maxFactor.value),
-    questionStyle: getCheckedValue("questionStyle"),
     focusFactor: Number(elements.focusFactor.value),
     adaptiveMode: elements.adaptiveMode.checked,
     negativesMode: elements.negativesMode.checked,
@@ -586,44 +712,83 @@ function usesSessionCountdown(settings) {
   return settings.sessionType === "timed" || (isSparMode(settings) && settings.sparTiming === "timed");
 }
 
+function syncIsolationRangeControls(changedField = "") {
+  const minFactor = clampNumber(
+    Number(elements.minFactor.value),
+    1,
+    FACTOR_LIMIT,
+    defaultSettingsSnapshot().minFactor,
+  );
+  const maxFactor = clampNumber(
+    Number(elements.maxFactor.value),
+    1,
+    FACTOR_LIMIT,
+    defaultSettingsSnapshot().maxFactor,
+  );
+  let nextMin = minFactor;
+  let nextMax = maxFactor;
+
+  if (nextMin > nextMax) {
+    if (changedField === "min") {
+      nextMax = nextMin;
+    } else {
+      nextMin = nextMax;
+    }
+  }
+
+  elements.minFactor.value = `${nextMin}`;
+  elements.maxFactor.value = `${nextMax}`;
+
+  Array.from(elements.minFactor.options).forEach((option) => {
+    option.disabled = Number(option.value) > nextMax;
+  });
+  Array.from(elements.maxFactor.options).forEach((option) => {
+    option.disabled = Number(option.value) < nextMin;
+  });
+}
+
 function toggleSetupFields() {
-  const questionStyle = getCheckedValue("questionStyle");
   const sessionType = getCheckedValue("sessionType");
   const freeTrainingMode = getCheckedValue("freeTrainingMode");
   const sparTiming = getCheckedValue("sparTiming");
   const questionPreset = getCheckedValue("questionPreset");
   const timePreset = getCheckedValue("timePreset");
+  const defaults = defaultSettingsSnapshot();
+  const isolationMode = sessionType === "isolation";
+  const questionGoalMode = sessionType === "question-goal" || isolationMode;
+  const countdownMode =
+    sessionType === "timed" ||
+    (sessionType === "endless" && freeTrainingMode === "spar" && sparTiming === "timed");
 
-  elements.focusField.classList.toggle("is-hidden", questionStyle !== "focus");
+  if (!isolationMode) {
+    elements.minFactor.value = `${defaults.minFactor}`;
+    elements.maxFactor.value = `${defaults.maxFactor}`;
+  }
+
+  syncIsolationRangeControls();
+  elements.isolationField.classList.toggle("is-hidden", !isolationMode);
+  elements.focusFactor.disabled = !isolationMode;
+  elements.minFactor.disabled = !isolationMode;
+  elements.maxFactor.disabled = !isolationMode;
+
   elements.freeTrainingField.classList.toggle("is-hidden", sessionType !== "endless");
   elements.sparTimingField.classList.toggle(
     "is-hidden",
     sessionType !== "endless" || freeTrainingMode !== "spar",
   );
-  elements.timeField.classList.toggle(
-    "is-hidden",
-    !(sessionType === "timed" || (sessionType === "endless" && freeTrainingMode === "spar" && sparTiming === "timed")),
-  );
-  elements.questionTargetField.classList.toggle(
-    "is-hidden",
-    sessionType !== "question-goal",
-  );
+  elements.timeField.classList.toggle("is-hidden", !countdownMode);
+  elements.questionTargetField.classList.toggle("is-hidden", !questionGoalMode);
   elements.timeCustomField.classList.toggle(
     "is-hidden",
-    !(sessionType === "timed" || (sessionType === "endless" && freeTrainingMode === "spar" && sparTiming === "timed")) ||
-      timePreset !== "custom",
+    !countdownMode || timePreset !== "custom",
   );
   elements.questionCustomField.classList.toggle(
     "is-hidden",
-    sessionType !== "question-goal" || questionPreset !== "custom",
+    !questionGoalMode || questionPreset !== "custom",
   );
 }
 
 function readSettings() {
-  const minFactor = Number(elements.minFactor.value);
-  const maxFactor = Number(elements.maxFactor.value);
-  const focusFactor = Number(elements.focusFactor.value);
-  const questionStyle = getCheckedValue("questionStyle");
   const sessionType = getCheckedValue("sessionType");
   const freeTrainingMode = getCheckedValue("freeTrainingMode");
   const sparTiming = getCheckedValue("sparTiming");
@@ -631,18 +796,26 @@ function readSettings() {
   const timePreset = getCheckedValue("timePreset");
   const adaptiveMode = elements.adaptiveMode.checked;
   const negativesMode = elements.negativesMode.checked;
+  const isolationMode = sessionType === "isolation";
 
-  if (
-    Number.isNaN(minFactor) ||
-    Number.isNaN(maxFactor) ||
-    Number.isNaN(focusFactor) ||
-    minFactor < 1 ||
-    maxFactor > FACTOR_LIMIT ||
-    focusFactor < 1 ||
-    focusFactor > FACTOR_LIMIT ||
-    minFactor > maxFactor
-  ) {
-    return { error: "Choose a valid practice range between 1 and 12." };
+  syncIsolationRangeControls();
+  const minFactor = Number(elements.minFactor.value);
+  const maxFactor = Number(elements.maxFactor.value);
+  const focusFactor = Number(elements.focusFactor.value);
+
+  if (isolationMode) {
+    if (
+      Number.isNaN(minFactor) ||
+      Number.isNaN(maxFactor) ||
+      Number.isNaN(focusFactor) ||
+      minFactor < 1 ||
+      maxFactor > FACTOR_LIMIT ||
+      focusFactor < 1 ||
+      focusFactor > FACTOR_LIMIT ||
+      minFactor > maxFactor
+    ) {
+      return { error: "Choose a valid isolation range between 1 and 12." };
+    }
   }
 
   const questionTarget =
@@ -652,7 +825,7 @@ function readSettings() {
   const timeLimitMinutes =
     timePreset === "custom" ? Number(elements.timeCustom.value) : Number(timePreset);
 
-  if (sessionType === "question-goal") {
+  if (sessionType === "question-goal" || sessionType === "isolation") {
     if (Number.isNaN(questionTarget) || questionTarget < 5 || questionTarget > 200) {
       return { error: "Choose an attempt goal between 5 and 200." };
     }
@@ -667,7 +840,6 @@ function readSettings() {
   return sanitiseSettingsSnapshot({
     minFactor,
     maxFactor,
-    questionStyle,
     focusFactor,
     adaptiveMode,
     negativesMode,
@@ -732,15 +904,15 @@ function formatMinutesLabel(minutes) {
 }
 
 function getQuestionStyleLabel(settings) {
-  return settings.questionStyle === "focus"
-    ? `Isolation - x ${settings.focusFactor}`
+  return settings.sessionType === "isolation"
+    ? `Isolation x ${settings.focusFactor} (${settings.minFactor}-${settings.maxFactor})`
     : "Full Circuit";
 }
 
 function getQuestionStylePreviewLabel(settings) {
-  return settings.questionStyle === "focus"
-    ? "Isolation - Keeps the workout focused on one table."
-    : "Full Circuit - Mixes facts across your selected range.";
+  return settings.sessionType === "isolation"
+    ? `Isolation drill for x ${settings.focusFactor}, paired with factors ${settings.minFactor} through ${settings.maxFactor}.`
+    : "Full Circuit - Mixes facts across the standard workout range.";
 }
 
 function getSessionTypeLabel(settings) {
@@ -750,6 +922,10 @@ function getSessionTypeLabel(settings) {
 
   if (settings.sessionType === "question-goal") {
     return `Target Reps - ${settings.questionTarget} attempts`;
+  }
+
+  if (settings.sessionType === "isolation") {
+    return `Isolation Training - x ${settings.focusFactor} for ${settings.questionTarget} reps`;
   }
 
   if (settings.freeTrainingMode === "spar") {
@@ -762,16 +938,17 @@ function getSessionTypeLabel(settings) {
 }
 
 function getSessionBadgeLabel(settings) {
-  const styleLabel =
-    settings.questionStyle === "focus"
-      ? `Isolation x ${settings.focusFactor}`
-      : "Full Circuit";
+  const styleLabel = getQuestionStyleLabel(settings).replace(/\s\(\d+-\d+\)$/, "");
 
   if (settings.sessionType === "timed") {
     return `${styleLabel} - HIT ${settings.timeLimitMinutes}m`;
   }
 
   if (settings.sessionType === "question-goal") {
+    return `${styleLabel} - ${settings.questionTarget} reps`;
+  }
+
+  if (settings.sessionType === "isolation") {
     return `${styleLabel} - ${settings.questionTarget} reps`;
   }
 
@@ -791,6 +968,10 @@ function getSetupPreviewNote(settings) {
 
   if (settings.sessionType === "question-goal") {
     return `Answer ${settings.questionTarget} questions to finish the workout. Skipping doesn't count!`;
+  }
+
+  if (settings.sessionType === "isolation") {
+    return `Drill x ${settings.focusFactor} with factors ${settings.minFactor}-${settings.maxFactor} for ${settings.questionTarget} total reps.`;
   }
 
   if (settings.freeTrainingMode === "spar") {
@@ -815,6 +996,918 @@ function getHeroMessage() {
   }
 }
 
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function formatTechniqueDigits(value, highlightFactor = false) {
+  return String(value)
+    .split("")
+    .map((digit) => {
+      if (digit === "0") {
+        return '<span class="technique-zero">0</span>';
+      }
+
+      const safeDigit = escapeHtml(digit);
+      return highlightFactor ? `<span class="technique-factor">${safeDigit}</span>` : safeDigit;
+    })
+    .join("");
+}
+
+function formatTechniqueNumber(value) {
+  return formatTechniqueDigits(value, false);
+}
+
+function formatTechniqueFactorValue(value) {
+  return formatTechniqueDigits(value, true);
+}
+
+function formatTechniqueCarryValue(value) {
+  return value === TECHNIQUE_TABLE ? formatTechniqueNumber(value) : formatTechniqueFactorValue(value);
+}
+
+function getTechniqueCarryFactor(left, right) {
+  if (left === TECHNIQUE_TABLE && right !== TECHNIQUE_TABLE) {
+    return right;
+  }
+
+  if (right === TECHNIQUE_TABLE && left !== TECHNIQUE_TABLE) {
+    return left;
+  }
+
+  return null;
+}
+
+function formatTechniqueAnswerValue(answer, carryFactor = null) {
+  if (
+    carryFactor !== null &&
+    carryFactor !== TECHNIQUE_TABLE &&
+    String(answer) === `${carryFactor}${TECHNIQUE_TABLE}`
+  ) {
+    return `${formatTechniqueFactorValue(carryFactor)}<span class="technique-zero">0</span>`;
+  }
+
+  return formatTechniqueNumber(answer);
+}
+
+function formatTechniqueEquation(left, right) {
+  const highlightedLeft =
+    left === TECHNIQUE_TABLE ? formatTechniqueNumber(left) : formatTechniqueFactorValue(left);
+  const highlightedRight =
+    right === TECHNIQUE_TABLE ? formatTechniqueNumber(right) : formatTechniqueFactorValue(right);
+
+  return `${highlightedLeft} x ${highlightedRight}`;
+}
+
+function createTechniqueQuestion(table = TECHNIQUE_TABLE, forceReversed = null) {
+  const reversed =
+    typeof forceReversed === "boolean" ? forceReversed : Math.random() > 0.5;
+  const otherFactor = TABLE_FACTORS[Math.floor(Math.random() * TABLE_FACTORS.length)];
+
+  return {
+    table,
+    otherFactor,
+    left: reversed ? table : otherFactor,
+    right: reversed ? otherFactor : table,
+    reversed,
+    answer: otherFactor * table,
+  };
+}
+
+function createGuidedTechniqueQuestions(table = TECHNIQUE_TABLE) {
+  const shuffledFactors = [...TABLE_FACTORS].sort(() => Math.random() - 0.5);
+  const selectedFactors = shuffledFactors.slice(0, 4);
+
+  return [
+    {
+      table,
+      otherFactor: selectedFactors[0],
+      left: selectedFactors[0],
+      right: table,
+      reversed: false,
+      answer: selectedFactors[0] * table,
+    },
+    {
+      table,
+      otherFactor: selectedFactors[1],
+      left: selectedFactors[1],
+      right: table,
+      reversed: false,
+      answer: selectedFactors[1] * table,
+    },
+    {
+      table,
+      otherFactor: selectedFactors[2],
+      left: table,
+      right: selectedFactors[2],
+      reversed: true,
+      answer: selectedFactors[2] * table,
+    },
+    {
+      table,
+      otherFactor: selectedFactors[3],
+      left: table,
+      right: selectedFactors[3],
+      reversed: true,
+      answer: selectedFactors[3] * table,
+    },
+  ];
+}
+
+function getTechniqueStageIndex(stage) {
+  return TECHNIQUE_STEPS.findIndex((step) => step.id === stage);
+}
+
+function advanceTechniqueStage() {
+  const currentIndex = getTechniqueStageIndex(state.technique.stage);
+  const nextStep = TECHNIQUE_STEPS[currentIndex + 1];
+  if (nextStep) {
+    state.technique.stage = nextStep.id;
+  }
+}
+
+function retreatTechniqueStage() {
+  const currentIndex = getTechniqueStageIndex(state.technique.stage);
+  const previousStep = TECHNIQUE_STEPS[currentIndex - 1];
+  if (previousStep) {
+    state.technique.stage = previousStep.id;
+  }
+}
+
+function isTechniqueAvailable(table) {
+  return table === TECHNIQUE_TABLE;
+}
+
+function clearTechniqueAdvanceTimer() {
+  window.clearTimeout(state.techniqueAdvanceTimeoutId);
+  state.techniqueAdvanceTimeoutId = null;
+}
+
+function getTechniqueProgressRecord(table) {
+  return {
+    completed: false,
+    completedAt: null,
+    ...(state.progress.techniques?.[table] || {}),
+  };
+}
+
+function markTechniqueCompleted(table) {
+  state.progress.techniques = state.progress.techniques || {};
+  state.progress.techniques[table] = {
+    completed: true,
+    completedAt: Date.now(),
+  };
+  saveProgress();
+}
+
+function resetTechniqueState(table = TECHNIQUE_TABLE, mode = "menu") {
+  clearTechniqueAdvanceTimer();
+  state.technique = createTechniqueState(table, mode);
+}
+
+function getTechniqueHintMarkup(question) {
+  const factorMarkup =
+    question.otherFactor === TECHNIQUE_TABLE
+      ? `<strong>${escapeHtml(question.otherFactor)}</strong>`
+      : `<strong class="technique-factor">${escapeHtml(question.otherFactor)}</strong>`;
+  return `Take ${factorMarkup} and place a zero next to it.`;
+}
+
+function getTechniqueCardStatus(table) {
+  if (!isTechniqueAvailable(table)) {
+    return {
+      classes: "",
+      pill: "Coming Soon",
+      note: "Coming soon.",
+    };
+  }
+
+  const progress = getTechniqueProgressRecord(table);
+  if (progress.completed) {
+    return {
+      classes: " is-completed",
+      pill: "Completed",
+      note: "Lesson complete.",
+    };
+  }
+
+  return {
+    classes: " is-active",
+    pill: "Ready",
+    note: "Learn the 10x shortcut.",
+  };
+}
+
+function getTechniqueTableGridMarkup() {
+  return TABLE_FACTORS.map((factor) => {
+    const available = isTechniqueAvailable(factor);
+    const status = getTechniqueCardStatus(factor);
+
+    return `
+      <button
+        class="technique-card${status.classes}"
+        type="button"
+        data-technique-select="${factor}"
+        ${available ? "" : "disabled"}
+      >
+        <span class="technique-card-pill">${status.pill}</span>
+        <strong>x ${factor}</strong>
+        <span class="technique-card-note">${status.note}</span>
+      </button>
+    `;
+  }).join("");
+}
+
+function getTechniqueStagePillsMarkup() {
+  return TECHNIQUE_STEPS.map(
+    (step) => `
+      <span class="technique-stage-pill ${step.id === state.technique.stage ? "is-active" : ""}">
+        ${step.label}
+      </span>
+    `,
+  ).join("");
+}
+
+function getTechniquePatternRowByFactor(factor) {
+  return state.technique.patternRows.find((row) => row.factor === factor);
+}
+
+function isTechniquePatternComplete() {
+  return state.technique.patternRows
+    .filter((row) => row.blank)
+    .every((row) => row.status === "correct");
+}
+
+function getTechniquePatternSignalMarkup(row) {
+  return getTechniqueStatusIconMarkup(row.status);
+}
+
+function getTechniqueStatusIconMarkup(status, extraClass = "") {
+  const classes = ["technique-status-icon"];
+  if (extraClass) {
+    classes.push(extraClass);
+  }
+
+  if (status === "correct") {
+    classes.push("is-correct");
+    return `
+      <span class="${classes.join(" ")}" aria-label="Correct">
+        <svg viewBox="0 0 16 16" role="presentation">
+          <path d="M3.2 8.4 6.6 11.8 12.8 5.6" />
+        </svg>
+      </span>
+    `;
+  }
+
+  if (status === "error") {
+    classes.push("is-error");
+    return `
+      <span class="${classes.join(" ")}" aria-label="Try again">
+        <svg viewBox="0 0 16 16" role="presentation">
+          <path d="M4.6 4.6 11.4 11.4 M11.4 4.6 4.6 11.4" />
+        </svg>
+      </span>
+    `;
+  }
+
+  return `<span class="${classes.join(" ")}" aria-hidden="true"></span>`;
+}
+
+function getTechniquePatternRowClasses(row) {
+  const classes = ["technique-pattern-row"];
+  if (row.status === "correct") {
+    classes.push("is-correct");
+  } else if (row.status === "error") {
+    classes.push("is-error");
+  }
+  return classes.join(" ");
+}
+
+function getTechniquePatternInputClasses(row, isWide = false) {
+  const classes = ["technique-inline-input"];
+  if (isWide) {
+    classes.push("is-wide");
+  }
+  if (row.status === "correct") {
+    classes.push("is-correct");
+  } else if (row.status === "error") {
+    classes.push("is-error");
+  }
+  return classes.join(" ");
+}
+
+function getTechniquePatternRowMarkup(row) {
+  const autofocus =
+    state.technique.focusFieldName === `pattern-${row.factor}` ? 'data-technique-autofocus="true"' : "";
+
+  if (row.blank === "answer-stem") {
+    return `
+      <div class="${getTechniquePatternRowClasses(row)}" data-technique-pattern-row="${row.factor}">
+        <span>${formatTechniqueCarryValue(row.factor)} x ${formatTechniqueNumber(TECHNIQUE_TABLE)} =</span>
+        <input
+          class="${getTechniquePatternInputClasses(row)}"
+          type="text"
+          name="pattern-${row.factor}"
+          inputmode="numeric"
+          pattern="[0-9]*"
+          value="${escapeHtml(row.value)}"
+          aria-label="Missing digits before the zero in ${row.factor} times 10"
+          ${autofocus}
+        />
+        <span><span class="technique-zero">0</span></span>
+        <span class="technique-pattern-signal">${getTechniquePatternSignalMarkup(row)}</span>
+      </div>
+    `;
+  }
+
+  if (row.blank === "answer-full") {
+    return `
+      <div class="${getTechniquePatternRowClasses(row)}" data-technique-pattern-row="${row.factor}">
+        <span>${formatTechniqueCarryValue(row.factor)} x ${formatTechniqueNumber(TECHNIQUE_TABLE)} =</span>
+        <input
+          class="${getTechniquePatternInputClasses(row, true)}"
+          type="text"
+          name="pattern-${row.factor}"
+          inputmode="numeric"
+          pattern="[0-9]*"
+          value="${escapeHtml(row.value)}"
+          aria-label="Missing answer in ${row.factor} times 10"
+          ${autofocus}
+        />
+        <span class="technique-pattern-signal">${getTechniquePatternSignalMarkup(row)}</span>
+      </div>
+    `;
+  }
+
+  if (row.blank === "factor") {
+    return `
+      <div class="${getTechniquePatternRowClasses(row)}" data-technique-pattern-row="${row.factor}">
+        <input
+          class="${getTechniquePatternInputClasses(row, true)}"
+          type="text"
+          name="pattern-${row.factor}"
+          inputmode="numeric"
+          pattern="[0-9]*"
+          value="${escapeHtml(row.value)}"
+          aria-label="Missing factor in the ${row.factor} times 10 fact"
+          ${autofocus}
+        />
+        <span>x ${formatTechniqueNumber(TECHNIQUE_TABLE)} = ${formatTechniqueAnswerValue(
+          row.factor * TECHNIQUE_TABLE,
+          row.factor,
+        )}</span>
+        <span class="technique-pattern-signal">${getTechniquePatternSignalMarkup(row)}</span>
+      </div>
+    `;
+  }
+
+  if (row.blank === "table") {
+    return `
+      <div class="${getTechniquePatternRowClasses(row)}" data-technique-pattern-row="${row.factor}">
+        <span>${formatTechniqueCarryValue(row.factor)} x</span>
+        <input
+          class="${getTechniquePatternInputClasses(row)}"
+          type="text"
+          name="pattern-${row.factor}"
+          inputmode="numeric"
+          pattern="[0-9]*"
+          value="${escapeHtml(row.value)}"
+          aria-label="Missing 10 factor in the ${row.factor} times 10 fact"
+          ${autofocus}
+        />
+        <span>= ${formatTechniqueAnswerValue(row.factor * TECHNIQUE_TABLE, row.factor)}</span>
+        <span class="technique-pattern-signal">${getTechniquePatternSignalMarkup(row)}</span>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="${getTechniquePatternRowClasses(row)}" data-technique-pattern-row="${row.factor}">
+      <span>${formatTechniqueCarryValue(row.factor)} x ${formatTechniqueNumber(TECHNIQUE_TABLE)} = ${formatTechniqueAnswerValue(
+        row.factor * TECHNIQUE_TABLE,
+        row.factor,
+      )}</span>
+    </div>
+  `;
+}
+
+function getTechniqueStageMeta(stage) {
+  switch (stage) {
+    case "rule":
+      return {
+        kicker: "10x Technique",
+        title: "Place the Zero.",
+      };
+    case "switch":
+      return {
+        kicker: "10x Technique",
+        title: "The order can flip.",
+      };
+    case "pattern":
+      return {
+        kicker: "10x Technique",
+        title: "Warm Up.",
+      };
+    case "guided":
+      return {
+        kicker: "10x Technique",
+        title: "Try it with support.",
+      };
+    case "quick-check":
+      return {
+        kicker: "10x Technique",
+        title: "Show it on your own.",
+      };
+    default:
+      return {
+        kicker: "10x Technique",
+        title: "Keep the 10x table feeling easy.",
+      };
+  }
+}
+
+function renderTechniqueMenuScreen() {
+  return `
+    <div class="technique-menu-shell">
+      <div class="section-heading compact">
+        <div>
+          <p class="section-kicker">Learn</p>
+          <h2>Techniques</h2>
+        </div>
+      </div>
+
+      <p class="technique-menu-copy">
+        Learn techniques and tricks to master multiplications, then lock it in with calm reps
+      </p>
+
+      <div class="technique-table-grid">${getTechniqueTableGridMarkup()}</div>
+    </div>
+  `;
+}
+
+function renderTechniqueRuleStage() {
+  return `
+    <section class="technique-lesson-card">
+      <p class="technique-helper">
+        When multiplying a number by ${formatTechniqueNumber(
+          TECHNIQUE_TABLE,
+        )}, place a zero next to the number.
+      </p>
+      <div class="technique-rule-grid">
+        <article class="technique-example-card">
+          <p class="technique-equation">${formatTechniqueFactorValue(7)} x ${formatTechniqueNumber(TECHNIQUE_TABLE)} = ${formatTechniqueAnswerValue(70, 7)}</p>
+          <p class="technique-caption">Keep the ${formatTechniqueFactorValue(7)}. Place the zero next to it.</p>
+        </article>
+        <article class="technique-example-card">
+          <p class="technique-equation">${formatTechniqueFactorValue(12)} x ${formatTechniqueNumber(TECHNIQUE_TABLE)} = ${formatTechniqueAnswerValue(120, 12)}</p>
+          <p class="technique-caption">The ${formatTechniqueFactorValue(12)} stays. The zero goes after it.</p>
+        </article>
+      </div>
+      <div class="technique-action-row technique-action-row-end">
+        <button class="primary-button" type="button" data-technique-action="next-stage">
+          Continue
+        </button>
+      </div>
+    </section>
+  `;
+}
+
+function renderTechniqueSwitchStage() {
+  return `
+    <section class="technique-lesson-card">
+      <p class="technique-helper">
+        It doesn't matter which way the fact is written, we can still use the same technique.
+      </p>
+      <div class="technique-switch-grid">
+        <article class="technique-switch-card">
+          <p class="technique-equation">${formatTechniqueFactorValue(6)} x ${formatTechniqueNumber(TECHNIQUE_TABLE)} = ${formatTechniqueAnswerValue(60, 6)}</p>
+          <p class="technique-caption">Start with the ${formatTechniqueFactorValue(6)}. Then place the zero.</p>
+        </article>
+        <article class="technique-switch-card">
+          <p class="technique-equation">${formatTechniqueNumber(TECHNIQUE_TABLE)} x ${formatTechniqueFactorValue(6)} = ${formatTechniqueAnswerValue(60, 6)}</p>
+          <p class="technique-caption">The 6 is still the number that matters.</p>
+        </article>
+        <article class="technique-switch-card">
+          <p class="technique-equation">${formatTechniqueFactorValue(9)} x ${formatTechniqueNumber(TECHNIQUE_TABLE)} = ${formatTechniqueAnswerValue(90, 9)}</p>
+          <p class="technique-caption">Same idea.</p>
+        </article>
+        <article class="technique-switch-card">
+          <p class="technique-equation">${formatTechniqueNumber(TECHNIQUE_TABLE)} x ${formatTechniqueFactorValue(9)} = ${formatTechniqueAnswerValue(90, 9)}</p>
+          <p class="technique-caption">Same answer.</p>
+        </article>
+      </div>
+      <div class="technique-action-row">
+        <button class="ghost-button" type="button" data-technique-action="prev-stage">
+          Back
+        </button>
+        <button class="primary-button" type="button" data-technique-action="next-stage">
+          Continue
+        </button>
+      </div>
+    </section>
+  `;
+}
+
+function renderTechniquePatternStage() {
+  return `
+    <section class="technique-lesson-card">
+      <p class="technique-helper">
+        Fill in the blanks to make each fact true.
+      </p>
+      <div class="technique-pattern-grid">
+        ${state.technique.patternRows.map(getTechniquePatternRowMarkup).join("")}
+      </div>
+      <p class="sr-only" aria-live="polite" data-technique-pattern-feedback>
+        ${state.technique.patternFeedback.message}
+      </p>
+      <div class="technique-action-row">
+        <button class="ghost-button" type="button" data-technique-action="prev-stage">
+          Back
+        </button>
+        <div class="technique-side-actions">
+          <button
+            class="primary-button"
+            type="button"
+            data-technique-action="next-stage"
+            ${isTechniquePatternComplete() ? "" : "disabled"}
+          >
+            Continue
+          </button>
+        </div>
+      </div>
+    </section>
+  `;
+}
+
+function renderTechniqueGuidedStage() {
+  const question = state.technique.guidedQuestions[state.technique.guidedIndex];
+  const feedback = state.technique.guidedFeedback;
+  const answerState = state.technique.guidedSolved
+    ? "correct"
+    : feedback.tone === "error"
+      ? "error"
+      : "idle";
+
+  return `
+    <form class="technique-lesson-card technique-question-shell" data-technique-form="guided" autocomplete="off">
+      <div class="technique-question-meta">
+        <span class="technique-progress-copy">Assisted rep ${
+          state.technique.guidedIndex + 1
+        } of ${state.technique.guidedQuestions.length}</span>
+      </div>
+      <p class="technique-question">${formatTechniqueEquation(question.left, question.right)} = ?</p>
+      <div class="technique-input-row">
+        <div class="technique-answer-wrap ${
+          answerState === "correct" ? "is-correct" : answerState === "error" ? "is-error" : ""
+        }">
+          <label class="answer-field">
+            <span class="sr-only">Technique answer</span>
+            <input
+              type="text"
+              name="techniqueAnswer"
+              inputmode="numeric"
+              pattern="[0-9]*"
+              placeholder="Type the full answer"
+              value="${escapeHtml(state.technique.guidedAnswer)}"
+              ${state.technique.guidedSolved ? "disabled" : ""}
+              data-technique-autofocus="true"
+            />
+          </label>
+          <span class="technique-answer-signal">
+            ${getTechniqueStatusIconMarkup(answerState, "technique-status-icon-inline")}
+          </span>
+        </div>
+        <button class="primary-button" type="submit" ${state.technique.guidedSolved ? "disabled" : ""}>
+          Check Answer
+        </button>
+      </div>
+      ${
+        state.technique.guidedHintVisible
+          ? `<div class="technique-hint">${getTechniqueHintMarkup(question)}</div>`
+          : ""
+      }
+      <p class="sr-only" aria-live="polite">${feedback.message}</p>
+      <div class="technique-action-row">
+        <button class="ghost-button" type="button" data-technique-action="prev-stage">
+          Back
+        </button>
+        <div class="technique-side-actions">
+          ${
+            !state.technique.guidedHintVisible && !state.technique.guidedSolved
+              ? `
+                <button class="ghost-button" type="button" data-technique-action="show-guided-hint">
+                  Show Hint
+                </button>
+              `
+              : ""
+          }
+        </div>
+      </div>
+    </form>
+  `;
+}
+
+function renderTechniqueQuickCheckStage() {
+  const question = state.technique.quickCheckQuestion;
+  const feedback = state.technique.quickCheckFeedback;
+  const answerState = state.technique.quickCheckSolved
+    ? "correct"
+    : feedback.tone === "error"
+      ? "error"
+      : "idle";
+  const hintAvailable =
+    state.technique.quickCheckHintVisible || state.technique.quickCheckHintOffered;
+
+  return `
+    <form class="technique-lesson-card technique-question-shell" data-technique-form="quick-check" autocomplete="off">
+      <div class="technique-question-meta">
+        <span class="technique-progress-copy">Correct answers: ${
+          state.technique.quickCheckCorrect
+        } / ${TECHNIQUE_COMPLETION_GOAL}</span>
+      </div>
+      <p class="technique-question">${formatTechniqueEquation(question.left, question.right)} = ?</p>
+      <div class="technique-input-row">
+        <div class="technique-answer-wrap ${
+          answerState === "correct" ? "is-correct" : answerState === "error" ? "is-error" : ""
+        }">
+          <label class="answer-field">
+            <span class="sr-only">Solo reps answer</span>
+            <input
+              type="text"
+              name="techniqueAnswer"
+              inputmode="numeric"
+              pattern="[0-9]*"
+              placeholder="Type the full answer"
+              value="${escapeHtml(state.technique.quickCheckAnswer)}"
+              ${state.technique.quickCheckSolved ? "disabled" : ""}
+              data-technique-autofocus="true"
+            />
+          </label>
+          <span class="technique-answer-signal">
+            ${getTechniqueStatusIconMarkup(answerState, "technique-status-icon-inline")}
+          </span>
+        </div>
+        <button class="primary-button" type="submit" ${state.technique.quickCheckSolved ? "disabled" : ""}>
+          Check Answer
+        </button>
+      </div>
+      ${
+        state.technique.quickCheckHintVisible
+          ? `<div class="technique-hint">${getTechniqueHintMarkup(question)}</div>`
+          : ""
+      }
+      <p class="sr-only" aria-live="polite">${feedback.message}</p>
+      <div class="technique-action-row">
+        <button class="ghost-button" type="button" data-technique-action="prev-stage">
+          Back
+        </button>
+        <div class="technique-side-actions">
+          ${
+            hintAvailable && !state.technique.quickCheckSolved && !state.technique.quickCheckHintVisible
+              ? `
+                <button class="ghost-button" type="button" data-technique-action="show-quick-hint">
+                  Hint
+                </button>
+              `
+              : ""
+          }
+        </div>
+      </div>
+    </form>
+  `;
+}
+
+function renderTechniquePracticeStage() {
+  const question = state.technique.practiceQuestion;
+  const feedback = state.technique.practiceFeedback;
+
+  return `
+    <div class="technique-lesson-wrap">
+      <div class="technique-lesson-head">
+        <div>
+          <p class="section-kicker">Practice More</p>
+          <h2>Keep the 10x table feeling easy.</h2>
+        </div>
+        <button class="ghost-button subtle-button" type="button" data-technique-action="back-to-techniques">
+          Back to Techniques
+        </button>
+      </div>
+
+      <form class="technique-lesson-card technique-question-shell" data-technique-form="practice" autocomplete="off">
+        <div class="technique-question-meta">
+          <span class="technique-progress-copy">Questions can flip either way now.</span>
+        </div>
+        <p class="technique-question">${formatTechniqueEquation(question.left, question.right)} = ?</p>
+        <div class="technique-input-row">
+          <label class="answer-field">
+            <span class="sr-only">Practice answer</span>
+            <input
+              type="text"
+              name="techniqueAnswer"
+              inputmode="numeric"
+              pattern="[0-9]*"
+              placeholder="Type the full answer"
+              value="${escapeHtml(state.technique.practiceAnswer)}"
+              data-technique-autofocus="true"
+            />
+          </label>
+          <button class="primary-button" type="submit">
+            Check Answer
+          </button>
+        </div>
+        ${
+          state.technique.practiceHintVisible
+            ? `<div class="technique-hint">${getTechniqueHintMarkup(question)}</div>`
+            : ""
+        }
+        <p class="technique-feedback ${feedback.tone}">${feedback.message}</p>
+        <div class="technique-action-row">
+          ${
+            !state.technique.practiceHintVisible
+              ? `
+                <button class="ghost-button" type="button" data-technique-action="show-practice-hint">
+                  Hint
+                </button>
+              `
+              : '<span class="technique-progress-copy">Use the hint when you want a quick reminder.</span>'
+          }
+          <div class="technique-side-actions">
+            ${
+              state.technique.practiceSolved
+                ? `
+                  <button class="primary-button" type="button" data-technique-action="next-practice">
+                    Next Practice Question
+                  </button>
+                `
+                : ""
+            }
+          </div>
+        </div>
+      </form>
+    </div>
+  `;
+}
+
+function renderTechniqueCelebrationScreen() {
+  return `
+    <div class="technique-celebration-shell">
+      <div class="technique-completion-card">
+        <p class="section-kicker">Lesson Complete</p>
+        <h2>10x technique complete.</h2>
+        <p class="technique-completion-copy">
+          You finished the lesson and locked in ${TECHNIQUE_COMPLETION_GOAL} solo reps. Keep building from here, or head back and choose your next move.
+        </p>
+        <div class="technique-completion-actions">
+          <button class="ghost-button" type="button" data-technique-action="back-to-techniques">
+            Back to Techniques
+          </button>
+          <button class="ghost-button" type="button" data-technique-action="open-practice">
+            Practice More
+          </button>
+          <button class="primary-button" type="button" data-technique-action="back-to-setup">
+            Go to Work Out
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function getTechniqueStageMarkup() {
+  if (state.technique.stage === "rule") {
+    return renderTechniqueRuleStage();
+  }
+
+  if (state.technique.stage === "switch") {
+    return renderTechniqueSwitchStage();
+  }
+
+  if (state.technique.stage === "pattern") {
+    return renderTechniquePatternStage();
+  }
+
+  if (state.technique.stage === "guided") {
+    return renderTechniqueGuidedStage();
+  }
+
+  return renderTechniqueQuickCheckStage();
+}
+
+function focusTechniqueField() {
+  const root = elements.techniqueScreenShell;
+  if (!root) {
+    return;
+  }
+
+  let target = null;
+
+  if (state.technique.focusFieldName) {
+    target = root.querySelector(`[name="${state.technique.focusFieldName}"]`);
+  }
+
+  if (!target) {
+    target = root.querySelector("[data-technique-autofocus]");
+  }
+
+  if (target) {
+    window.requestAnimationFrame(() => {
+      target.focus();
+      if (target.name === "techniqueAnswer" && typeof target.select === "function") {
+        target.select();
+      }
+    });
+  }
+}
+
+function renderTechniqueLessonScreen() {
+  const stageMeta = getTechniqueStageMeta(state.technique.stage);
+
+  return `
+    <div class="technique-lesson-wrap">
+      <div class="technique-lesson-head">
+        <div>
+          <p class="section-kicker">${stageMeta.kicker}</p>
+          <h2>${stageMeta.title}</h2>
+        </div>
+        <button class="ghost-button subtle-button" type="button" data-technique-action="exit">
+          Exit Lesson
+        </button>
+      </div>
+      <div class="technique-stage-pills">${getTechniqueStagePillsMarkup()}</div>
+      ${getTechniqueStageMarkup()}
+    </div>
+  `;
+}
+
+function renderTechniqueScreen() {
+  if (!elements.techniqueScreenShell) {
+    return;
+  }
+
+  if (state.technique.mode === "menu") {
+    elements.techniqueScreenShell.innerHTML = renderTechniqueMenuScreen();
+  } else if (state.technique.mode === "celebration") {
+    elements.techniqueScreenShell.innerHTML = renderTechniqueCelebrationScreen();
+  } else if (state.technique.mode === "practice") {
+    elements.techniqueScreenShell.innerHTML = renderTechniquePracticeStage();
+  } else {
+    elements.techniqueScreenShell.innerHTML = renderTechniqueLessonScreen();
+  }
+
+  focusTechniqueField();
+}
+
+function openTechniqueExitDialog(targetView) {
+  state.pendingTechniqueView = targetView;
+  if (!elements.exitTechniqueDialog.open) {
+    elements.exitTechniqueDialog.showModal();
+  }
+}
+
+function cancelTechniqueExit() {
+  state.pendingTechniqueView = null;
+  elements.exitTechniqueDialog.close();
+}
+
+function confirmTechniqueExit() {
+  const targetView = state.pendingTechniqueView || "techniques";
+  state.pendingTechniqueView = null;
+  elements.exitTechniqueDialog.close();
+  resetTechniqueState(state.technique.selectedTable, "menu");
+  renderTechniqueScreen();
+
+  if (targetView !== "techniques") {
+    showView(targetView);
+  }
+}
+
+function requestView(targetView) {
+  if (state.active || !targetView) {
+    return;
+  }
+
+  if (
+    state.view === "techniques" &&
+    ["lesson", "practice"].includes(state.technique.mode) &&
+    targetView !== "techniques"
+  ) {
+    openTechniqueExitDialog(targetView);
+    return;
+  }
+
+  if (targetView === "techniques" && state.view !== "techniques") {
+    resetTechniqueState(state.technique.selectedTable, "menu");
+    renderTechniqueScreen();
+  }
+
+  showView(targetView);
+}
+
 function viewMatchesButton(view, buttonTarget) {
   if (buttonTarget === "setup") {
     return ["setup", "countdown", "practice", "results"].includes(view);
@@ -827,13 +1920,483 @@ function showView(view) {
   state.view = view;
 
   elements.screens.forEach((screen) => {
-    screen.classList.toggle("is-active", screen.dataset.view === view);
+    const isActiveScreen = screen.dataset.view === view;
+    screen.classList.toggle("is-active", isActiveScreen);
+    screen.setAttribute("aria-hidden", isActiveScreen ? "false" : "true");
   });
 
   elements.navButtons.forEach((button) => {
-    button.classList.toggle("is-active", viewMatchesButton(view, button.dataset.viewTarget));
+    const isActiveButton = viewMatchesButton(view, button.dataset.viewTarget);
+    button.classList.toggle("is-active", isActiveButton);
+    if (isActiveButton) {
+      button.setAttribute("aria-current", "page");
+    } else {
+      button.removeAttribute("aria-current");
+    }
     button.disabled = state.active;
   });
+
+  elements.optionsButton.disabled = state.active;
+}
+
+function isTypingTarget(target) {
+  if (!(target instanceof HTMLElement)) {
+    return false;
+  }
+
+  const tagName = target.tagName;
+  return (
+    tagName === "INPUT" ||
+    tagName === "TEXTAREA" ||
+    tagName === "SELECT" ||
+    target.isContentEditable
+  );
+}
+
+function closeOpenDialog() {
+  if (elements.endWorkoutDialog.open) {
+    elements.endWorkoutDialog.close();
+    return true;
+  }
+
+  if (elements.optionsDialog.open) {
+    elements.optionsDialog.close();
+    return true;
+  }
+
+  if (elements.exitTechniqueDialog.open) {
+    elements.exitTechniqueDialog.close();
+    state.pendingTechniqueView = null;
+    return true;
+  }
+
+  return false;
+}
+
+function handleGlobalKeydown(event) {
+  if (event.defaultPrevented) {
+    return;
+  }
+
+  if (event.key === "Escape") {
+    if (closeOpenDialog()) {
+      event.preventDefault();
+      return;
+    }
+
+    if (
+      !state.active &&
+      state.view === "techniques" &&
+      ["lesson", "practice"].includes(state.technique.mode)
+    ) {
+      event.preventDefault();
+      openTechniqueExitDialog("techniques");
+    }
+
+    return;
+  }
+
+  if (
+    state.active ||
+    event.altKey ||
+    event.ctrlKey ||
+    event.metaKey ||
+    isTypingTarget(event.target)
+  ) {
+    return;
+  }
+
+  if (state.view === "results") {
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      shiftResultsCarousel(-1);
+    } else if (event.key === "ArrowRight") {
+      event.preventDefault();
+      shiftResultsCarousel(1);
+    }
+    return;
+  }
+
+  if (state.view === "progress") {
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      shiftProgressCarousel(-1);
+    } else if (event.key === "ArrowRight") {
+      event.preventDefault();
+      shiftProgressCarousel(1);
+    }
+  }
+}
+
+function sanitiseTechniqueEntry(value) {
+  return String(value || "").replace(/[^\d]/g, "");
+}
+
+function updateTechniquePatternRow(name, value) {
+  const factor = Number(name.replace("pattern-", ""));
+  const row = getTechniquePatternRowByFactor(factor);
+  if (!row) {
+    return;
+  }
+
+  row.value = value;
+  if (!value) {
+    row.status = "idle";
+  } else if (value === row.expected) {
+    row.status = "correct";
+  } else {
+    row.status = "error";
+  }
+
+  if (isTechniquePatternComplete()) {
+    state.technique.patternFeedback = {
+      message: "Strong. The whole 10x pattern is holding together.",
+      tone: "success",
+    };
+  } else {
+    state.technique.patternFeedback = {
+      message: "",
+      tone: "",
+    };
+  }
+}
+
+function renderTechniquePatternProgress() {
+  const root = elements.techniqueScreenShell;
+  if (!root || state.technique.stage !== "pattern") {
+    return;
+  }
+
+  state.technique.patternRows.forEach((row) => {
+    const rowElement = root.querySelector(`[data-technique-pattern-row="${row.factor}"]`);
+    if (!rowElement) {
+      return;
+    }
+
+    rowElement.className = getTechniquePatternRowClasses(row);
+    const input = rowElement.querySelector(`input[name="pattern-${row.factor}"]`);
+    if (input) {
+      const isWide = row.blank === "answer-full" || row.blank === "factor";
+      input.className = getTechniquePatternInputClasses(row, isWide);
+    }
+
+    const signal = rowElement.querySelector(".technique-pattern-signal");
+    if (signal) {
+      signal.innerHTML = getTechniquePatternSignalMarkup(row);
+    }
+  });
+
+  const feedback = root.querySelector("[data-technique-pattern-feedback]");
+  if (feedback) {
+    feedback.textContent = state.technique.patternFeedback.message;
+  }
+
+  const continueButton = root.querySelector('[data-technique-action="next-stage"]');
+  if (continueButton instanceof HTMLButtonElement) {
+    continueButton.disabled = !isTechniquePatternComplete();
+  }
+}
+
+function submitGuidedTechniqueAnswer() {
+  const question = state.technique.guidedQuestions[state.technique.guidedIndex];
+  const answer = state.technique.guidedAnswer.trim();
+
+  clearTechniqueAdvanceTimer();
+
+  if (answer === `${question.answer}`) {
+    state.technique.guidedSolved = true;
+    state.technique.guidedHintVisible = false;
+    state.technique.guidedFeedback = {
+      message: "Nice. That one is locked in.",
+      tone: "success",
+    };
+    renderTechniqueScreen();
+    state.techniqueAdvanceTimeoutId = window.setTimeout(() => {
+      if (state.technique.guidedIndex >= state.technique.guidedQuestions.length - 1) {
+        state.technique.stage = "quick-check";
+      } else {
+        state.technique.guidedIndex += 1;
+      }
+
+      state.technique.guidedAnswer = "";
+      state.technique.guidedSolved = false;
+      state.technique.guidedHintVisible = false;
+      state.technique.guidedFeedback = { message: "", tone: "" };
+      clearTechniqueAdvanceTimer();
+      renderTechniqueScreen();
+    }, TECHNIQUE_AUTO_ADVANCE_MS);
+    return;
+  }
+
+  state.technique.guidedSolved = false;
+  state.technique.guidedFeedback = {
+    message: "Not yet. Keep the same fact and use the hint if you want support.",
+    tone: "error",
+  };
+  renderTechniqueScreen();
+}
+
+function submitQuickCheckAnswer() {
+  const question = state.technique.quickCheckQuestion;
+  const answer = state.technique.quickCheckAnswer.trim();
+  clearTechniqueAdvanceTimer();
+
+  if (answer === `${question.answer}`) {
+    state.technique.quickCheckCorrect += 1;
+    state.technique.quickCheckSolved = true;
+    state.technique.quickCheckHintVisible = false;
+    state.technique.quickCheckHintOffered = false;
+    state.technique.quickCheckFeedback = {
+      message:
+        state.technique.quickCheckCorrect >= TECHNIQUE_COMPLETION_GOAL
+          ? "Strong work. You finished the solo reps."
+          : "Correct. Keep the pattern steady.",
+      tone: "success",
+    };
+
+    if (state.technique.quickCheckCorrect >= TECHNIQUE_COMPLETION_GOAL) {
+      markTechniqueCompleted(state.technique.selectedTable);
+    }
+
+    renderTechniqueScreen();
+    state.techniqueAdvanceTimeoutId = window.setTimeout(() => {
+      if (state.technique.quickCheckCorrect >= TECHNIQUE_COMPLETION_GOAL) {
+        state.technique.mode = "celebration";
+      } else {
+        state.technique.quickCheckQuestion = createTechniqueQuestion(state.technique.selectedTable);
+      }
+
+      state.technique.quickCheckAnswer = "";
+      state.technique.quickCheckSolved = false;
+      state.technique.quickCheckHintVisible = false;
+      state.technique.quickCheckHintOffered = false;
+      state.technique.quickCheckFeedback = { message: "", tone: "" };
+      clearTechniqueAdvanceTimer();
+      renderTechniqueScreen();
+    }, TECHNIQUE_AUTO_ADVANCE_MS);
+    return;
+  } else {
+    state.technique.quickCheckAnswer = "";
+    state.technique.quickCheckSolved = false;
+    state.technique.quickCheckHintVisible = false;
+    state.technique.quickCheckHintOffered = true;
+    state.technique.quickCheckFeedback = {
+      message: "Wrong this time. The same fact stays here, and you can ask for a hint.",
+      tone: "error",
+    };
+  }
+
+  renderTechniqueScreen();
+}
+
+function submitTechniquePracticeAnswer() {
+  const question = state.technique.practiceQuestion;
+  const answer = state.technique.practiceAnswer.trim();
+
+  if (answer === `${question.answer}`) {
+    state.technique.practiceSolved = true;
+    state.technique.practiceHintVisible = false;
+    state.technique.practiceFeedback = {
+      message: "Correct. Keep the table feeling easy.",
+      tone: "success",
+    };
+  } else {
+    state.technique.practiceSolved = false;
+    state.technique.practiceFeedback = {
+      message: "Not yet. Stay with the same fact and use the hint if you want support.",
+      tone: "error",
+    };
+  }
+
+  renderTechniqueScreen();
+}
+
+function handleTechniqueLessonSubmit(event) {
+  const form = event.target;
+
+  if (!(form instanceof HTMLFormElement) || !form.dataset.techniqueForm) {
+    return;
+  }
+
+  event.preventDefault();
+
+  if (form.dataset.techniqueForm === "pattern") {
+    return;
+  }
+
+  if (form.dataset.techniqueForm === "guided") {
+    submitGuidedTechniqueAnswer();
+    return;
+  }
+
+  if (form.dataset.techniqueForm === "quick-check") {
+    if (state.technique.quickCheckSolved) {
+      return;
+    }
+    submitQuickCheckAnswer();
+    return;
+  }
+
+  if (form.dataset.techniqueForm === "practice") {
+    submitTechniquePracticeAnswer();
+  }
+}
+
+function handleTechniqueInput(event) {
+  const input = event.target;
+  if (!(input instanceof HTMLInputElement)) {
+    return;
+  }
+
+  if (input.name.startsWith("pattern-")) {
+    const nextValue = sanitiseTechniqueEntry(input.value);
+    input.value = nextValue;
+    state.technique.focusFieldName = input.name;
+    updateTechniquePatternRow(input.name, nextValue);
+    renderTechniquePatternProgress();
+    return;
+  }
+
+  if (input.name !== "techniqueAnswer") {
+    return;
+  }
+
+  const nextValue = sanitiseTechniqueEntry(input.value);
+  input.value = nextValue;
+  state.technique.focusFieldName = input.name;
+
+  if (state.technique.mode === "practice") {
+    state.technique.practiceAnswer = nextValue;
+    return;
+  }
+
+  if (state.technique.stage === "guided") {
+    state.technique.guidedAnswer = nextValue;
+    return;
+  }
+
+  if (state.technique.stage === "quick-check") {
+    if (state.technique.quickCheckSolved) {
+      return;
+    }
+    clearTechniqueAdvanceTimer();
+    state.technique.quickCheckAnswer = nextValue;
+  }
+}
+
+function handleTechniqueAction(action) {
+  clearTechniqueAdvanceTimer();
+
+  if (action === "next-stage") {
+    if (state.technique.stage === "pattern" && !isTechniquePatternComplete()) {
+      return;
+    }
+    advanceTechniqueStage();
+    renderTechniqueScreen();
+    return;
+  }
+
+  if (action === "prev-stage") {
+    retreatTechniqueStage();
+    renderTechniqueScreen();
+    return;
+  }
+
+  if (action === "show-guided-hint") {
+    state.technique.guidedHintVisible = true;
+    renderTechniqueScreen();
+    return;
+  }
+
+  if (action === "show-quick-hint") {
+    state.technique.quickCheckHintVisible = true;
+    renderTechniqueScreen();
+    return;
+  }
+
+  if (action === "next-quick") {
+    if (state.technique.quickCheckCorrect >= TECHNIQUE_COMPLETION_GOAL) {
+      state.technique.mode = "celebration";
+    } else {
+      state.technique.quickCheckQuestion = createTechniqueQuestion(state.technique.selectedTable);
+      state.technique.quickCheckAnswer = "";
+      state.technique.quickCheckSolved = false;
+      state.technique.quickCheckHintVisible = false;
+      state.technique.quickCheckHintOffered = false;
+      state.technique.quickCheckFeedback = { message: "", tone: "" };
+    }
+
+    renderTechniqueScreen();
+    return;
+  }
+
+  if (action === "show-practice-hint") {
+    state.technique.practiceHintVisible = true;
+    renderTechniqueScreen();
+    return;
+  }
+
+  if (action === "next-practice") {
+    state.technique.practiceQuestion = createTechniqueQuestion(state.technique.selectedTable);
+    state.technique.practiceAnswer = "";
+    state.technique.practiceSolved = false;
+    state.technique.practiceHintVisible = false;
+    state.technique.practiceFeedback = { message: "", tone: "" };
+    renderTechniqueScreen();
+    return;
+  }
+
+  if (action === "open-practice") {
+    state.technique.mode = "practice";
+    state.technique.practiceQuestion = createTechniqueQuestion(state.technique.selectedTable);
+    state.technique.practiceAnswer = "";
+    state.technique.practiceSolved = false;
+    state.technique.practiceHintVisible = false;
+    state.technique.practiceFeedback = { message: "", tone: "" };
+    renderTechniqueScreen();
+    return;
+  }
+
+  if (action === "back-to-techniques") {
+    resetTechniqueState(state.technique.selectedTable, "menu");
+    renderTechniqueScreen();
+    return;
+  }
+
+  if (action === "back-to-setup") {
+    resetTechniqueState(state.technique.selectedTable, "menu");
+    renderTechniqueScreen();
+    showView("setup");
+    return;
+  }
+
+  if (action === "exit") {
+    openTechniqueExitDialog("techniques");
+  }
+}
+
+function handleTechniqueLessonClick(event) {
+  const actionButton = event.target.closest("[data-technique-action]");
+  if (!actionButton) {
+    return;
+  }
+
+  handleTechniqueAction(actionButton.dataset.techniqueAction);
+}
+
+function handleTechniqueTableClick(event) {
+  const button = event.target.closest("[data-technique-select]");
+  if (!button) {
+    return;
+  }
+
+  const table = Number(button.dataset.techniqueSelect);
+  if (!isTechniqueAvailable(table)) {
+    return;
+  }
+
+  resetTechniqueState(table, "lesson");
+  renderTechniqueScreen();
 }
 
 function renderSetupPreview() {
@@ -895,7 +2458,7 @@ function addSignedVariants(map, leftMagnitude, rightMagnitude, includeNegatives)
 function buildMultiplicationPool(settings) {
   const map = new Map();
 
-  if (settings.questionStyle === "focus") {
+  if (settings.sessionType === "isolation") {
     for (let factor = settings.minFactor; factor <= settings.maxFactor; factor += 1) {
       addSignedVariants(map, settings.focusFactor, factor, settings.negativesMode);
     }
@@ -1148,7 +2711,7 @@ function renderPracticeProgress() {
   let progressLabel = "Ready";
   let fillColor = ENDLESS_COLORS[0];
 
-  if (settings.sessionType === "question-goal") {
+  if (settings.sessionType === "question-goal" || settings.sessionType === "isolation") {
     fillRatio =
       settings.questionTarget > 0
         ? Math.min(state.session.attempted / settings.questionTarget, 1)
@@ -1308,7 +2871,10 @@ function startSession(settings) {
 }
 
 function isSessionComplete() {
-  if (state.settings.sessionType === "question-goal") {
+  if (
+    state.settings.sessionType === "question-goal" ||
+    state.settings.sessionType === "isolation"
+  ) {
     return state.session.attempted >= state.settings.questionTarget;
   }
 
@@ -1348,6 +2914,10 @@ function getWorkoutModeKey(settings) {
     return "question-goal";
   }
 
+  if (settings.sessionType === "isolation") {
+    return "isolation";
+  }
+
   return settings.freeTrainingMode === "spar" ? "spar" : "zen";
 }
 
@@ -1358,6 +2928,9 @@ function getWorkoutModeLabelFromSettings(settings) {
   }
   if (modeKey === "question-goal") {
     return "Target Reps";
+  }
+  if (modeKey === "isolation") {
+    return `Isolation Training (x ${settings.focusFactor})`;
   }
   if (modeKey === "spar") {
     return settings.sparTiming === "timed" ? "Spar Mode (Timed)" : "Spar Mode";
@@ -1375,6 +2948,9 @@ function getWorkoutModeLabel(record) {
   }
   if (record.modeKey === "question-goal") {
     return "Target Reps";
+  }
+  if (record.modeKey === "isolation") {
+    return `Isolation Training (x ${record.focusFactor || 7})`;
   }
   if (record.modeKey === "spar") {
     return record.sparTiming === "timed" ? "Spar Mode (Timed)" : "Spar Mode";
@@ -1404,6 +2980,9 @@ function appendWorkoutHistory(reason) {
     freeTrainingMode: state.settings.freeTrainingMode,
     sparTiming: state.settings.sparTiming,
     timeLimitMinutes: usesSessionCountdown(state.settings) ? state.settings.timeLimitMinutes : 0,
+    focusFactor: state.settings.focusFactor,
+    minFactor: state.settings.minFactor,
+    maxFactor: state.settings.maxFactor,
   });
 
   state.progress.workoutHistory = [record, ...state.progress.workoutHistory].slice(0, 50);
@@ -1462,11 +3041,15 @@ function registerAnswer(evaluation, answerValue, options = {}) {
   const sparMode = isSparMode(state.settings);
 
   if (skipped) {
+    state.session.attempted += 1;
     state.session.skipped += 1;
     state.session.streak = 0;
+    state.progress.totalAttempted += 1;
     if (sparMode) {
       state.session.sparStrikes += 1;
     }
+    updateDailyRecordForAttempt(false);
+    updateFactProgress(state.currentQuestion, false, null);
     registerRecentAnswer("Skipped", null, true, null);
   } else {
     const isCorrect = Boolean(evaluation.isCorrect);
@@ -1620,7 +3203,7 @@ function renderResults(reason) {
   }
 
   if (reason === "manual" && !improved && !strongPerformance) {
-    titleMessage = "You still showed up today.";
+    titleMessage = "A journey of a thousand miles begins with one step.";
   }
 
   elements.resultsTitle.textContent = titleMessage;
@@ -1702,6 +3285,10 @@ function getRecordsModeSortValue(record, modeKey) {
     return [record.accuracy, -(record.averageMs ?? Number.MAX_SAFE_INTEGER), record.correct, record.bestStreak];
   }
 
+  if (modeKey === "isolation") {
+    return [record.accuracy, record.correct, -(record.averageMs ?? Number.MAX_SAFE_INTEGER), record.bestStreak];
+  }
+
   if (modeKey === "spar") {
     return [record.correct, record.attempted, record.accuracy, record.bestStreak];
   }
@@ -1747,8 +3334,9 @@ function renderPersonalBests() {
       <article class="focus-card record-card">
         <div class="focus-card-top">
           <div class="fact-name">#${index + 1} ${getWorkoutModeLabel(record)}</div>
-          <div class="focus-chip">${record.correct} correct</div>
+          <div class="focus-chip success-chip">${record.correct} correct</div>
         </div>
+        <div class="fact-meta">${formatRecordDateLabel(record)}</div>
         <div class="fact-meta">${record.attempted} attempts | ${formatPercent(record.accuracy)} accuracy</div>
         <div class="fact-meta">${record.averageMs === null ? "No pace yet" : `${formatQuestionDuration(record.averageMs)} avg pace`}</div>
       </article>
@@ -1777,7 +3365,7 @@ function renderRecentWorkouts() {
       <article class="focus-card record-card">
         <div class="focus-card-top">
           <div class="fact-name">${getWorkoutModeLabel(record)}</div>
-          <div class="focus-chip subtle-chip">${record.dateKey}</div>
+          <div class="focus-chip subtle-chip">${formatRecordDateLabel(record)}</div>
         </div>
         <div class="fact-meta">${record.correct} correct out of ${record.attempted} attempts</div>
         <div class="fact-meta">${formatPercent(record.accuracy)} accuracy${record.averageMs === null ? "" : ` | ${formatQuestionDuration(record.averageMs)} avg pace`}</div>
@@ -1824,12 +3412,21 @@ function renderPriorityList(target, troubleFacts) {
   target.innerHTML = troubleFacts
     .map((fact) => {
       const [a, b] = fact.key.split("x");
+      let chipLabel = "Low Accuracy";
+
+      if (fact.attempts <= 1 && fact.correct === 0) {
+        chipLabel = "Fresh Miss";
+      } else if (fact.mastery < 0.45) {
+        chipLabel = "Needs Reps";
+      } else if (fact.misses >= 3) {
+        chipLabel = "Sticking Point";
+      }
 
       return `
         <article class="focus-card">
           <div class="focus-card-top">
             <div class="fact-name">${a} x ${b}</div>
-            <div class="focus-chip">Priority</div>
+            <div class="focus-chip">${chipLabel}</div>
           </div>
           <div class="fact-meta">${fact.correct} / ${fact.attempts} correct</div>
           <div class="fact-meta">${Math.round(fact.mastery * 100)}% accuracy</div>
@@ -1890,7 +3487,6 @@ function renderGrowthList(target, items) {
         <article class="focus-card">
           <div class="focus-card-top">
             <div class="fact-name">${item.equation}</div>
-            <div class="focus-chip subtle-chip">Recent</div>
           </div>
           <div class="fact-meta">${summary}</div>
           <div class="fact-meta">${history}</div>
@@ -1900,10 +3496,64 @@ function renderGrowthList(target, items) {
     .join("");
 }
 
+function getPositiveProgressItems(limit = 3) {
+  return Object.entries(state.progress.facts)
+    .map(([key, value]) => ({
+      key,
+      ...value,
+      mastery: value.attempts ? value.correct / value.attempts : 0,
+    }))
+    .filter((fact) => fact.attempts > 0 && fact.mastery >= 0.72)
+    .sort(
+      (left, right) =>
+        right.mastery - left.mastery ||
+        right.correct - left.correct ||
+        right.attempts - left.attempts,
+    )
+    .slice(0, limit);
+}
+
+function renderPositiveProgressList(target, items) {
+  if (!target) {
+    return;
+  }
+
+  if (!items.length) {
+    target.innerHTML = `
+      <div class="focus-card empty-state">
+        <div class="fact-meta">Strong facts will start showing up here as your tables settle in.</div>
+      </div>
+    `;
+    return;
+  }
+
+  target.innerHTML = items
+    .map((fact) => {
+      const [a, b] = fact.key.split("x");
+      const chipLabel = fact.mastery >= 0.9 ? "Strong" : "Improving";
+      const chipClass = fact.mastery >= 0.9 ? "success-chip" : "warning-chip";
+
+      return `
+        <article class="focus-card">
+          <div class="focus-card-top">
+            <div class="fact-name">${a} x ${b}</div>
+            <div class="focus-chip ${chipClass}">${chipLabel}</div>
+          </div>
+          <div class="fact-meta">${fact.correct} / ${fact.attempts} correct</div>
+          <div class="fact-meta">${Math.round(fact.mastery * 100)}% accuracy</div>
+        </article>
+      `;
+    })
+    .join("");
+}
+
 function renderFocusAreas() {
   const troubleFacts = getTroubleFacts();
   const growthItems = getGrowthOpportunityItems();
+  const positiveItems = getPositiveProgressItems();
 
+  renderPositiveProgressList(elements.resultsWinsList, positiveItems);
+  renderPositiveProgressList(elements.progressWinsList, positiveItems);
   renderGrowthList(elements.resultsGrowthList, growthItems);
   renderGrowthList(elements.progressGrowthList, growthItems);
   renderPriorityList(elements.resultsPriorityList, troubleFacts);
@@ -2232,15 +3882,18 @@ function renderStreakPanel() {
 
 function renderResultsCarousel() {
   elements.resultsSlides.forEach((slide) => {
-    slide.classList.toggle(
-      "is-active",
-      slide.dataset.resultsSlide === RESULTS_SLIDES[state.resultsSlideIndex],
-    );
+    const isActiveSlide =
+      slide.dataset.resultsSlide === RESULTS_SLIDES[state.resultsSlideIndex];
+    slide.classList.toggle("is-active", isActiveSlide);
+    slide.setAttribute("aria-hidden", isActiveSlide ? "false" : "true");
   });
 
-  elements.resultsPrevButton.disabled = state.resultsSlideIndex === 0;
-  elements.resultsNextButton.disabled =
-    state.resultsSlideIndex === RESULTS_SLIDES.length - 1;
+  const atStart = state.resultsSlideIndex === 0;
+  const atEnd = state.resultsSlideIndex === RESULTS_SLIDES.length - 1;
+  elements.resultsPrevButton.hidden = false;
+  elements.resultsNextButton.hidden = false;
+  elements.resultsPrevButton.disabled = atStart;
+  elements.resultsNextButton.disabled = atEnd;
 }
 
 function shiftResultsCarousel(direction) {
@@ -2255,15 +3908,18 @@ function shiftResultsCarousel(direction) {
 
 function renderProgressCarousel() {
   elements.progressSlides.forEach((slide) => {
-    slide.classList.toggle(
-      "is-active",
-      slide.dataset.progressSlide === PROGRESS_SLIDES[state.progressSlideIndex],
-    );
+    const isActiveSlide =
+      slide.dataset.progressSlide === PROGRESS_SLIDES[state.progressSlideIndex];
+    slide.classList.toggle("is-active", isActiveSlide);
+    slide.setAttribute("aria-hidden", isActiveSlide ? "false" : "true");
   });
 
-  elements.progressPrevButton.disabled = state.progressSlideIndex === 0;
-  elements.progressNextButton.disabled =
-    state.progressSlideIndex === PROGRESS_SLIDES.length - 1;
+  const atStart = state.progressSlideIndex === 0;
+  const atEnd = state.progressSlideIndex === PROGRESS_SLIDES.length - 1;
+  elements.progressPrevButton.hidden = false;
+  elements.progressNextButton.hidden = false;
+  elements.progressPrevButton.disabled = atStart;
+  elements.progressNextButton.disabled = atEnd;
 }
 
 function shiftProgressCarousel(direction) {
@@ -2291,7 +3947,12 @@ function registerBackdropClose(dialog) {
   });
 }
 
-function handleSettingsChange() {
+function handleSettingsChange(event) {
+  const changedField =
+    event?.target?.id === "minFactor" ? "min" : event?.target?.id === "maxFactor" ? "max" : "";
+  if (changedField) {
+    syncIsolationRangeControls(changedField);
+  }
   toggleSetupFields();
   renderSetupPreview();
   saveSettingsSnapshot(getCurrentSettingsPreview());
@@ -2319,6 +3980,9 @@ function resetProgress() {
 }
 
 function initialise() {
+  if (elements.appVersion) {
+    elements.appVersion.textContent = APP_VERSION;
+  }
   elements.heroMessage.textContent = getHeroMessage();
   state.displayMonthKey = getMonthKey(getCurrentMonthDate());
 
@@ -2329,6 +3993,7 @@ function initialise() {
   renderDailyProgress();
   renderOverall();
   renderFocusAreas();
+  renderWorkoutHistory();
   renderCoachTip();
   renderTableRadar();
   renderCalendars();
@@ -2338,6 +4003,7 @@ function initialise() {
   renderPracticeProgress();
   renderSessionTimer();
   renderQuestionTimer(0);
+  renderTechniqueScreen();
   setFeedback("");
   showView("setup");
 
@@ -2355,6 +4021,7 @@ function initialise() {
 
   elements.settingsForm.addEventListener("input", handleSettingsChange);
   elements.settingsForm.addEventListener("change", handleSettingsChange);
+  document.addEventListener("keydown", handleGlobalKeydown);
   elements.answerForm.addEventListener("submit", handleSubmit);
   elements.skipButton.addEventListener("click", handleSkip);
   elements.finishSessionButton.addEventListener("click", handleFinishSession);
@@ -2369,9 +4036,8 @@ function initialise() {
   elements.optionsCloseButton.addEventListener("click", () => {
     elements.optionsDialog.close();
   });
-  elements.endWorkoutCloseButton.addEventListener("click", () => {
-    elements.endWorkoutDialog.close();
-  });
+  elements.cancelExitTechniqueButton.addEventListener("click", cancelTechniqueExit);
+  elements.confirmExitTechniqueButton.addEventListener("click", confirmTechniqueExit);
   elements.cancelEndWorkoutButton.addEventListener("click", () => {
     elements.endWorkoutDialog.close();
   });
@@ -2381,6 +4047,10 @@ function initialise() {
   });
   registerBackdropClose(elements.optionsDialog);
   registerBackdropClose(elements.endWorkoutDialog);
+  registerBackdropClose(elements.exitTechniqueDialog);
+  elements.exitTechniqueDialog.addEventListener("close", () => {
+    state.pendingTechniqueView = null;
+  });
   elements.resetProgressButton.addEventListener("click", resetProgress);
   elements.recordsModeSelect.addEventListener("change", renderPersonalBests);
   elements.progressMonthPrevButton.addEventListener("click", () => shiftDisplayedMonth(-1));
@@ -2398,18 +4068,20 @@ function initialise() {
     });
   });
 
+  elements.techniqueScreenShell.addEventListener("click", handleTechniqueTableClick);
+  elements.techniqueScreenShell.addEventListener("click", handleTechniqueLessonClick);
+  elements.techniqueScreenShell.addEventListener("submit", handleTechniqueLessonSubmit);
+  elements.techniqueScreenShell.addEventListener("input", handleTechniqueInput);
+
   elements.viewButtons.forEach((button) => {
     button.addEventListener("click", () => {
-      if (state.active) {
-        return;
-      }
-
       const targetView = button.dataset.viewTarget;
       if (targetView) {
-        showView(targetView);
+        requestView(targetView);
       }
     });
   });
 }
 
 initialise();
+

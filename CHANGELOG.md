@@ -6,6 +6,33 @@ The format is inspired by Keep a Changelog and uses a simple project-friendly ve
 
 ## [Unreleased]
 
+### Added
+- Keyboard shortcuts for Results and Progress carousels (`Left`/`Right` arrows) plus `Escape` handling to close open dialogs and quickly exit an in-progress lesson.
+- A close button on the lesson-exit confirmation dialog for consistency with the other app dialogs.
+
+### Changed
+- Added stronger accessibility semantics for hidden/active screens and carousel slides, plus active nav `aria-current` state updates.
+- Added subtle transition polish for carousel slides and techniques screens with a `prefers-reduced-motion` fallback.
+- Removed duplicate stage metadata and duplicate results-title overrides in `app.js` to simplify maintenance.
+
+## [0.5.0] - 2026-04-22
+
+### Added
+- A full-screen two-step Learn / Techniques flow so table selection and lesson content no longer compete side by side.
+- A completion state for finished technique lessons so completed tables show differently on the Techniques menu.
+- A post-lesson celebration screen with routes back to Techniques, into optional extra practice, or back to Work Out.
+- A new Positive Progress section ahead of corrective focus cards in Results and My Progress.
+
+### Changed
+- Reworked the `10x` lesson into `Idea #1`, `Idea #2`, `Warm Up`, `Assisted Reps`, and `Solo Reps`.
+- Made pattern blanks semi-random with auto-checking feedback, including occasional blank `10` factors.
+- Changed assisted reps to auto-advance after correct answers instead of requiring a separate next button.
+- Preserved typed lesson answers when opening hints, while still clearing wrong solo-rep answers as intended.
+- Made extra post-lesson practice voluntary instead of an automatic final stage.
+- Disabled carousel arrows at the ends, strengthened their floating treatment, and anchored them more consistently so they stop shifting with panel height.
+- Rebalanced the header with a larger hero/title presence, a wider workout tracker card, a more elongated cog button, and a unified Learn Techniques nav treatment.
+- Updated the hero tagline to `Grow your brain & begin your reign.`
+
 ## [0.4.0] - 2026-04-22
 
 ### Added
