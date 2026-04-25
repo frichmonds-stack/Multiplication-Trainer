@@ -6,6 +6,70 @@ The format is inspired by Keep a Changelog and uses a simple project-friendly ve
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-04-25
+
+### Changed
+- Reworked Setup into a progressive flow: choose operation first, then (for addition) difficulty, then workout type before advanced options appear.
+- Added setup backtracking controls so operation and workout type can be changed without leaving the screen.
+- Stopped persisting setup choices between workouts so each new workout begins from a fresh setup state.
+- Moved addition difficulty ahead of workout type selection to better match the decision flow.
+- Replaced Spar/Knockout strike progress bars with a 3-box strike HUD that marks each miss with an `X`.
+- Boosted streak feedback with stronger tier visuals and a visible in-workout combo counter.
+- Updated Techniques menu layout with the operation selector in the header, streamlined intro copy, and removed redundant prompt/callout text.
+- Updated Fact Tracker title copy to operation-aware wording: `Track the development of your {operation} skills.`
+
+## [0.7.0] - 2026-04-25
+
+### Added
+- Per-slide operation filters for Workout Log, Next Focus, and Coach Notes so filtering is contextual instead of globally persistent.
+- Bucket-level trend cards for Positive Progress and Growth Opportunities (multiplication tables + addition buckets) using rolling 7-day comparisons.
+- Addition tracker tap-to-reveal cards with a front summary and back regrouping split.
+- New staged addition lesson cards:
+  - Adding by 1s
+  - Adding by 10s
+  - Adding by 100s
+  - Adding by 1000s
+
+### Changed
+- Updated Workout Records controls so operation + workout-type filters sit together in the top-right heading.
+- Refined addition bucket labels to explicit digit language (for example `1-digit + 2-digit`).
+- Changed lesson availability messaging so `Make 10` is `Under Construction` (selectable) and remaining addition lessons are `Coming Soon`.
+- Improved calendar readability and touch ergonomics with stronger weekday/day contrast and larger month-nav targets.
+- Rebalanced tracker column spacing and compact stat sizing for iPad presentation.
+
+## [0.6.0] - 2026-04-24
+
+### Added
+- Operation-first setup flow with a dedicated arithmetic selector (Addition + Multiplication active, Subtraction/Division marked coming soon).
+- Addition workout support for High Intensity Training, Target Reps, Zen Mode, and Spar Mode (Isolation intentionally excluded for this release).
+- Addition difficulty presets (`easy`, `medium`, `hard`) with equal-weighted category sampling.
+- iPad-friendly on-screen number pad with Enter support to reduce virtual keyboard intrusion during practice.
+- Operation-aware filters in My Progress (`All`, `Multiplication`, `Addition`) that drive overview, focus, and coach views.
+- Fact Tracker operation switching with a new addition tracker view:
+  - Make 10
+  - Single + Single
+  - Single + Double
+  - Double + Double
+  - Triple + Single
+  - Triple + Double
+  - Triple + Triple
+- Addition bucket analytics split into overall, with regrouping, and without regrouping.
+- Workout Records dual-filtering by operation and workout type, with operation-conditional mode options.
+- Technique menu operation selector that loads multiplication or addition lesson sets.
+
+### Changed
+- Replaced the Setup workout preview panel with a two-column operation + settings layout.
+- Added streak intensity visuals (`smoke`, `spark`, `flame`) around the progress bar and practice area.
+- Updated browser storage keys for this release (`v2`) to simplify migration while operations are expanding.
+- Updated options modal update notes to reflect the operation-layer release.
+
+### Notes
+- Rewards mechanic was intentionally left unchanged in this pass.
+- User testing note captured: rewards icon meaning (heart/star) needs a dedicated clarity pass.
+- User testing note captured: multiplication negatives randomization needs rebalancing across sign combinations in a future update.
+
+## [0.5.1] - 2026-04-23
+
 ### Added
 - Keyboard shortcuts for Results and Progress carousels (`Left`/`Right` arrows) plus `Escape` handling to close open dialogs and quickly exit an in-progress lesson.
 - A close button on the lesson-exit confirmation dialog for consistency with the other app dialogs.
