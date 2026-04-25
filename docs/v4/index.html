@@ -127,16 +127,81 @@
         <main class="screen-stage">
           <section class="screen is-active" data-view="setup" id="setupScreen">
             <div class="screen-grid setup-grid">
-              <section class="panel">
+              <section class="panel operation-panel" id="setupOperationPanel">
                 <div class="section-heading compact">
                   <div>
-                    <p class="section-kicker">Setup</p>
-                    <h2>Workout Settings</h2>
+                    <p class="section-kicker">Choose Skill</p>
+                    <h2>Training Discipline</h2>
                   </div>
                 </div>
 
-                <form id="settingsForm" class="settings-form">
-                  <div class="field option-field">
+                <p class="operation-panel-copy">
+                  Choose the arithmetic operation to train. Addition and Multiplication are ready now.
+                </p>
+
+                <div
+                  class="operation-choice-grid"
+                  id="operationChoiceGrid"
+                  role="radiogroup"
+                  aria-label="Arithmetic operation"
+                >
+                  <label class="operation-choice">
+                    <input type="radio" name="operation" value="addition" />
+                    <span class="operation-choice-copy">
+                      <strong>Addition</strong>
+                      <small>Ready</small>
+                    </span>
+                  </label>
+
+                  <label class="operation-choice">
+                    <input type="radio" name="operation" value="multiplication" />
+                    <span class="operation-choice-copy">
+                      <strong>Multiplication</strong>
+                      <small>Ready</small>
+                    </span>
+                  </label>
+
+                  <label class="operation-choice is-disabled">
+                    <input type="radio" name="operation" value="subtraction" disabled />
+                    <span class="operation-choice-copy">
+                      <strong>Subtraction</strong>
+                      <small>Coming Soon</small>
+                    </span>
+                  </label>
+
+                  <label class="operation-choice is-disabled">
+                    <input type="radio" name="operation" value="division" disabled />
+                    <span class="operation-choice-copy">
+                      <strong>Division</strong>
+                      <small>Coming Soon</small>
+                    </span>
+                  </label>
+                </div>
+
+                <div class="setup-step-shell" id="setupStepShell">
+                  <div class="field option-field is-hidden setup-step-field" id="additionDifficultyField">
+                    <span>Addition Difficulty</span>
+                    <div
+                      class="choice-row choice-row-compact"
+                      role="radiogroup"
+                      aria-label="Addition difficulty"
+                    >
+                      <label class="choice-pill compact">
+                        <input type="radio" name="additionDifficulty" value="easy" />
+                        <span>Easy</span>
+                      </label>
+                      <label class="choice-pill compact">
+                        <input type="radio" name="additionDifficulty" value="medium" />
+                        <span>Medium</span>
+                      </label>
+                      <label class="choice-pill compact">
+                        <input type="radio" name="additionDifficulty" value="hard" />
+                        <span>Hard</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div class="field option-field is-hidden setup-step-field" id="sessionTypeField">
                     <span>Workout Type</span>
                     <div
                       class="choice-row centered-choice workout-type-grid"
@@ -152,12 +217,7 @@
                       </label>
 
                       <label class="choice-pill session-choice">
-                        <input
-                          type="radio"
-                          name="sessionType"
-                          value="question-goal"
-                          checked
-                        />
+                        <input type="radio" name="sessionType" value="question-goal" />
                         <span class="choice-pill-copy">
                           <strong>Target Reps</strong>
                           <small>(Attempt Goal)</small>
@@ -172,7 +232,7 @@
                         </span>
                       </label>
 
-                      <label class="choice-pill session-choice">
+                      <label class="choice-pill session-choice" id="isolationSessionChoice">
                         <input type="radio" name="sessionType" value="isolation" />
                         <span class="choice-pill-copy">
                           <strong>Isolation Training</strong>
@@ -181,7 +241,34 @@
                       </label>
                     </div>
                   </div>
+                </div>
+              </section>
 
+              <section class="panel setup-settings-panel is-collapsed" id="setupSettingsPanel">
+                <div class="section-heading compact setup-settings-head">
+                  <div>
+                    <p class="section-kicker">Setup</p>
+                    <h2>Workout Settings</h2>
+                  </div>
+                  <div class="setup-backtrack-row">
+                    <button
+                      class="ghost-button subtle-button is-hidden"
+                      type="button"
+                      id="changeWorkoutTypeButton"
+                    >
+                      Change Workout Type
+                    </button>
+                    <button
+                      class="ghost-button subtle-button is-hidden"
+                      type="button"
+                      id="changeOperationButton"
+                    >
+                      Change Operation
+                    </button>
+                  </div>
+                </div>
+
+                <form id="settingsForm" class="settings-form setup-settings-form">
                   <div class="field option-field">
                     <span>Workout Options</span>
                     <div class="setup-option-list">
@@ -200,7 +287,7 @@
                         </span>
                       </label>
 
-                      <label class="toggle compact-toggle bare-toggle">
+                      <label class="toggle compact-toggle bare-toggle" id="negativesToggleRow">
                         <span class="toggle-row">
                           <input id="negativesMode" type="checkbox" />
                           <span class="toggle-label">Negatives</span>
@@ -392,59 +479,16 @@
                       </label>
                     </div>
                   </section>
+
+                  <div class="button-row setup-actions">
+                    <button class="primary-button" type="submit" form="settingsForm" id="setupStartButton">
+                      Start
+                    </button>
+                  </div>
                 </form>
-              </section>
-
-              <section class="panel preview-panel">
-                <div class="section-heading compact">
-                  <div>
-                    <p class="section-kicker">Workout Preview</p>
-                    <h2>What this run will feel like</h2>
-                  </div>
-                </div>
-
-                <div class="preview-stack">
-                  <article class="preview-item">
-                    <span class="preview-label">Workout Focus</span>
-                    <strong class="preview-value" id="setupPreviewStyle">Standard mixed facts</strong>
-                  </article>
-
-                  <article class="preview-item">
-                    <span class="preview-label">Workout Type</span>
-                    <strong class="preview-value" id="setupPreviewType">
-                      Target Reps - 20 attempts
-                    </strong>
-                  </article>
-
-                  <article class="preview-item">
-                    <span class="preview-label">Practice Range</span>
-                    <strong class="preview-value" id="setupPreviewRange">2 through 12</strong>
-                  </article>
-
-                  <div class="preview-pair">
-                    <article class="preview-item compact-preview">
-                      <span class="preview-label">Targeted</span>
-                      <strong class="preview-value" id="setupPreviewAdaptive">On</strong>
-                    </article>
-
-                    <article class="preview-item compact-preview">
-                      <span class="preview-label">Negatives</span>
-                      <strong class="preview-value" id="setupPreviewNegatives">Off</strong>
-                    </article>
-                  </div>
-                </div>
-
-                <div class="coach-card preview-note" id="setupPreviewNote">
-                  Answer 20 questions to finish the workout. Skipping doesn't count!
-                </div>
-
-                <div class="button-row preview-actions">
-                  <button class="primary-button" type="submit" form="settingsForm">Start</button>
-                </div>
               </section>
             </div>
           </section>
-
           <section class="screen" data-view="techniques" id="techniquesScreen">
             <section class="panel techniques-screen-panel">
               <div id="techniqueScreenShell"></div>
@@ -454,7 +498,7 @@
           <section class="screen" data-view="countdown" id="countdownScreen">
             <section class="panel countdown-panel">
               <p class="section-kicker">Get Ready</p>
-              <p class="countdown-copy">Type the answer to the times tables.</p>
+              <p class="countdown-copy" id="countdownCopy">Type the answer to the times tables.</p>
               <p class="countdown-subcopy">Starting in...</p>
               <div class="countdown-number" id="countdownNumber" aria-live="assertive">3</div>
             </section>
@@ -487,10 +531,18 @@
               </div>
 
               <div class="practice-progress-row">
-                <div class="progress-track" aria-hidden="true">
+                <div class="progress-track" id="progressTrack" aria-hidden="true">
                   <div class="progress-fill" id="progressFill"></div>
                 </div>
+                <div class="spar-strike-hud is-hidden" id="sparStrikeHud" aria-label="Spar strikes">
+                  <span class="spar-strike-box" data-spar-strike-box="1" aria-hidden="true">X</span>
+                  <span class="spar-strike-box" data-spar-strike-box="2" aria-hidden="true">X</span>
+                  <span class="spar-strike-box" data-spar-strike-box="3" aria-hidden="true">X</span>
+                </div>
                 <span class="progress-text" id="progressText">0 attempted</span>
+              </div>
+              <div class="combo-indicator" id="comboIndicator" aria-live="polite" aria-hidden="true">
+                COMBO x0
               </div>
 
               <div class="problem-wrap minimalist">
@@ -518,6 +570,24 @@
                   Check
                 </button>
               </form>
+
+              <div class="practice-keypad is-hidden" id="practiceKeypad" aria-label="Number pad">
+                <button class="ghost-button" type="button" data-keypad-key="7">7</button>
+                <button class="ghost-button" type="button" data-keypad-key="8">8</button>
+                <button class="ghost-button" type="button" data-keypad-key="9">9</button>
+                <button class="ghost-button" type="button" data-keypad-key="4">4</button>
+                <button class="ghost-button" type="button" data-keypad-key="5">5</button>
+                <button class="ghost-button" type="button" data-keypad-key="6">6</button>
+                <button class="ghost-button" type="button" data-keypad-key="1">1</button>
+                <button class="ghost-button" type="button" data-keypad-key="2">2</button>
+                <button class="ghost-button" type="button" data-keypad-key="3">3</button>
+                <button class="ghost-button" type="button" data-keypad-key="-">-</button>
+                <button class="ghost-button" type="button" data-keypad-key="0">0</button>
+                <button class="ghost-button" type="button" data-keypad-key="backspace">&#9003;</button>
+                <button class="primary-button keypad-enter" type="button" data-keypad-key="enter">
+                  Enter
+                </button>
+              </div>
 
               <p class="feedback" id="feedback" aria-live="polite"></p>
             </section>
@@ -726,9 +796,19 @@
 
               <div class="progress-carousel">
                 <section class="progress-slide is-active" data-progress-slide="overview">
-                  <div class="slide-heading">
-                    <p class="section-kicker">Workout Log</p>
-                    <h2>Your progress so far</h2>
+                  <div class="slide-heading slide-heading-with-filter">
+                    <div>
+                      <p class="section-kicker">Workout Log</p>
+                      <h2>Your progress so far</h2>
+                    </div>
+                    <label class="records-filter progress-filter">
+                      <span class="sr-only">Workout log operation</span>
+                      <select id="overviewOperationFilter">
+                        <option value="all">All Operations</option>
+                        <option value="multiplication">Multiplication</option>
+                        <option value="addition">Addition</option>
+                      </select>
+                    </label>
                   </div>
 
                   <div class="stats-grid">
@@ -844,18 +924,37 @@
                 </section>
 
                 <section class="progress-slide" data-progress-slide="facts">
-                  <div class="slide-heading">
-                    <p class="section-kicker">Fact Tracker</p>
-                    <h2>See which multiplication facts are developing</h2>
+                  <div class="slide-heading slide-heading-with-filter">
+                    <div>
+                      <p class="section-kicker">Fact Tracker</p>
+                      <h2 id="factsSlideTitle">Track the development of your skills.</h2>
+                    </div>
+                    <label class="records-filter facts-filter">
+                      <span class="sr-only">Fact tracker operation</span>
+                      <select id="factOperationFilter">
+                        <option value="multiplication">Multiplication</option>
+                        <option value="addition">Addition</option>
+                      </select>
+                    </label>
                   </div>
 
                   <div class="table-grid" id="tableGrid"></div>
                 </section>
 
                 <section class="progress-slide" data-progress-slide="focus">
-                  <div class="slide-heading">
-                    <p class="section-kicker">Next Focus</p>
-                    <h2>Where to build next</h2>
+                  <div class="slide-heading slide-heading-with-filter">
+                    <div>
+                      <p class="section-kicker">Next Focus</p>
+                      <h2>Where to build next</h2>
+                    </div>
+                    <label class="records-filter progress-filter">
+                      <span class="sr-only">Next focus operation</span>
+                      <select id="focusOperationFilter">
+                        <option value="all">All Operations</option>
+                        <option value="multiplication">Multiplication</option>
+                        <option value="addition">Addition</option>
+                      </select>
+                    </label>
                   </div>
 
                   <div class="focus-columns">
@@ -877,42 +976,57 @@
                 </section>
 
                 <section class="progress-slide" data-progress-slide="coach">
-                  <div class="slide-heading">
-                    <p class="section-kicker">Coach Notes</p>
-                    <h2>What to practice next</h2>
+                  <div class="slide-heading slide-heading-with-filter">
+                    <div>
+                      <p class="section-kicker">Coach Notes</p>
+                      <h2>What to practice next</h2>
+                    </div>
+                    <label class="records-filter progress-filter">
+                      <span class="sr-only">Coach notes operation</span>
+                      <select id="coachOperationFilter">
+                        <option value="all">All Operations</option>
+                        <option value="multiplication">Multiplication</option>
+                        <option value="addition">Addition</option>
+                      </select>
+                    </label>
                   </div>
 
                   <div class="coach-card" id="coachTip"></div>
                 </section>
 
                 <section class="progress-slide" data-progress-slide="records">
-                  <div class="slide-heading">
-                    <p class="section-kicker">Workout Records</p>
-                    <h2>How your workouts are stacking up</h2>
+                  <div class="slide-heading slide-heading-with-filter">
+                    <div>
+                      <p class="section-kicker">Workout Records</p>
+                      <h2>How your workouts are stacking up</h2>
+                    </div>
+                    <div class="records-filter-row records-filter-row-head">
+                      <label class="records-filter">
+                        <span class="sr-only">Records operation</span>
+                        <select id="recordsOperationSelect">
+                          <option value="all">All Operations</option>
+                          <option value="multiplication">Multiplication</option>
+                          <option value="addition">Addition</option>
+                        </select>
+                      </label>
+                      <label class="records-filter">
+                        <span class="sr-only">Personal best mode</span>
+                        <select id="recordsModeSelect"></select>
+                      </label>
+                    </div>
                   </div>
 
                   <div class="focus-split records-split">
                     <section class="focus-panel">
                       <div class="records-panel-head">
                         <h3 class="focus-panel-title">Personal Bests</h3>
-                        <label class="records-filter">
-                          <span class="sr-only">Personal best mode</span>
-                          <select id="recordsModeSelect">
-                            <option value="timed">High Intensity Training</option>
-                            <option value="question-goal">Target Reps</option>
-                            <option value="isolation">Isolation Training</option>
-                            <option value="zen">Zen Mode</option>
-                            <option value="spar">Spar Mode</option>
-                          </select>
-                        </label>
                       </div>
                       <div class="focus-card-grid single-column-grid" id="personalBestsList"></div>
                     </section>
 
                     <section class="focus-panel">
-                      <div class="records-panel-head records-panel-head-passive">
+                      <div class="records-panel-head">
                         <h3 class="focus-panel-title">Recent Workouts</h3>
-                        <span class="records-panel-spacer" aria-hidden="true"></span>
                       </div>
                       <div class="focus-card-grid single-column-grid" id="recentWorkoutsList"></div>
                     </section>
@@ -942,24 +1056,24 @@
 
           <section class="options-card">
             <p class="section-kicker">Version</p>
-            <p class="options-copy"><strong id="appVersion">v0.5.1</strong></p>
+            <p class="options-copy"><strong id="appVersion">v0.7.1</strong></p>
           </section>
 
           <section class="options-card">
             <p class="section-kicker">Most Recent Updates</p>
             <ul class="options-list">
-              <li>New two-screen Learn / Techniques flow with a stronger 10x lesson</li>
-              <li>Dark workout theme and reworked app shell</li>
-              <li>Carousel-style Results and My Progress views</li>
-              <li>Timed, target, and endless workout types</li>
-              <li>Shared workout tracker calendar and daily rewards</li>
+              <li>Setup now uses a progressive flow with operation, difficulty (addition), then workout type</li>
+              <li>Workout setup includes backtracking controls for changing operation or workout type</li>
+              <li>Spar mode now uses a 3-box strike HUD with X markers instead of the strike bar</li>
+              <li>Practice HUD now shows a visible combo counter with stronger streak intensity tiers</li>
+              <li>Techniques layout and Fact Tracker copy were updated for cleaner operation-first clarity</li>
             </ul>
           </section>
 
           <section class="options-card">
             <p class="section-kicker">Future Updates</p>
             <p class="options-copy">
-              Operation layer support, additional arithmetic modes, richer fact detail views, and stronger milestone celebrations are next on the roadmap.
+              Subtraction and division modes, richer lesson interactivity, stronger rewards clarity, and milestone celebrations are next on the roadmap.
             </p>
           </section>
         </div>

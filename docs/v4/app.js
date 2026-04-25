@@ -1,8 +1,7 @@
-const STORAGE_KEY = "multiplication-trainer-progress-v1";
-const SETTINGS_KEY = "multiplication-trainer-settings-v1";
+const STORAGE_KEY = "multiplication-trainer-progress-v2";
 const HERO_MESSAGE_KEY = "multiplication-trainer-hero-message-v1";
 const RESULTS_MESSAGE_KEY_PREFIX = "multiplication-trainer-results-message-v1";
-const APP_VERSION = "v0.5.1";
+const APP_VERSION = "v0.7.1";
 const FACTOR_LIMIT = 12;
 const TABLE_FACTORS = Array.from({ length: FACTOR_LIMIT }, (_, index) => index + 1);
 const QUESTION_PRESETS = [10, 20, 30];
@@ -58,8 +57,16 @@ const RESULTS_TITLE_POOLS = {
 const OPERATION_CONFIG = {
   multiplication: {
     label: "Multiplication",
+    symbol: "x",
     buildPool(settings) {
       return buildMultiplicationPool(settings);
+    },
+  },
+  addition: {
+    label: "Addition",
+    symbol: "+",
+    buildPool(settings) {
+      return buildAdditionPool(settings);
     },
   },
 };
@@ -77,6 +84,142 @@ const TECHNIQUE_STEPS = [
   { id: "quick-check", label: "Solo Reps" },
 ];
 
+const OPERATION_OPTIONS = ["multiplication", "addition"];
+const OPERATION_LABELS = {
+  multiplication: "Multiplication",
+  addition: "Addition",
+};
+const OPERATION_SYMBOLS = {
+  multiplication: "x",
+  addition: "+",
+};
+const BUCKET_STATUS_MIN_ATTEMPTS = 6;
+const BUCKET_STATUS_STRONG_MIN_ATTEMPTS = 10;
+const BUCKET_STATUS_BUILDING_MIN_ACCURACY = 0.7;
+const BUCKET_STATUS_STRONG_MIN_ACCURACY = 0.9;
+const BUCKET_TREND_WINDOW_DAYS = 7;
+const BUCKET_TREND_MIN_TOTAL_ATTEMPTS = 6;
+const BUCKET_TREND_MIN_RECENT_ATTEMPTS = 3;
+const BUCKET_TREND_DELTA_THRESHOLD = 0.08;
+const ADDITION_DIGIT_BUCKETS = {
+  easy: [
+    [1, 1],
+  ],
+  medium: [
+    [1, 2],
+    [2, 2],
+  ],
+  hard: [
+    [1, 3],
+    [2, 3],
+    [3, 3],
+  ],
+};
+const ADDITION_TRACKER_BUCKETS = [
+  { key: "make-10", label: "Make 10 Facts" },
+  { key: "1-1", label: "1-digit + 1-digit" },
+  { key: "1-2", label: "1-digit + 2-digit" },
+  { key: "2-2", label: "2-digit + 2-digit" },
+  { key: "1-3", label: "3-digit + 1-digit" },
+  { key: "2-3", label: "3-digit + 2-digit" },
+  { key: "3-3", label: "3-digit + 3-digit" },
+];
+const ADDITION_LESSONS = [
+  {
+    id: "make-10",
+    title: "Make 10",
+    description: "Spot number pairs that combine to 10 quickly.",
+    status: "under-construction",
+    selectable: true,
+  },
+  {
+    id: "adding-by-1s",
+    title: "Adding by 1s",
+    description: "Multi-digit numbers plus 1s-only place value changes.",
+    status: "coming-soon",
+    selectable: false,
+  },
+  {
+    id: "adding-by-10s",
+    title: "Adding by 10s",
+    description: "Multi-digit numbers plus 10s-only place value changes.",
+    status: "coming-soon",
+    selectable: false,
+  },
+  {
+    id: "adding-by-100s",
+    title: "Adding by 100s",
+    description: "Multi-digit numbers plus 100s-only place value changes.",
+    status: "coming-soon",
+    selectable: false,
+  },
+  {
+    id: "adding-by-1000s",
+    title: "Adding by 1000s",
+    description: "Multi-digit numbers plus 1000s-only place value changes.",
+    status: "coming-soon",
+    selectable: false,
+  },
+  {
+    id: "counting-on-easy",
+    title: "Counting On (Easy)",
+    description: "Single + single facts with counting on strategies.",
+    status: "coming-soon",
+    selectable: false,
+  },
+  {
+    id: "counting-on-medium",
+    title: "Counting On (Medium)",
+    description: "Double + single combinations with counting on.",
+    status: "coming-soon",
+    selectable: false,
+  },
+  {
+    id: "bridging-10-easy",
+    title: "Bridging to 10 (Easy)",
+    description: "Single + single with a bridge-to-10 move first.",
+    status: "coming-soon",
+    selectable: false,
+  },
+  {
+    id: "bridging-10-medium",
+    title: "Bridging to 10 (Medium)",
+    description: "Double + single bridging to a clean group of 10.",
+    status: "coming-soon",
+    selectable: false,
+  },
+  {
+    id: "bridging-advanced",
+    title: "Bridging Advanced",
+    description: "Double + double facts, bridge to nearest 10 or 100.",
+    status: "coming-soon",
+    selectable: false,
+  },
+  {
+    id: "bridging-expert",
+    title: "Bridging Expert",
+    description: "Triple mixes with multi-bridge choices and carry decisions.",
+    status: "coming-soon",
+    selectable: false,
+  },
+];
+
+const WORKOUT_MODE_DEFINITIONS = {
+  multiplication: [
+    { key: "timed", label: "High Intensity Training" },
+    { key: "question-goal", label: "Target Reps" },
+    { key: "isolation", label: "Isolation Training" },
+    { key: "zen", label: "Zen Mode" },
+    { key: "spar", label: "Spar Mode" },
+  ],
+  addition: [
+    { key: "timed", label: "High Intensity Training" },
+    { key: "question-goal", label: "Target Reps" },
+    { key: "zen", label: "Zen Mode" },
+    { key: "spar", label: "Spar Mode" },
+  ],
+};
+
 const elements = {
   screens: Array.from(document.querySelectorAll(".screen")),
   navButtons: Array.from(document.querySelectorAll(".nav-button")),
@@ -86,13 +229,26 @@ const elements = {
   optionsCloseButton: document.getElementById("optionsCloseButton"),
   appVersion: document.getElementById("appVersion"),
   heroMessage: document.getElementById("heroMessage"),
+  setupOperationPanel: document.getElementById("setupOperationPanel"),
+  operationChoiceGrid: document.getElementById("operationChoiceGrid"),
+  setupStepShell: document.getElementById("setupStepShell"),
+  operationInputs: Array.from(document.querySelectorAll('input[name="operation"]')),
+  sessionTypeInputs: Array.from(document.querySelectorAll('input[name="sessionType"]')),
+  additionDifficultyInputs: Array.from(document.querySelectorAll('input[name="additionDifficulty"]')),
   settingsForm: document.getElementById("settingsForm"),
+  sessionTypeField: document.getElementById("sessionTypeField"),
+  setupSettingsPanel: document.getElementById("setupSettingsPanel"),
+  changeWorkoutTypeButton: document.getElementById("changeWorkoutTypeButton"),
+  changeOperationButton: document.getElementById("changeOperationButton"),
+  setupStartButton: document.getElementById("setupStartButton"),
   minFactor: document.getElementById("minFactor"),
   maxFactor: document.getElementById("maxFactor"),
   isolationField: document.getElementById("isolationField"),
+  isolationSessionChoice: document.getElementById("isolationSessionChoice"),
   focusFactor: document.getElementById("focusFactor"),
   adaptiveMode: document.getElementById("adaptiveMode"),
   negativesMode: document.getElementById("negativesMode"),
+  negativesToggleRow: document.getElementById("negativesToggleRow"),
   freeTrainingField: document.getElementById("freeTrainingField"),
   sparTimingField: document.getElementById("sparTimingField"),
   timeField: document.getElementById("timeField"),
@@ -101,26 +257,29 @@ const elements = {
   questionTargetField: document.getElementById("questionTargetField"),
   questionCustomField: document.getElementById("questionCustomField"),
   questionCustom: document.getElementById("questionCustom"),
+  additionDifficultyField: document.getElementById("additionDifficultyField"),
   resetProgressButton: document.getElementById("resetProgressButton"),
-  setupPreviewStyle: document.getElementById("setupPreviewStyle"),
-  setupPreviewType: document.getElementById("setupPreviewType"),
-  setupPreviewRange: document.getElementById("setupPreviewRange"),
-  setupPreviewAdaptive: document.getElementById("setupPreviewAdaptive"),
-  setupPreviewNegatives: document.getElementById("setupPreviewNegatives"),
-  setupPreviewNote: document.getElementById("setupPreviewNote"),
   countdownNumber: document.getElementById("countdownNumber"),
+  countdownCopy: document.getElementById("countdownCopy"),
   sessionBadge: document.getElementById("sessionBadge"),
   finishSessionButton: document.getElementById("finishSessionButton"),
+  practicePanel: document.querySelector("#practiceScreen .practice-panel"),
+  problemWrap: document.querySelector("#practiceScreen .problem-wrap"),
+  progressTrack: document.querySelector("#practiceScreen .progress-track"),
+  sparStrikeHud: document.getElementById("sparStrikeHud"),
+  sparStrikeBoxes: Array.from(document.querySelectorAll("[data-spar-strike-box]")),
   questionTimer: document.getElementById("questionTimer"),
   sessionTimer: document.getElementById("sessionTimer"),
   practiceAttemptedCount: document.getElementById("practiceAttemptedCount"),
   progressFill: document.getElementById("progressFill"),
   progressText: document.getElementById("progressText"),
+  comboIndicator: document.getElementById("comboIndicator"),
   problemText: document.getElementById("problemText"),
   answerForm: document.getElementById("answerForm"),
   answerInput: document.getElementById("answerInput"),
   checkButton: document.getElementById("checkButton"),
   skipButton: document.getElementById("skipButton"),
+  practiceKeypad: document.getElementById("practiceKeypad"),
   feedback: document.getElementById("feedback"),
   resultsTitle: document.getElementById("resultsTitle"),
   resultQuestions: document.getElementById("resultQuestions"),
@@ -144,6 +303,10 @@ const elements = {
   resultsSlides: Array.from(document.querySelectorAll(".results-slide")),
   progressPrevButton: document.getElementById("progressPrevButton"),
   progressNextButton: document.getElementById("progressNextButton"),
+  overviewOperationFilter: document.getElementById("overviewOperationFilter"),
+  focusOperationFilter: document.getElementById("focusOperationFilter"),
+  coachOperationFilter: document.getElementById("coachOperationFilter"),
+  factOperationFilter: document.getElementById("factOperationFilter"),
   progressSlides: Array.from(document.querySelectorAll(".progress-slide")),
   overallAnswered: document.getElementById("overallAnswered"),
   overallAccuracy: document.getElementById("overallAccuracy"),
@@ -168,6 +331,8 @@ const elements = {
   progressWinsList: document.getElementById("progressWinsList"),
   progressPriorityList: document.getElementById("progressPriorityList"),
   tableGrid: document.getElementById("tableGrid"),
+  factsSlideTitle: document.getElementById("factsSlideTitle"),
+  recordsOperationSelect: document.getElementById("recordsOperationSelect"),
   recordsModeSelect: document.getElementById("recordsModeSelect"),
   personalBestsList: document.getElementById("personalBestsList"),
   recentWorkoutsList: document.getElementById("recentWorkoutsList"),
@@ -202,6 +367,7 @@ const state = {
   resultsSlideIndex: 0,
   progressSlideIndex: 0,
   displayMonthKey: "",
+  useTouchKeypad: false,
   session: createEmptySession(),
   technique: createTechniqueState(),
   pendingTechniqueView: null,
@@ -264,7 +430,9 @@ function createTechniquePatternRows(table = TECHNIQUE_TABLE) {
 
 function createTechniqueState(table = TECHNIQUE_TABLE, mode = "menu") {
   return {
+    selectedOperation: "",
     selectedTable: table,
+    additionLessonId: "",
     mode,
     stage: TECHNIQUE_STEPS[0].id,
     patternRows: createTechniquePatternRows(table),
@@ -314,6 +482,7 @@ function defaultProgress() {
     fastestAverageMs: null,
     facts: {},
     dailyRecords: {},
+    bucketDaily: {},
     workoutHistory: [],
     techniques: {},
   };
@@ -334,6 +503,7 @@ function defaultSettingsSnapshot() {
     questionTarget: 20,
     timePreset: "3",
     timeLimitMinutes: 3,
+    additionDifficulty: "easy",
   };
 }
 
@@ -370,6 +540,9 @@ function normaliseDailyRecord(record) {
 }
 
 function normaliseWorkoutRecord(record) {
+  const operation = OPERATION_OPTIONS.includes(record?.operation)
+    ? record.operation
+    : "multiplication";
   const modeKey =
     record?.modeKey === "timed" ||
     record?.modeKey === "question-goal" ||
@@ -381,6 +554,7 @@ function normaliseWorkoutRecord(record) {
 
   return {
     id: String(record?.id || `${record?.recordedAt || Date.now()}`),
+    operation,
     modeKey,
     modeLabel: String(record?.modeLabel || ""),
     dateKey: String(record?.dateKey || getTodayDateKey()),
@@ -413,12 +587,33 @@ function normaliseWorkoutRecord(record) {
       clampNumber(Number(record?.minFactor), 1, FACTOR_LIMIT, 2),
       clampNumber(Number(record?.maxFactor), 1, FACTOR_LIMIT, FACTOR_LIMIT),
     ),
+    additionDifficulty:
+      record?.additionDifficulty === "easy" ||
+      record?.additionDifficulty === "medium" ||
+      record?.additionDifficulty === "hard"
+        ? record.additionDifficulty
+        : "easy",
+  };
+}
+
+function normaliseBucketDailyEntry(entry) {
+  const attempted = clampNumber(Number(entry?.attempted), 0, 9999, 0);
+  const correct = clampNumber(Number(entry?.correct), 0, attempted, 0);
+  return {
+    attempted,
+    correct,
   };
 }
 
 function sanitiseSettingsSnapshot(settings) {
   const defaults = defaultSettingsSnapshot();
   const operation = OPERATION_CONFIG[settings?.operation] ? settings.operation : defaults.operation;
+  const additionDifficulty =
+    settings?.additionDifficulty === "easy" ||
+    settings?.additionDifficulty === "medium" ||
+    settings?.additionDifficulty === "hard"
+      ? settings.additionDifficulty
+      : defaults.additionDifficulty;
   const legacyIsolationMode = settings?.questionStyle === "focus" || settings?.mode === "focus";
   const hasLegacyQuestionStyle = typeof settings?.questionStyle === "string";
   const legacySessionLength = Number(settings?.sessionLength);
@@ -435,6 +630,9 @@ function sanitiseSettingsSnapshot(settings) {
   }
   if (hasLegacyQuestionStyle && legacyIsolationMode) {
     sessionType = "isolation";
+  }
+  if (operation === "addition" && sessionType === "isolation") {
+    sessionType = "question-goal";
   }
   const freeTrainingMode =
     settings?.freeTrainingMode === "spar" || settings?.freeTrainingMode === "zen"
@@ -492,7 +690,7 @@ function sanitiseSettingsSnapshot(settings) {
       : TIME_PRESETS.includes(Number(settings?.timePreset))
         ? `${Number(settings.timePreset)}`
         : "custom";
-  const useIsolationControls = sessionType === "isolation";
+  const useIsolationControls = operation === "multiplication" && sessionType === "isolation";
   const minFactor = useIsolationControls ? minFactorNormalised : defaults.minFactor;
   const maxFactor = useIsolationControls ? maxFactorNormalised : defaults.maxFactor;
 
@@ -506,7 +704,9 @@ function sanitiseSettingsSnapshot(settings) {
         ? settings.adaptiveMode
         : defaults.adaptiveMode,
     negativesMode:
-      typeof settings?.negativesMode === "boolean"
+      operation === "addition"
+        ? false
+        : typeof settings?.negativesMode === "boolean"
         ? settings.negativesMode
         : defaults.negativesMode,
     sessionType,
@@ -516,6 +716,7 @@ function sanitiseSettingsSnapshot(settings) {
     questionTarget,
     timePreset,
     timeLimitMinutes,
+    additionDifficulty,
   };
 }
 
@@ -531,6 +732,12 @@ function loadProgress() {
       Object.entries(parsed.dailyRecords || {}).map(([key, record]) => [
         key,
         normaliseDailyRecord(record),
+      ]),
+    );
+    const bucketDaily = Object.fromEntries(
+      Object.entries(parsed.bucketDaily || {}).map(([key, record]) => [
+        key,
+        normaliseBucketDailyEntry(record),
       ]),
     );
     const workoutHistory = Array.isArray(parsed.workoutHistory)
@@ -557,6 +764,7 @@ function loadProgress() {
       totalSignErrors: clampNumber(Number(parsed.totalSignErrors), 0, 999999, 0),
       facts: parsed.facts || {},
       dailyRecords,
+      bucketDaily,
       workoutHistory,
       techniques: parsed.techniques || {},
     };
@@ -570,30 +778,6 @@ function saveProgress() {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state.progress));
   } catch (error) {
     // Ignore storage failures so the app still works in restricted contexts.
-  }
-}
-
-function loadSettingsSnapshot() {
-  try {
-    const raw = window.localStorage.getItem(SETTINGS_KEY);
-    if (!raw) {
-      return defaultSettingsSnapshot();
-    }
-
-    return sanitiseSettingsSnapshot(JSON.parse(raw));
-  } catch (error) {
-    return defaultSettingsSnapshot();
-  }
-}
-
-function saveSettingsSnapshot(settings) {
-  try {
-    window.localStorage.setItem(
-      SETTINGS_KEY,
-      JSON.stringify(sanitiseSettingsSnapshot(settings)),
-    );
-  } catch (error) {
-    // Ignore storage failures so the app still works when persistence is restricted.
   }
 }
 
@@ -670,8 +854,54 @@ function setCheckedValue(name, value) {
   });
 }
 
+function getSelectedOperationValue() {
+  const value = getCheckedValue("operation");
+  return OPERATION_CONFIG[value] ? value : "";
+}
+
+function getSelectedOperation() {
+  return getSelectedOperationValue() || "multiplication";
+}
+
+function hasSelectedSessionType() {
+  const sessionType = getCheckedValue("sessionType");
+  return (
+    sessionType === "timed" ||
+    sessionType === "question-goal" ||
+    sessionType === "endless" ||
+    sessionType === "isolation"
+  );
+}
+
+function hasSelectedAdditionDifficulty() {
+  const difficulty = getCheckedValue("additionDifficulty");
+  return difficulty === "easy" || difficulty === "medium" || difficulty === "hard";
+}
+
+function clearSetupFlowSelections() {
+  const defaults = defaultSettingsSnapshot();
+  applySettingsSnapshot(defaults);
+  setCheckedValue("operation", "");
+  setCheckedValue("sessionType", "");
+  setCheckedValue("additionDifficulty", "");
+}
+
+function resetSetupForNextWorkout() {
+  clearSetupFlowSelections();
+  toggleSetupFields();
+}
+
+function getOperationLabel(operation) {
+  return OPERATION_LABELS[operation] || OPERATION_LABELS.multiplication;
+}
+
+function getOperationSymbol(operation) {
+  return OPERATION_SYMBOLS[operation] || OPERATION_SYMBOLS.multiplication;
+}
+
 function applySettingsSnapshot(settings) {
   const snapshot = sanitiseSettingsSnapshot(settings);
+  setCheckedValue("operation", snapshot.operation);
   elements.minFactor.value = `${snapshot.minFactor}`;
   elements.maxFactor.value = `${snapshot.maxFactor}`;
   elements.focusFactor.value = `${snapshot.focusFactor}`;
@@ -679,6 +909,7 @@ function applySettingsSnapshot(settings) {
   elements.negativesMode.checked = snapshot.negativesMode;
   elements.questionCustom.value = `${snapshot.questionTarget}`;
   elements.timeCustom.value = `${snapshot.timeLimitMinutes}`;
+  setCheckedValue("additionDifficulty", snapshot.additionDifficulty);
   setCheckedValue("sessionType", snapshot.sessionType);
   setCheckedValue("freeTrainingMode", snapshot.freeTrainingMode);
   setCheckedValue("sparTiming", snapshot.sparTiming);
@@ -689,6 +920,7 @@ function applySettingsSnapshot(settings) {
 
 function getFormSettingsSnapshot() {
   return sanitiseSettingsSnapshot({
+    operation: getCheckedValue("operation"),
     minFactor: Number(elements.minFactor.value),
     maxFactor: Number(elements.maxFactor.value),
     focusFactor: Number(elements.focusFactor.value),
@@ -701,6 +933,7 @@ function getFormSettingsSnapshot() {
     questionTarget: Number(elements.questionCustom.value),
     timePreset: getCheckedValue("timePreset"),
     timeLimitMinutes: Number(elements.timeCustom.value),
+    additionDifficulty: getCheckedValue("additionDifficulty"),
   });
 }
 
@@ -748,17 +981,68 @@ function syncIsolationRangeControls(changedField = "") {
 }
 
 function toggleSetupFields() {
-  const sessionType = getCheckedValue("sessionType");
+  const operation = getSelectedOperationValue();
+  const hasOperation = Boolean(operation);
+  let sessionType = getCheckedValue("sessionType");
   const freeTrainingMode = getCheckedValue("freeTrainingMode");
   const sparTiming = getCheckedValue("sparTiming");
   const questionPreset = getCheckedValue("questionPreset");
   const timePreset = getCheckedValue("timePreset");
   const defaults = defaultSettingsSnapshot();
-  const isolationMode = sessionType === "isolation";
+  const additionMode = operation === "addition";
+  const difficultySelected = hasSelectedAdditionDifficulty();
+  const showDifficultyStep = additionMode && hasOperation;
+  const showWorkoutTypeStep = hasOperation && (!additionMode || difficultySelected);
+  const supportsIsolation = operation === "multiplication";
+
+  if (!hasOperation) {
+    setCheckedValue("sessionType", "");
+    setCheckedValue("additionDifficulty", "");
+    sessionType = "";
+  }
+
+  if (additionMode && !difficultySelected && sessionType) {
+    setCheckedValue("sessionType", "");
+    sessionType = "";
+  }
+
+  if (!supportsIsolation && sessionType === "isolation") {
+    setCheckedValue("sessionType", "");
+    sessionType = "";
+  }
+
+  const hasSessionType = hasSelectedSessionType() && showWorkoutTypeStep;
+  const showAdvancedSettings = hasOperation && hasSessionType;
+  const isolationMode = supportsIsolation && sessionType === "isolation";
   const questionGoalMode = sessionType === "question-goal" || isolationMode;
   const countdownMode =
     sessionType === "timed" ||
     (sessionType === "endless" && freeTrainingMode === "spar" && sparTiming === "timed");
+
+  if (elements.setupOperationPanel) {
+    elements.setupOperationPanel.classList.toggle("has-operation-selection", hasOperation);
+  }
+  if (elements.operationChoiceGrid) {
+    elements.operationChoiceGrid.classList.toggle("is-pruned-view", hasOperation);
+  }
+  elements.operationInputs.forEach((input) => {
+    const option = input.closest(".operation-choice");
+    if (!option) {
+      return;
+    }
+    option.classList.toggle("is-pruned", hasOperation && !input.checked);
+  });
+
+  if (elements.additionDifficultyField) {
+    elements.additionDifficultyField.classList.toggle("is-hidden", !showDifficultyStep);
+  }
+  elements.additionDifficultyInputs.forEach((input) => {
+    input.disabled = !showDifficultyStep;
+  });
+
+  if (elements.sessionTypeField) {
+    elements.sessionTypeField.classList.toggle("is-hidden", !showWorkoutTypeStep);
+  }
 
   if (!isolationMode) {
     elements.minFactor.value = `${defaults.minFactor}`;
@@ -766,37 +1050,104 @@ function toggleSetupFields() {
   }
 
   syncIsolationRangeControls();
-  elements.isolationField.classList.toggle("is-hidden", !isolationMode);
-  elements.focusFactor.disabled = !isolationMode;
-  elements.minFactor.disabled = !isolationMode;
-  elements.maxFactor.disabled = !isolationMode;
+  if (elements.isolationSessionChoice) {
+    elements.isolationSessionChoice.classList.toggle("is-hidden", !supportsIsolation);
+    const isolationInput = elements.isolationSessionChoice.querySelector('input[name="sessionType"]');
+    if (isolationInput instanceof HTMLInputElement) {
+      isolationInput.disabled = !supportsIsolation || !showWorkoutTypeStep;
+    }
+  }
+  elements.sessionTypeInputs.forEach((input) => {
+    if (input.value === "isolation") {
+      return;
+    }
+    input.disabled = !showWorkoutTypeStep;
+  });
 
-  elements.freeTrainingField.classList.toggle("is-hidden", sessionType !== "endless");
+  if (elements.setupSettingsPanel) {
+    elements.setupSettingsPanel.classList.toggle("is-collapsed", !showAdvancedSettings);
+    elements.setupSettingsPanel.classList.toggle("is-expanded", showAdvancedSettings);
+  }
+  if (elements.changeOperationButton) {
+    elements.changeOperationButton.classList.toggle("is-hidden", !hasOperation);
+  }
+  if (elements.changeWorkoutTypeButton) {
+    elements.changeWorkoutTypeButton.classList.toggle("is-hidden", !hasSessionType);
+  }
+  if (elements.setupStartButton) {
+    elements.setupStartButton.disabled = !showAdvancedSettings;
+  }
+
+  elements.isolationField.classList.toggle("is-hidden", !showAdvancedSettings || !isolationMode);
+  elements.focusFactor.disabled = !showAdvancedSettings || !isolationMode;
+  elements.minFactor.disabled = !showAdvancedSettings || !isolationMode;
+  elements.maxFactor.disabled = !showAdvancedSettings || !isolationMode;
+
+  if (elements.negativesToggleRow) {
+    elements.negativesToggleRow.classList.toggle("is-hidden", additionMode || !showAdvancedSettings);
+  }
+  elements.negativesMode.disabled = additionMode || !showAdvancedSettings;
+  if (additionMode || !showAdvancedSettings) {
+    elements.negativesMode.checked = false;
+  }
+  if (elements.countdownCopy) {
+    elements.countdownCopy.textContent = operation === "addition"
+      ? "Type the answer to each addition fact."
+      : "Type the answer to the times tables.";
+  }
+
+  elements.freeTrainingField.classList.toggle(
+    "is-hidden",
+    !showAdvancedSettings || sessionType !== "endless",
+  );
   elements.sparTimingField.classList.toggle(
     "is-hidden",
-    sessionType !== "endless" || freeTrainingMode !== "spar",
+    !showAdvancedSettings || sessionType !== "endless" || freeTrainingMode !== "spar",
   );
-  elements.timeField.classList.toggle("is-hidden", !countdownMode);
-  elements.questionTargetField.classList.toggle("is-hidden", !questionGoalMode);
+  elements.timeField.classList.toggle("is-hidden", !showAdvancedSettings || !countdownMode);
+  elements.questionTargetField.classList.toggle(
+    "is-hidden",
+    !showAdvancedSettings || !questionGoalMode,
+  );
   elements.timeCustomField.classList.toggle(
     "is-hidden",
-    !countdownMode || timePreset !== "custom",
+    !showAdvancedSettings || !countdownMode || timePreset !== "custom",
   );
   elements.questionCustomField.classList.toggle(
     "is-hidden",
-    !questionGoalMode || questionPreset !== "custom",
+    !showAdvancedSettings || !questionGoalMode || questionPreset !== "custom",
   );
 }
 
 function readSettings() {
+  const operation = getSelectedOperationValue();
   const sessionType = getCheckedValue("sessionType");
   const freeTrainingMode = getCheckedValue("freeTrainingMode");
   const sparTiming = getCheckedValue("sparTiming");
   const questionPreset = getCheckedValue("questionPreset");
   const timePreset = getCheckedValue("timePreset");
+  const additionDifficulty = getCheckedValue("additionDifficulty");
+
+  if (!operation) {
+    return { error: "Choose an operation before starting." };
+  }
+
+  if (operation === "addition" && !hasSelectedAdditionDifficulty()) {
+    return { error: "Choose an addition difficulty before selecting the workout type." };
+  }
+
+  if (
+    sessionType !== "timed" &&
+    sessionType !== "question-goal" &&
+    sessionType !== "endless" &&
+    sessionType !== "isolation"
+  ) {
+    return { error: "Choose a workout type before starting." };
+  }
+
   const adaptiveMode = elements.adaptiveMode.checked;
-  const negativesMode = elements.negativesMode.checked;
-  const isolationMode = sessionType === "isolation";
+  const negativesMode = operation === "addition" ? false : elements.negativesMode.checked;
+  const isolationMode = operation === "multiplication" && sessionType === "isolation";
 
   syncIsolationRangeControls();
   const minFactor = Number(elements.minFactor.value);
@@ -838,6 +1189,7 @@ function readSettings() {
   }
 
   return sanitiseSettingsSnapshot({
+    operation,
     minFactor,
     maxFactor,
     focusFactor,
@@ -850,6 +1202,7 @@ function readSettings() {
     questionTarget,
     timePreset,
     timeLimitMinutes,
+    additionDifficulty,
   });
 }
 
@@ -904,24 +1257,34 @@ function formatMinutesLabel(minutes) {
 }
 
 function getQuestionStyleLabel(settings) {
+  if (settings.operation === "addition") {
+    return `Addition (${settings.additionDifficulty})`;
+  }
+
   return settings.sessionType === "isolation"
     ? `Isolation x ${settings.focusFactor} (${settings.minFactor}-${settings.maxFactor})`
     : "Full Circuit";
 }
 
 function getQuestionStylePreviewLabel(settings) {
+  if (settings.operation === "addition") {
+    return `Addition drill with ${settings.additionDifficulty} number ranges.`;
+  }
+
   return settings.sessionType === "isolation"
     ? `Isolation drill for x ${settings.focusFactor}, paired with factors ${settings.minFactor} through ${settings.maxFactor}.`
     : "Full Circuit - Mixes facts across the standard workout range.";
 }
 
 function getSessionTypeLabel(settings) {
+  const operationLabel = getOperationLabel(settings.operation);
+
   if (settings.sessionType === "timed") {
-    return `High Intensity Training - ${formatMinutesLabel(settings.timeLimitMinutes)}`;
+    return `${operationLabel} High Intensity Training - ${formatMinutesLabel(settings.timeLimitMinutes)}`;
   }
 
   if (settings.sessionType === "question-goal") {
-    return `Target Reps - ${settings.questionTarget} attempts`;
+    return `${operationLabel} Target Reps - ${settings.questionTarget} attempts`;
   }
 
   if (settings.sessionType === "isolation") {
@@ -930,11 +1293,11 @@ function getSessionTypeLabel(settings) {
 
   if (settings.freeTrainingMode === "spar") {
     return settings.sparTiming === "timed"
-      ? `Spar Mode - 3 strikes in ${formatMinutesLabel(settings.timeLimitMinutes)}`
-      : "Spar Mode - 3 mistake knockout";
+      ? `${operationLabel} Spar Mode - 3 strikes in ${formatMinutesLabel(settings.timeLimitMinutes)}`
+      : `${operationLabel} Spar Mode - 3 mistake knockout`;
   }
 
-  return "Zen Mode - No rules";
+  return `${operationLabel} Zen Mode - No rules`;
 }
 
 function getSessionBadgeLabel(settings) {
@@ -962,6 +1325,24 @@ function getSessionBadgeLabel(settings) {
 }
 
 function getSetupPreviewNote(settings) {
+  if (settings.operation === "addition") {
+    if (settings.sessionType === "timed") {
+      return `Push through a ${settings.timeLimitMinutes}-minute addition workout and keep your streak alive.`;
+    }
+
+    if (settings.sessionType === "question-goal") {
+      return `Answer ${settings.questionTarget} addition facts. Difficulty is set to ${settings.additionDifficulty}.`;
+    }
+
+    if (settings.freeTrainingMode === "spar") {
+      return settings.sparTiming === "timed"
+        ? "Stay in the spar round until three misses or the timer expires."
+        : "Three misses ends the round.";
+    }
+
+    return "Free training for addition facts with no finish line.";
+  }
+
   if (settings.sessionType === "timed") {
     return `Push through a ${settings.timeLimitMinutes}-minute workout and see how many clean answers you can land.`;
   }
@@ -1165,9 +1546,10 @@ function markTechniqueCompleted(table) {
   saveProgress();
 }
 
-function resetTechniqueState(table = TECHNIQUE_TABLE, mode = "menu") {
+function resetTechniqueState(table = TECHNIQUE_TABLE, mode = "menu", selectedOperation = "") {
   clearTechniqueAdvanceTimer();
   state.technique = createTechniqueState(table, mode);
+  state.technique.selectedOperation = selectedOperation;
 }
 
 function getTechniqueHintMarkup(question) {
@@ -1432,20 +1814,42 @@ function getTechniqueStageMeta(stage) {
 }
 
 function renderTechniqueMenuScreen() {
+  const selectedOperation = state.technique.selectedOperation;
+  let bodyMarkup = "";
+
+  if (selectedOperation === "multiplication") {
+    bodyMarkup = `
+      <div class="technique-table-grid">${getTechniqueTableGridMarkup()}</div>
+    `;
+  } else if (selectedOperation === "addition") {
+    bodyMarkup = `
+      <div class="technique-table-grid">${getAdditionTechniqueGridMarkup()}</div>
+    `;
+  }
+
   return `
     <div class="technique-menu-shell">
-      <div class="section-heading compact">
-        <div>
+      <div class="technique-menu-head technique-menu-head-compact">
+        <div class="technique-menu-title-block">
           <p class="section-kicker">Learn</p>
           <h2>Techniques</h2>
+          <p class="techniques-copy">Learn mental mathematics techniques to improve accuracy and speed.</p>
         </div>
+        <label class="technique-operation-field">
+          <span>Operation</span>
+          <select data-technique-operation-select>
+            <option value="" ${selectedOperation ? "" : "selected"} disabled hidden>
+              Select an operation
+            </option>
+            <option value="multiplication" ${
+              selectedOperation === "multiplication" ? "selected" : ""
+            }>Multiplication</option>
+            <option value="addition" ${selectedOperation === "addition" ? "selected" : ""}>Addition</option>
+          </select>
+        </label>
       </div>
 
-      <p class="technique-menu-copy">
-        Learn techniques and tricks to master multiplications, then lock it in with calm reps
-      </p>
-
-      <div class="technique-table-grid">${getTechniqueTableGridMarkup()}</div>
+      ${bodyMarkup}
     </div>
   `;
 }
@@ -1753,6 +2157,67 @@ function renderTechniquePracticeStage() {
   `;
 }
 
+function renderAdditionTechniqueLessonScreen() {
+  const lesson = ADDITION_LESSONS.find((item) => item.id === state.technique.additionLessonId);
+
+  if (!lesson) {
+    return `
+      <div class="technique-lesson-wrap">
+        <div class="technique-lesson-head">
+          <div>
+            <p class="section-kicker">Addition Lessons</p>
+            <h2>Choose a lesson</h2>
+          </div>
+        </div>
+        <section class="technique-lesson-card">
+          <p class="technique-helper">Select an addition lesson from the menu to continue.</p>
+          <div class="technique-action-row">
+            <button class="primary-button" type="button" data-technique-action="back-to-techniques">
+              Back to Techniques
+            </button>
+          </div>
+        </section>
+      </div>
+    `;
+  }
+
+  const statusLabel =
+    lesson.status === "under-construction" ? "Under Construction" : "Coming Soon";
+  const helperCopy =
+    lesson.status === "under-construction"
+      ? "This lesson is available as a preview concept card while full interactivity is being built."
+      : "This lesson is staged for a future release.";
+
+  return `
+    <div class="technique-lesson-wrap">
+      <div class="technique-lesson-head">
+        <div>
+          <p class="section-kicker">Addition Technique</p>
+          <h2>${lesson.title}</h2>
+        </div>
+        <button class="ghost-button subtle-button" type="button" data-technique-action="back-to-techniques">
+          Back to Lessons
+        </button>
+      </div>
+      <section class="technique-lesson-card">
+        <span class="technique-card-pill">${statusLabel}</span>
+        <p class="technique-helper">${lesson.description}</p>
+        <article class="technique-hint">
+          ${helperCopy}
+        </article>
+        <div class="technique-action-row">
+          <button class="ghost-button" type="button" data-technique-action="back-to-techniques">
+            Choose Another Lesson
+          </button>
+          <button class="primary-button" type="button" data-technique-action="back-to-setup">
+            Go to Work Out
+          </button>
+        </div>
+      </section>
+    </div>
+  `;
+}
+
 function renderTechniqueCelebrationScreen() {
   return `
     <div class="technique-celebration-shell">
@@ -1851,6 +2316,8 @@ function renderTechniqueScreen() {
 
   if (state.technique.mode === "menu") {
     elements.techniqueScreenShell.innerHTML = renderTechniqueMenuScreen();
+  } else if (state.technique.mode === "addition-lesson") {
+    elements.techniqueScreenShell.innerHTML = renderAdditionTechniqueLessonScreen();
   } else if (state.technique.mode === "celebration") {
     elements.techniqueScreenShell.innerHTML = renderTechniqueCelebrationScreen();
   } else if (state.technique.mode === "practice") {
@@ -1878,7 +2345,8 @@ function confirmTechniqueExit() {
   const targetView = state.pendingTechniqueView || "techniques";
   state.pendingTechniqueView = null;
   elements.exitTechniqueDialog.close();
-  resetTechniqueState(state.technique.selectedTable, "menu");
+  const selectedOperation = state.technique.selectedOperation;
+  resetTechniqueState(state.technique.selectedTable, "menu", selectedOperation);
   renderTechniqueScreen();
 
   if (targetView !== "techniques") {
@@ -1893,7 +2361,7 @@ function requestView(targetView) {
 
   if (
     state.view === "techniques" &&
-    ["lesson", "practice"].includes(state.technique.mode) &&
+    ["lesson", "practice", "addition-lesson"].includes(state.technique.mode) &&
     targetView !== "techniques"
   ) {
     openTechniqueExitDialog(targetView);
@@ -1987,7 +2455,7 @@ function handleGlobalKeydown(event) {
     if (
       !state.active &&
       state.view === "techniques" &&
-      ["lesson", "practice"].includes(state.technique.mode)
+      ["lesson", "practice", "addition-lesson"].includes(state.technique.mode)
     ) {
       event.preventDefault();
       openTechniqueExitDialog("techniques");
@@ -2358,7 +2826,8 @@ function handleTechniqueAction(action) {
   }
 
   if (action === "back-to-techniques") {
-    resetTechniqueState(state.technique.selectedTable, "menu");
+    const selectedOperation = state.technique.selectedOperation;
+    resetTechniqueState(state.technique.selectedTable, "menu", selectedOperation);
     renderTechniqueScreen();
     return;
   }
@@ -2385,42 +2854,74 @@ function handleTechniqueLessonClick(event) {
 }
 
 function handleTechniqueTableClick(event) {
-  const button = event.target.closest("[data-technique-select]");
-  if (!button) {
+  const multiplicationButton = event.target.closest("[data-technique-select]");
+  if (multiplicationButton) {
+    const table = Number(multiplicationButton.dataset.techniqueSelect);
+    if (!isTechniqueAvailable(table)) {
+      return;
+    }
+
+    resetTechniqueState(table, "lesson", "multiplication");
+    renderTechniqueScreen();
     return;
   }
 
-  const table = Number(button.dataset.techniqueSelect);
-  if (!isTechniqueAvailable(table)) {
+  const additionButton = event.target.closest("[data-addition-technique]");
+  if (!additionButton) {
     return;
   }
 
-  resetTechniqueState(table, "lesson");
+  const lessonId = String(additionButton.dataset.additionTechnique || "");
+  const lesson = ADDITION_LESSONS.find((item) => item.id === lessonId);
+  if (!lesson || !lesson.selectable) {
+    return;
+  }
+
+  state.technique.selectedOperation = "addition";
+  state.technique.additionLessonId = lesson.id;
+  state.technique.mode = "addition-lesson";
+  renderTechniqueScreen();
+}
+
+function handleTechniqueMenuChange(event) {
+  const select = event.target.closest("[data-technique-operation-select]");
+  if (!(select instanceof HTMLSelectElement)) {
+    return;
+  }
+
+  const selectedOperation = select.value;
+  state.technique.selectedOperation =
+    selectedOperation === "addition" || selectedOperation === "multiplication"
+      ? selectedOperation
+      : "";
+  state.technique.mode = "menu";
+  state.technique.additionLessonId = "";
   renderTechniqueScreen();
 }
 
 function renderSetupPreview() {
-  const settings = getCurrentSettingsPreview();
-  elements.setupPreviewStyle.textContent = getQuestionStylePreviewLabel(settings);
-  elements.setupPreviewType.textContent = getSessionTypeLabel(settings);
-  elements.setupPreviewRange.textContent = `${settings.minFactor} through ${settings.maxFactor}`;
-  elements.setupPreviewAdaptive.textContent = settings.adaptiveMode ? "On" : "Off";
-  elements.setupPreviewNegatives.textContent = settings.negativesMode ? "On" : "Off";
-  elements.setupPreviewNote.textContent = getSetupPreviewNote(settings);
+  // Setup preview panel was removed in the operation-layer update.
 }
 
-function createFact(left, right) {
+function evaluateFactAnswer(operation, left, right) {
+  return operation === "addition" ? left + right : left * right;
+}
+
+function createFact(operation, left, right) {
   const ordered = [left, right].sort((first, second) => first - second);
+  const symbol = OPERATION_SYMBOLS[operation] || "x";
   return {
+    operation,
+    symbol,
     a: ordered[0],
     b: ordered[1],
-    key: `${ordered[0]}x${ordered[1]}`,
-    answer: left * right,
+    key: `${operation}:${ordered[0]}${symbol}${ordered[1]}`,
+    answer: evaluateFactAnswer(operation, left, right),
   };
 }
 
-function addFactVariant(map, left, right) {
-  const fact = createFact(left, right);
+function addFactVariant(map, operation, left, right) {
+  const fact = createFact(operation, left, right);
   if (!map.has(fact.key)) {
     map.set(fact.key, fact);
   }
@@ -2441,7 +2942,7 @@ function getRotatingMessage(storageKey, messages) {
 
 function addSignedVariants(map, leftMagnitude, rightMagnitude, includeNegatives) {
   if (!includeNegatives) {
-    addFactVariant(map, leftMagnitude, rightMagnitude);
+    addFactVariant(map, "multiplication", leftMagnitude, rightMagnitude);
     return;
   }
 
@@ -2451,7 +2952,12 @@ function addSignedVariants(map, leftMagnitude, rightMagnitude, includeNegatives)
     [1, -1],
     [-1, -1],
   ].forEach(([leftSign, rightSign]) => {
-    addFactVariant(map, leftMagnitude * leftSign, rightMagnitude * rightSign);
+    addFactVariant(
+      map,
+      "multiplication",
+      leftMagnitude * leftSign,
+      rightMagnitude * rightSign,
+    );
   });
 }
 
@@ -2475,6 +2981,56 @@ function buildMultiplicationPool(settings) {
   return Array.from(map.values());
 }
 
+function getRandomNumberByDigits(digits) {
+  if (digits <= 1) {
+    return Math.floor(Math.random() * 10);
+  }
+
+  if (digits === 2) {
+    return 10 + Math.floor(Math.random() * 90);
+  }
+
+  return 100 + Math.floor(Math.random() * 900);
+}
+
+function buildAdditionPool(settings) {
+  const difficulty =
+    settings.additionDifficulty === "easy" ||
+    settings.additionDifficulty === "medium" ||
+    settings.additionDifficulty === "hard"
+      ? settings.additionDifficulty
+      : "easy";
+  const buckets = ADDITION_DIGIT_BUCKETS[difficulty];
+  const targetTotal = 120;
+  const perBucketTarget = Math.max(24, Math.floor(targetTotal / buckets.length));
+  const map = new Map();
+
+  buckets.forEach(([leftDigits, rightDigits]) => {
+    let created = 0;
+    let attempts = 0;
+    const maxAttempts = perBucketTarget * 40;
+
+    while (created < perBucketTarget && attempts < maxAttempts) {
+      attempts += 1;
+      const beforeSize = map.size;
+      const left = getRandomNumberByDigits(leftDigits);
+      const right = getRandomNumberByDigits(rightDigits);
+      addFactVariant(map, "addition", left, right);
+      if (map.size > beforeSize) {
+        created += 1;
+      }
+    }
+  });
+
+  if (!map.size) {
+    addFactVariant(map, "addition", 1, 1);
+    addFactVariant(map, "addition", 2, 3);
+    addFactVariant(map, "addition", 10, 5);
+  }
+
+  return Array.from(map.values());
+}
+
 function buildPool(settings) {
   return OPERATION_CONFIG[settings.operation]?.buildPool(settings) || [];
 }
@@ -2489,8 +3045,26 @@ function randomiseDisplay(fact) {
   };
 }
 
+function inferOperationFromFactKey(key) {
+  if (typeof key !== "string") {
+    return "multiplication";
+  }
+
+  if (key.startsWith("addition:")) {
+    return "addition";
+  }
+
+  return "multiplication";
+}
+
+function inferSymbolFromFactKey(key) {
+  return inferOperationFromFactKey(key) === "addition" ? "+" : "x";
+}
+
 function getFactProgress(key) {
   return {
+    operation: inferOperationFromFactKey(key),
+    symbol: inferSymbolFromFactKey(key),
     attempts: 0,
     correct: 0,
     magnitudeCorrect: 0,
@@ -2707,6 +3281,7 @@ function renderSessionTimer() {
 
 function renderPracticeProgress() {
   const settings = state.settings || getCurrentSettingsPreview();
+  const sparMode = isSparMode(settings);
   let fillRatio = 0;
   let progressLabel = "Ready";
   let fillColor = ENDLESS_COLORS[0];
@@ -2717,7 +3292,7 @@ function renderPracticeProgress() {
         ? Math.min(state.session.attempted / settings.questionTarget, 1)
         : 0;
     progressLabel = `${state.session.attempted} / ${settings.questionTarget} attempted`;
-  } else if (isSparMode(settings)) {
+  } else if (sparMode) {
     fillRatio = Math.min(state.session.sparStrikes / 3, 1);
     fillColor = "#c6452d";
     progressLabel = `${state.session.sparStrikes} / 3 strikes`;
@@ -2743,6 +3318,64 @@ function renderPracticeProgress() {
   elements.progressFill.style.background = fillColor;
   elements.progressText.textContent = progressLabel;
   elements.practiceAttemptedCount.textContent = `${state.session.attempted}`;
+  elements.progressTrack?.classList.toggle("is-hidden", sparMode);
+  elements.progressText?.classList.toggle("is-hidden", sparMode);
+  renderSparStrikeHud(state.session.sparStrikes, sparMode);
+  renderStreakEffects();
+  renderComboIndicator();
+}
+
+function getStreakEffectTier(streak) {
+  if (streak >= 8) {
+    return "flame";
+  }
+  if (streak >= 4) {
+    return "spark";
+  }
+  if (streak >= 2) {
+    return "smoke";
+  }
+  return "";
+}
+
+function renderStreakEffects() {
+  const tier = getStreakEffectTier(state.session.streak);
+  const tiers = ["smoke", "spark", "flame"];
+
+  tiers.forEach((candidate) => {
+    const className = `streak-${candidate}`;
+    elements.progressTrack?.classList.toggle(className, tier === candidate);
+    elements.problemWrap?.classList.toggle(className, tier === candidate);
+    elements.practicePanel?.classList.toggle(className, tier === candidate);
+  });
+}
+
+function renderSparStrikeHud(strikes, active) {
+  if (!elements.sparStrikeHud) {
+    return;
+  }
+
+  elements.sparStrikeHud.classList.toggle("is-hidden", !active);
+  elements.sparStrikeHud.setAttribute("aria-hidden", active ? "false" : "true");
+  elements.sparStrikeBoxes.forEach((box, index) => {
+    box.classList.toggle("is-hit", active && index < strikes);
+  });
+}
+
+function renderComboIndicator() {
+  if (!elements.comboIndicator) {
+    return;
+  }
+
+  const streak = state.session.streak;
+  const tier = getStreakEffectTier(streak);
+  const visible = streak >= 2;
+  elements.comboIndicator.classList.toggle("is-visible", visible);
+  elements.comboIndicator.setAttribute("aria-hidden", visible ? "false" : "true");
+  elements.comboIndicator.classList.toggle("tier-smoke", tier === "smoke");
+  elements.comboIndicator.classList.toggle("tier-spark", tier === "spark");
+  elements.comboIndicator.classList.toggle("tier-flame", tier === "flame");
+  elements.comboIndicator.textContent = visible ? `COMBO x${streak}` : "COMBO x0";
 }
 
 function setFeedback(message, tone = "") {
@@ -2758,12 +3391,15 @@ function askNextQuestion() {
   state.questionStartedAt = window.performance.now();
   state.lastQuestionKey = state.currentQuestion.key;
 
-  elements.problemText.textContent = `${state.currentQuestion.left} x ${state.currentQuestion.right}`;
+  elements.problemText.textContent = `${state.currentQuestion.left} ${state.currentQuestion.symbol} ${state.currentQuestion.right}`;
   elements.answerInput.value = "";
   elements.answerInput.disabled = false;
+  elements.answerInput.readOnly = state.useTouchKeypad;
   elements.checkButton.disabled = false;
   elements.skipButton.disabled = isSparMode(state.settings);
-  elements.answerInput.focus();
+  if (!state.useTouchKeypad) {
+    elements.answerInput.focus();
+  }
   setFeedback("");
   renderQuestionTimer(0);
   renderPracticeProgress();
@@ -2855,9 +3491,15 @@ function startSession(settings) {
   state.sessionStartedAt = 0;
   state.sessionEndedAt = 0;
 
-  saveSettingsSnapshot(settings);
   elements.sessionBadge.textContent = getSessionBadgeLabel(settings);
+  if (elements.countdownCopy) {
+    elements.countdownCopy.textContent =
+      settings.operation === "addition"
+        ? "Type the answer to each addition fact."
+        : "Type the answer to the times tables.";
+  }
   elements.answerInput.disabled = true;
+  elements.answerInput.readOnly = state.useTouchKeypad;
   elements.checkButton.disabled = true;
   elements.skipButton.disabled = true;
   elements.problemText.textContent = "Get ready";
@@ -2923,19 +3565,22 @@ function getWorkoutModeKey(settings) {
 
 function getWorkoutModeLabelFromSettings(settings) {
   const modeKey = getWorkoutModeKey(settings);
+  const operationLabel = getOperationLabel(settings.operation);
   if (modeKey === "timed") {
-    return "High Intensity Training";
+    return `${operationLabel} High Intensity Training`;
   }
   if (modeKey === "question-goal") {
-    return "Target Reps";
+    return `${operationLabel} Target Reps`;
   }
   if (modeKey === "isolation") {
     return `Isolation Training (x ${settings.focusFactor})`;
   }
   if (modeKey === "spar") {
-    return settings.sparTiming === "timed" ? "Spar Mode (Timed)" : "Spar Mode";
+    return settings.sparTiming === "timed"
+      ? `${operationLabel} Spar Mode (Timed)`
+      : `${operationLabel} Spar Mode`;
   }
-  return "Zen Mode";
+  return `${operationLabel} Zen Mode`;
 }
 
 function getWorkoutModeLabel(record) {
@@ -2943,19 +3588,22 @@ function getWorkoutModeLabel(record) {
     return record.modeLabel;
   }
 
+  const operationLabel = getOperationLabel(record.operation);
   if (record.modeKey === "timed") {
-    return "High Intensity Training";
+    return `${operationLabel} High Intensity Training`;
   }
   if (record.modeKey === "question-goal") {
-    return "Target Reps";
+    return `${operationLabel} Target Reps`;
   }
   if (record.modeKey === "isolation") {
     return `Isolation Training (x ${record.focusFactor || 7})`;
   }
   if (record.modeKey === "spar") {
-    return record.sparTiming === "timed" ? "Spar Mode (Timed)" : "Spar Mode";
+    return record.sparTiming === "timed"
+      ? `${operationLabel} Spar Mode (Timed)`
+      : `${operationLabel} Spar Mode`;
   }
-  return "Zen Mode";
+  return `${operationLabel} Zen Mode`;
 }
 
 function appendWorkoutHistory(reason) {
@@ -2966,6 +3614,7 @@ function appendWorkoutHistory(reason) {
   const averageMs = average(state.session.responseTimes);
   const record = normaliseWorkoutRecord({
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    operation: state.settings.operation,
     modeKey: getWorkoutModeKey(state.settings),
     modeLabel: getWorkoutModeLabelFromSettings(state.settings),
     dateKey: getTodayDateKey(),
@@ -2983,6 +3632,7 @@ function appendWorkoutHistory(reason) {
     focusFactor: state.settings.focusFactor,
     minFactor: state.settings.minFactor,
     maxFactor: state.settings.maxFactor,
+    additionDifficulty: state.settings.additionDifficulty,
   });
 
   state.progress.workoutHistory = [record, ...state.progress.workoutHistory].slice(0, 50);
@@ -3000,6 +3650,8 @@ function updateFactProgress(question, isCorrect, responseTimeMs) {
     typeof isCorrect === "object" ? Boolean(isCorrect.isCorrect) : Boolean(isCorrect);
   const updated = {
     ...existing,
+    operation: question.operation || "multiplication",
+    symbol: question.symbol || "x",
     attempts: existing.attempts + 1,
     correct: existing.correct + (fullyCorrect ? 1 : 0),
     magnitudeCorrect: existing.magnitudeCorrect + (magnitudeCorrect ? 1 : 0),
@@ -3024,7 +3676,9 @@ function updateFactProgress(question, isCorrect, responseTimeMs) {
 function registerRecentAnswer(answerValue, evaluation, skipped, responseTimeMs) {
   state.session.recent.unshift({
     key: state.currentQuestion.key,
-    equation: `${state.currentQuestion.left} x ${state.currentQuestion.right}`,
+    operation: state.currentQuestion.operation,
+    symbol: state.currentQuestion.symbol,
+    equation: `${state.currentQuestion.left} ${state.currentQuestion.symbol} ${state.currentQuestion.right}`,
     answer: state.currentQuestion.answer,
     provided: answerValue,
     isCorrect: Boolean(evaluation?.isCorrect),
@@ -3050,6 +3704,7 @@ function registerAnswer(evaluation, answerValue, options = {}) {
     }
     updateDailyRecordForAttempt(false);
     updateFactProgress(state.currentQuestion, false, null);
+    updateBucketDailyProgress(state.currentQuestion, false);
     registerRecentAnswer("Skipped", null, true, null);
   } else {
     const isCorrect = Boolean(evaluation.isCorrect);
@@ -3068,6 +3723,7 @@ function registerAnswer(evaluation, answerValue, options = {}) {
     }
     updateDailyRecordForAttempt(isCorrect);
     updateFactProgress(state.currentQuestion, evaluation, responseTimeMs);
+    updateBucketDailyProgress(state.currentQuestion, isCorrect);
     registerRecentAnswer(answerValue, evaluation, false, responseTimeMs);
   }
 
@@ -3143,6 +3799,50 @@ function handleSkip() {
   queueNextQuestion(420);
 }
 
+function canUseNegativeInput() {
+  return Boolean(state.settings?.negativesMode);
+}
+
+function handlePracticeKeypadClick(event) {
+  const button = event.target.closest("[data-keypad-key]");
+  if (!(button instanceof HTMLButtonElement)) {
+    return;
+  }
+
+  const key = button.dataset.keypadKey;
+  if (!key) {
+    return;
+  }
+
+  if (key === "enter") {
+    if (state.active && !state.countingDown && state.currentQuestion) {
+      elements.answerForm.requestSubmit();
+    }
+    return;
+  }
+
+  if (!state.active || state.countingDown || !state.currentQuestion) {
+    return;
+  }
+
+  let nextValue = elements.answerInput.value;
+
+  if (key === "backspace") {
+    nextValue = nextValue.slice(0, -1);
+  } else if (key === "-") {
+    if (!canUseNegativeInput()) {
+      return;
+    }
+    nextValue = nextValue.startsWith("-") ? nextValue.slice(1) : `-${nextValue}`;
+  } else if (/^\d$/.test(key)) {
+    nextValue = `${nextValue}${key}`;
+  } else {
+    return;
+  }
+
+  elements.answerInput.value = nextValue;
+}
+
 function getTodayRewardSummary() {
   const todayRecord = getDailyRecord();
   const attemptedRemaining = Math.max(0, DAILY_TARGET - todayRecord.attempted);
@@ -3170,7 +3870,12 @@ function renderResults(reason) {
   const previousModeRecords = latestRecord
     ? state.progress.workoutHistory
         .slice(1)
-        .filter((record) => record.modeKey === latestRecord.modeKey)
+        .filter(
+          (record) =>
+            record.modeKey === latestRecord.modeKey &&
+            (record.operation || "multiplication") ===
+              (latestRecord.operation || "multiplication"),
+        )
         .sort((left, right) => compareWorkoutRecords(left, right, latestRecord.modeKey))
     : [];
   const improved =
@@ -3243,6 +3948,7 @@ function completeSession(reason = "manual") {
   renderDailyProgress();
   renderOverall();
   renderFocusAreas();
+  syncRecordsModeOptions();
   renderWorkoutHistory();
   renderCoachTip();
   renderTableRadar();
@@ -3251,6 +3957,8 @@ function completeSession(reason = "manual") {
   renderResults(reason);
   state.resultsSlideIndex = 0;
   renderResultsCarousel();
+  resetSetupForNextWorkout();
+  renderSetupPreview();
   showView("results");
 }
 
@@ -3262,18 +3970,141 @@ function handleFinishSession() {
   elements.endWorkoutDialog.showModal();
 }
 
-function renderOverall() {
-  const accuracy = getAccuracy(state.progress.totalCorrect, state.progress.totalAttempted);
-  const bestAttemptsInDay = Object.values(state.progress.dailyRecords).reduce(
-    (best, record) => Math.max(best, normaliseDailyRecord(record).attempted),
-    0,
+function getOperationFilterValue(selectElement, fallback = "all") {
+  if (!(selectElement instanceof HTMLSelectElement)) {
+    return fallback;
+  }
+
+  const value = selectElement.value;
+  return value === "addition" || value === "multiplication" || value === "all"
+    ? value
+    : fallback;
+}
+
+function getOverviewOperationFilterValue() {
+  return getOperationFilterValue(elements.overviewOperationFilter, "all");
+}
+
+function getFocusOperationFilterValue() {
+  return getOperationFilterValue(elements.focusOperationFilter, "all");
+}
+
+function getCoachOperationFilterValue() {
+  return getOperationFilterValue(elements.coachOperationFilter, "all");
+}
+
+function getFactOperationFilterValue() {
+  if (!elements.factOperationFilter) {
+    return "multiplication";
+  }
+  return elements.factOperationFilter.value === "addition" ? "addition" : "multiplication";
+}
+
+function getRecordsOperationFilterValue() {
+  if (!elements.recordsOperationSelect) {
+    return "all";
+  }
+  const value = elements.recordsOperationSelect.value;
+  return value === "addition" || value === "multiplication" || value === "all"
+    ? value
+    : "all";
+}
+
+function matchesOperationFilter(operation, filterValue) {
+  return filterValue === "all" ? true : operation === filterValue;
+}
+
+function getFactEntriesByOperation(filterValue = "all") {
+  return Object.entries(state.progress.facts)
+    .map(([key, value]) => {
+      const parsed = parseFactKey(key);
+      const progress = getFactProgress(key);
+      return {
+        key,
+        ...parsed,
+        ...progress,
+        operation: progress.operation || parsed.operation || "multiplication",
+        symbol: progress.symbol || parsed.symbol || "x",
+      };
+    })
+    .filter((entry) => matchesOperationFilter(entry.operation, filterValue));
+}
+
+function getWorkoutHistoryByOperation(filterValue = "all") {
+  return state.progress.workoutHistory.filter((record) =>
+    matchesOperationFilter(record.operation || "multiplication", filterValue),
   );
-  elements.overallAnswered.textContent = `${state.progress.totalAttempted}`;
+}
+
+function prefersTouchKeypad() {
+  const coarsePointer = window.matchMedia("(pointer: coarse)").matches;
+  const maxSide = Math.max(window.innerWidth, window.innerHeight);
+  return coarsePointer && maxSide >= 768;
+}
+
+function updatePracticeInputMode() {
+  state.useTouchKeypad = prefersTouchKeypad();
+  if (elements.practiceKeypad) {
+    elements.practiceKeypad.classList.toggle("is-hidden", !state.useTouchKeypad);
+  }
+  if (elements.answerInput) {
+    elements.answerInput.readOnly = state.useTouchKeypad;
+  }
+}
+
+function getBestAttemptsInDay(records) {
+  const totalsByDay = {};
+
+  records.forEach((record) => {
+    const key = record.dateKey || getTodayDateKey();
+    totalsByDay[key] = (totalsByDay[key] || 0) + Number(record.attempted || 0);
+  });
+
+  return Object.values(totalsByDay).reduce((best, value) => Math.max(best, value), 0);
+}
+
+function getOverallStats(filterValue = "all") {
+  const factEntries = getFactEntriesByOperation(filterValue);
+  const workoutHistory = getWorkoutHistoryByOperation(filterValue);
+  const totals = factEntries.reduce(
+    (summary, entry) => {
+      summary.attempted += entry.attempts;
+      summary.correct += entry.correct;
+      summary.bestStreak = Math.max(summary.bestStreak, entry.bestStreak || 0);
+      return summary;
+    },
+    { attempted: 0, correct: 0, bestStreak: 0 },
+  );
+
+  let fastestAverageMs = null;
+  workoutHistory.forEach((record) => {
+    if (record.averageMs === null || record.averageMs === undefined) {
+      return;
+    }
+    fastestAverageMs =
+      fastestAverageMs === null ? record.averageMs : Math.min(fastestAverageMs, record.averageMs);
+  });
+
+  return {
+    attempted: totals.attempted,
+    correct: totals.correct,
+    bestStreak: totals.bestStreak,
+    fastestAverageMs,
+    workoutsCompleted: workoutHistory.length,
+    bestAttemptsInDay: getBestAttemptsInDay(workoutHistory),
+  };
+}
+
+function renderOverall() {
+  const filterValue = getOverviewOperationFilterValue();
+  const stats = getOverallStats(filterValue);
+  const accuracy = getAccuracy(stats.correct, stats.attempted);
+  elements.overallAnswered.textContent = `${stats.attempted}`;
   elements.overallAccuracy.textContent = formatPercent(accuracy);
-  elements.overallBestStreak.textContent = `${state.progress.bestStreak}`;
-  elements.overallBestPace.textContent = formatQuestionDuration(state.progress.fastestAverageMs);
-  elements.overallWorkoutCount.textContent = `${state.progress.sessionsCompleted}`;
-  elements.overallBestDayAttempts.textContent = `${bestAttemptsInDay}`;
+  elements.overallBestStreak.textContent = `${stats.bestStreak}`;
+  elements.overallBestPace.textContent = formatQuestionDuration(stats.fastestAverageMs);
+  elements.overallWorkoutCount.textContent = `${stats.workoutsCompleted}`;
+  elements.overallBestDayAttempts.textContent = `${stats.bestAttemptsInDay}`;
 }
 
 function getRecordsModeSortValue(record, modeKey) {
@@ -3309,21 +4140,60 @@ function compareWorkoutRecords(left, right, modeKey) {
   return right.recordedAt - left.recordedAt;
 }
 
+function getRecordModeDefinitions(filterOperation) {
+  if (filterOperation === "addition" || filterOperation === "multiplication") {
+    return WORKOUT_MODE_DEFINITIONS[filterOperation];
+  }
+
+  const merged = new Map();
+  Object.values(WORKOUT_MODE_DEFINITIONS).forEach((definitions) => {
+    definitions.forEach((item) => {
+      if (!merged.has(item.key)) {
+        merged.set(item.key, item);
+      }
+    });
+  });
+  return Array.from(merged.values());
+}
+
+function syncRecordsModeOptions() {
+  if (!elements.recordsModeSelect) {
+    return;
+  }
+
+  const operationFilter = getRecordsOperationFilterValue();
+  const definitions = getRecordModeDefinitions(operationFilter);
+  const previousValue = elements.recordsModeSelect.value;
+
+  elements.recordsModeSelect.innerHTML = definitions
+    .map((item) => `<option value="${item.key}">${item.label}</option>`)
+    .join("");
+
+  const nextValue = definitions.some((item) => item.key === previousValue)
+    ? previousValue
+    : definitions[0]?.key || "timed";
+  elements.recordsModeSelect.value = nextValue;
+}
+
 function renderPersonalBests() {
   if (!elements.personalBestsList || !elements.recordsModeSelect) {
     return;
   }
 
+  syncRecordsModeOptions();
+  const operationFilter = getRecordsOperationFilterValue();
   const selectedMode = elements.recordsModeSelect.value || "timed";
-  const bests = state.progress.workoutHistory
+  const bests = getWorkoutHistoryByOperation(operationFilter)
     .filter((record) => record.modeKey === selectedMode)
     .sort((left, right) => compareWorkoutRecords(left, right, selectedMode))
     .slice(0, 3);
 
   if (!bests.length) {
+    const operationLabel =
+      operationFilter === "all" ? "selected operation set" : getOperationLabel(operationFilter);
     elements.personalBestsList.innerHTML = `
       <div class="focus-card empty-state">
-        <div class="fact-meta">No records yet for this mode. Knock out a few workouts to set the board.</div>
+        <div class="fact-meta">No records yet for ${operationLabel} in this workout type.</div>
       </div>
     `;
     return;
@@ -3336,6 +4206,9 @@ function renderPersonalBests() {
           <div class="fact-name">#${index + 1} ${getWorkoutModeLabel(record)}</div>
           <div class="focus-chip success-chip">${record.correct} correct</div>
         </div>
+        <div class="fact-meta">${getOperationLabel(record.operation || "multiplication")}${
+          record.operation === "addition" ? ` (${record.additionDifficulty})` : ""
+        }</div>
         <div class="fact-meta">${formatRecordDateLabel(record)}</div>
         <div class="fact-meta">${record.attempted} attempts | ${formatPercent(record.accuracy)} accuracy</div>
         <div class="fact-meta">${record.averageMs === null ? "No pace yet" : `${formatQuestionDuration(record.averageMs)} avg pace`}</div>
@@ -3349,12 +4222,16 @@ function renderRecentWorkouts() {
     return;
   }
 
-  const recent = state.progress.workoutHistory.slice(0, 5);
+  const operationFilter = getRecordsOperationFilterValue();
+  const selectedMode = elements.recordsModeSelect?.value || "timed";
+  const recent = getWorkoutHistoryByOperation(operationFilter)
+    .filter((record) => record.modeKey === selectedMode)
+    .slice(0, 5);
 
   if (!recent.length) {
     elements.recentWorkoutsList.innerHTML = `
       <div class="focus-card empty-state">
-        <div class="fact-meta">Your latest workouts will appear here once you finish a few rounds.</div>
+        <div class="fact-meta">No recent workouts match these filters yet.</div>
       </div>
     `;
     return;
@@ -3367,6 +4244,9 @@ function renderRecentWorkouts() {
           <div class="fact-name">${getWorkoutModeLabel(record)}</div>
           <div class="focus-chip subtle-chip">${formatRecordDateLabel(record)}</div>
         </div>
+        <div class="fact-meta">${getOperationLabel(record.operation || "multiplication")}${
+          record.operation === "addition" ? ` (${record.additionDifficulty})` : ""
+        }</div>
         <div class="fact-meta">${record.correct} correct out of ${record.attempted} attempts</div>
         <div class="fact-meta">${formatPercent(record.accuracy)} accuracy${record.averageMs === null ? "" : ` | ${formatQuestionDuration(record.averageMs)} avg pace`}</div>
       </article>
@@ -3379,10 +4259,9 @@ function renderWorkoutHistory() {
   renderRecentWorkouts();
 }
 
-function getTroubleFacts(limit = 5) {
-  return Object.entries(state.progress.facts)
-    .map(([key, value]) => ({
-      key,
+function getTroubleFacts(limit = 5, filterValue = "all") {
+  return getFactEntriesByOperation(filterValue)
+    .map((value) => ({
       ...value,
       mastery: value.attempts ? value.correct / value.attempts : 0,
       weight:
@@ -3411,7 +4290,6 @@ function renderPriorityList(target, troubleFacts) {
 
   target.innerHTML = troubleFacts
     .map((fact) => {
-      const [a, b] = fact.key.split("x");
       let chipLabel = "Low Accuracy";
 
       if (fact.attempts <= 1 && fact.correct === 0) {
@@ -3425,7 +4303,7 @@ function renderPriorityList(target, troubleFacts) {
       return `
         <article class="focus-card">
           <div class="focus-card-top">
-            <div class="fact-name">${a} x ${b}</div>
+            <div class="fact-name">${formatFactLabelFromKey(fact.key)}</div>
             <div class="focus-chip">${chipLabel}</div>
           </div>
           <div class="fact-meta">${fact.correct} / ${fact.attempts} correct</div>
@@ -3436,27 +4314,213 @@ function renderPriorityList(target, troubleFacts) {
     .join("");
 }
 
-function parseEquationKey(equation) {
-  const match = equation.match(/(-?\d+)\s*x\s*(-?\d+)/i);
-  if (!match) {
-    return null;
+function getBucketLabel(operation, bucketKey) {
+  if (operation === "addition") {
+    return ADDITION_TRACKER_BUCKETS.find((bucket) => bucket.key === bucketKey)?.label || bucketKey;
   }
 
-  return createFact(Number(match[1]), Number(match[2])).key;
+  if (operation === "multiplication") {
+    return /^x\d+$/.test(bucketKey) ? bucketKey.replace("x", "x ") : bucketKey;
+  }
+
+  return bucketKey;
 }
 
-function getGrowthOpportunityItems(limit = 4) {
-  return state.session.recent
-    .filter((item) => !item.isCorrect)
-    .map((item) => {
-      const key = item.key || parseEquationKey(item.equation);
-      const progress = key ? getFactProgress(key) : null;
-      return {
-        ...item,
-        progress,
-      };
-    })
+function getBucketStatus(attempts, accuracy) {
+  if (!attempts) {
+    return { tone: "unseen", label: "No reps yet" };
+  }
+
+  if (
+    attempts >= BUCKET_STATUS_STRONG_MIN_ATTEMPTS &&
+    accuracy >= BUCKET_STATUS_STRONG_MIN_ACCURACY
+  ) {
+    return { tone: "strong", label: "Strong" };
+  }
+
+  if (
+    attempts >= BUCKET_STATUS_MIN_ATTEMPTS &&
+    accuracy >= BUCKET_STATUS_BUILDING_MIN_ACCURACY
+  ) {
+    return { tone: "steady", label: "Building" };
+  }
+
+  return { tone: "needs", label: "Need Reps" };
+}
+
+function createBucketDailyKey(dateKey, operation, bucketKey) {
+  return `${dateKey}|${operation}|${bucketKey}`;
+}
+
+function parseBucketDailyKey(key) {
+  const [dateKey = "", operation = "multiplication", ...rest] = String(key).split("|");
+  return {
+    dateKey,
+    operation: operation === "addition" ? "addition" : "multiplication",
+    bucketKey: rest.join("|"),
+  };
+}
+
+function getBucketsForQuestion(question) {
+  if (!question) {
+    return [];
+  }
+
+  if (question.operation === "addition") {
+    return [getAdditionTrackerBucketKey(question.a, question.b)];
+  }
+
+  if (question.operation === "multiplication") {
+    const factors = new Set([Math.abs(question.a), Math.abs(question.b)]);
+    return Array.from(factors)
+      .filter((factor) => factor >= 1 && factor <= FACTOR_LIMIT)
+      .map((factor) => `x${factor}`);
+  }
+
+  return [];
+}
+
+function updateBucketDailyProgress(question, isCorrect) {
+  const dateKey = getTodayDateKey();
+  const buckets = getBucketsForQuestion(question);
+  if (!buckets.length) {
+    return;
+  }
+
+  state.progress.bucketDaily = state.progress.bucketDaily || {};
+  buckets.forEach((bucketKey) => {
+    const storageKey = createBucketDailyKey(dateKey, question.operation, bucketKey);
+    const current = normaliseBucketDailyEntry(state.progress.bucketDaily[storageKey] || {});
+    state.progress.bucketDaily[storageKey] = {
+      attempted: current.attempted + 1,
+      correct: current.correct + (isCorrect ? 1 : 0),
+    };
+  });
+}
+
+function buildBucketTrendItem(operation, bucketKey) {
+  const todayKey = getTodayDateKey();
+  const total = { attempted: 0, correct: 0 };
+
+  Object.entries(state.progress.bucketDaily || {}).forEach(([storageKey, record]) => {
+    const parsed = parseBucketDailyKey(storageKey);
+    if (parsed.operation !== operation || parsed.bucketKey !== bucketKey) {
+      return;
+    }
+    const normalised = normaliseBucketDailyEntry(record);
+    total.attempted += normalised.attempted;
+    total.correct += normalised.correct;
+  });
+
+  const lastWindow = { attempted: 0, correct: 0 };
+  const previousWindow = { attempted: 0, correct: 0 };
+
+  for (let index = 0; index < BUCKET_TREND_WINDOW_DAYS; index += 1) {
+    const lastDateKey = shiftDateKey(todayKey, -index);
+    const previousDateKey = shiftDateKey(todayKey, -(index + BUCKET_TREND_WINDOW_DAYS));
+
+    const lastEntry = normaliseBucketDailyEntry(
+      state.progress.bucketDaily?.[createBucketDailyKey(lastDateKey, operation, bucketKey)] || {},
+    );
+    const previousEntry = normaliseBucketDailyEntry(
+      state.progress.bucketDaily?.[
+        createBucketDailyKey(previousDateKey, operation, bucketKey)
+      ] || {},
+    );
+
+    lastWindow.attempted += lastEntry.attempted;
+    lastWindow.correct += lastEntry.correct;
+    previousWindow.attempted += previousEntry.attempted;
+    previousWindow.correct += previousEntry.correct;
+  }
+
+  const totalAccuracy = getAccuracy(total.correct, total.attempted);
+  const lastAccuracy = getAccuracy(lastWindow.correct, lastWindow.attempted);
+  const previousAccuracy = getAccuracy(previousWindow.correct, previousWindow.attempted);
+  const status = getBucketStatus(total.attempted, totalAccuracy);
+
+  return {
+    operation,
+    bucketKey,
+    label: getBucketLabel(operation, bucketKey),
+    totalAttempted: total.attempted,
+    totalCorrect: total.correct,
+    totalAccuracy,
+    lastAttempted: lastWindow.attempted,
+    lastCorrect: lastWindow.correct,
+    lastAccuracy,
+    previousAttempted: previousWindow.attempted,
+    previousCorrect: previousWindow.correct,
+    previousAccuracy,
+    delta: lastAccuracy - previousAccuracy,
+    status,
+  };
+}
+
+function getBucketTrendItems(filterValue = "all") {
+  const operations =
+    filterValue === "all" ? ["multiplication", "addition"] : [filterValue];
+  const items = [];
+
+  operations.forEach((operation) => {
+    if (operation === "multiplication") {
+      TABLE_FACTORS.forEach((factor) => {
+        items.push(buildBucketTrendItem("multiplication", `x${factor}`));
+      });
+      return;
+    }
+
+    ADDITION_TRACKER_BUCKETS.forEach((bucket) => {
+      items.push(buildBucketTrendItem("addition", bucket.key));
+    });
+  });
+
+  return items;
+}
+
+function getPositiveProgressItems(limit = 3, filterValue = "all") {
+  return getBucketTrendItems(filterValue)
+    .filter(
+      (item) =>
+        item.totalAttempted >= BUCKET_TREND_MIN_TOTAL_ATTEMPTS &&
+        item.lastAttempted >= BUCKET_TREND_MIN_RECENT_ATTEMPTS &&
+        item.delta >= BUCKET_TREND_DELTA_THRESHOLD,
+    )
+    .sort(
+      (left, right) =>
+        right.delta - left.delta ||
+        right.lastAccuracy - left.lastAccuracy ||
+        right.totalAttempted - left.totalAttempted,
+    )
     .slice(0, limit);
+}
+
+function getGrowthOpportunityItems(limit = 4, filterValue = "all") {
+  return getBucketTrendItems(filterValue)
+    .filter(
+      (item) =>
+        item.totalAttempted >= BUCKET_TREND_MIN_TOTAL_ATTEMPTS &&
+        item.lastAttempted >= BUCKET_TREND_MIN_RECENT_ATTEMPTS &&
+        (item.delta <= -BUCKET_TREND_DELTA_THRESHOLD || item.lastAccuracy < 0.7),
+    )
+    .sort(
+      (left, right) =>
+        left.delta - right.delta ||
+        left.lastAccuracy - right.lastAccuracy ||
+        right.totalAttempted - left.totalAttempted,
+    )
+    .slice(0, limit);
+}
+
+function formatBucketTrendDelta(delta) {
+  const percent = Math.round(delta * 100);
+  if (percent > 0) {
+    return `+${percent}% vs prior week`;
+  }
+  if (percent < 0) {
+    return `${percent}% vs prior week`;
+  }
+  return "No change vs prior week";
 }
 
 function renderGrowthList(target, items) {
@@ -3467,50 +4531,25 @@ function renderGrowthList(target, items) {
   if (!items.length) {
     target.innerHTML = `
       <div class="focus-card empty-state">
-        <div class="fact-meta">No recent growth opportunities from the last run. Nice work.</div>
+        <div class="fact-meta">Growth opportunities will appear once bucket trends settle in.</div>
       </div>
     `;
     return;
   }
 
   target.innerHTML = items
-    .map((item) => {
-      const summary = item.skipped
-        ? "Skipped this round"
-        : `You said ${item.provided}, answer ${item.answer}`;
-      const history =
-        item.progress && item.progress.attempts
-          ? `${item.progress.correct} / ${item.progress.attempts} correct so far`
-          : "Fresh fact";
-
-      return `
-        <article class="focus-card">
-          <div class="focus-card-top">
-            <div class="fact-name">${item.equation}</div>
-          </div>
-          <div class="fact-meta">${summary}</div>
-          <div class="fact-meta">${history}</div>
-        </article>
-      `;
-    })
+    .map((item) => `
+      <article class="focus-card">
+        <div class="focus-card-top">
+          <div class="fact-name">${item.label}</div>
+          <div class="focus-chip warning-chip">${item.status.label}</div>
+        </div>
+        <div class="fact-meta">${item.operation === "addition" ? "Addition bucket" : "Multiplication table"}</div>
+        <div class="fact-meta">Last 7 days: ${item.lastCorrect} / ${item.lastAttempted} (${formatPercent(item.lastAccuracy)})</div>
+        <div class="fact-meta">${formatBucketTrendDelta(item.delta)}</div>
+      </article>
+    `)
     .join("");
-}
-
-function getPositiveProgressItems(limit = 3) {
-  return Object.entries(state.progress.facts)
-    .map(([key, value]) => ({
-      key,
-      ...value,
-      mastery: value.attempts ? value.correct / value.attempts : 0,
-    }))
-    .filter((fact) => fact.attempts > 0 && fact.mastery >= 0.72)
-    .sort(
-      (left, right) =>
-        right.mastery - left.mastery ||
-        right.correct - left.correct ||
-        right.attempts - left.attempts,
-    )
-    .slice(0, limit);
 }
 
 function renderPositiveProgressList(target, items) {
@@ -3521,48 +4560,59 @@ function renderPositiveProgressList(target, items) {
   if (!items.length) {
     target.innerHTML = `
       <div class="focus-card empty-state">
-        <div class="fact-meta">Strong facts will start showing up here as your tables settle in.</div>
+        <div class="fact-meta">Positive progress buckets will appear after a few days of reps.</div>
       </div>
     `;
     return;
   }
 
   target.innerHTML = items
-    .map((fact) => {
-      const [a, b] = fact.key.split("x");
-      const chipLabel = fact.mastery >= 0.9 ? "Strong" : "Improving";
-      const chipClass = fact.mastery >= 0.9 ? "success-chip" : "warning-chip";
-
-      return `
-        <article class="focus-card">
-          <div class="focus-card-top">
-            <div class="fact-name">${a} x ${b}</div>
-            <div class="focus-chip ${chipClass}">${chipLabel}</div>
-          </div>
-          <div class="fact-meta">${fact.correct} / ${fact.attempts} correct</div>
-          <div class="fact-meta">${Math.round(fact.mastery * 100)}% accuracy</div>
-        </article>
-      `;
-    })
+    .map((item) => `
+      <article class="focus-card">
+        <div class="focus-card-top">
+          <div class="fact-name">${item.label}</div>
+          <div class="focus-chip success-chip">${item.status.label}</div>
+        </div>
+        <div class="fact-meta">${item.operation === "addition" ? "Addition bucket" : "Multiplication table"}</div>
+        <div class="fact-meta">Overall: ${item.totalCorrect} / ${item.totalAttempted} (${formatPercent(item.totalAccuracy)})</div>
+        <div class="fact-meta">${formatBucketTrendDelta(item.delta)}</div>
+      </article>
+    `)
     .join("");
 }
 
-function renderFocusAreas() {
-  const troubleFacts = getTroubleFacts();
-  const growthItems = getGrowthOpportunityItems();
-  const positiveItems = getPositiveProgressItems();
+function renderProgressFocusAreas() {
+  const filterValue = getFocusOperationFilterValue();
+  const troubleFacts = getTroubleFacts(5, filterValue);
+  const growthItems = getGrowthOpportunityItems(4, filterValue);
+  const positiveItems = getPositiveProgressItems(3, filterValue);
 
-  renderPositiveProgressList(elements.resultsWinsList, positiveItems);
   renderPositiveProgressList(elements.progressWinsList, positiveItems);
-  renderGrowthList(elements.resultsGrowthList, growthItems);
   renderGrowthList(elements.progressGrowthList, growthItems);
-  renderPriorityList(elements.resultsPriorityList, troubleFacts);
   renderPriorityList(elements.progressPriorityList, troubleFacts);
 }
 
+function renderResultsFocusAreas() {
+  const filterValue = "all";
+  const troubleFacts = getTroubleFacts(5, filterValue);
+  const growthItems = getGrowthOpportunityItems(4, filterValue);
+  const positiveItems = getPositiveProgressItems(3, filterValue);
+
+  renderPositiveProgressList(elements.resultsWinsList, positiveItems);
+  renderGrowthList(elements.resultsGrowthList, growthItems);
+  renderPriorityList(elements.resultsPriorityList, troubleFacts);
+}
+
+function renderFocusAreas() {
+  renderResultsFocusAreas();
+  renderProgressFocusAreas();
+}
+
 function renderCoachTip() {
-  const totalAttempted = state.progress.totalAttempted;
-  const troubleFacts = getTroubleFacts(1);
+  const filterValue = getCoachOperationFilterValue();
+  const stats = getOverallStats(filterValue);
+  const totalAttempted = stats.attempted;
+  const troubleFacts = getTroubleFacts(1, filterValue);
 
   if (!totalAttempted) {
     elements.coachTip.innerHTML =
@@ -3571,12 +4621,12 @@ function renderCoachTip() {
   }
 
   if (troubleFacts.length) {
-    const [a, b] = troubleFacts[0].key.split("x");
-    elements.coachTip.innerHTML = `<strong>Next best target:</strong> spend a few rounds on <strong>${a} x ${b}</strong> and nearby facts. That pair is costing you the most right now.`;
+    const factLabel = formatFactLabelFromKey(troubleFacts[0].key);
+    elements.coachTip.innerHTML = `<strong>Next best target:</strong> spend a few rounds on <strong>${factLabel}</strong> and nearby facts. That pair is costing you the most right now.`;
     return;
   }
 
-  if (state.progress.bestStreak >= 15) {
+  if (stats.bestStreak >= 15) {
     elements.coachTip.innerHTML =
       "<strong>You have momentum.</strong> Push the range wider, try a timed workout, or stretch things out with Free Training.";
     return;
@@ -3587,8 +4637,39 @@ function renderCoachTip() {
 }
 
 function parseFactKey(key) {
-  const [left, right] = key.split("x").map(Number);
+  if (typeof key !== "string") {
+    return {
+      operation: "multiplication",
+      symbol: "x",
+      left: 0,
+      right: 0,
+      leftMagnitude: 0,
+      rightMagnitude: 0,
+    };
+  }
+
+  const modernMatch = key.match(/^(multiplication|addition):(-?\d+)([x+])(-?\d+)$/i);
+  if (modernMatch) {
+    const operation = modernMatch[1] === "addition" ? "addition" : "multiplication";
+    const left = Number(modernMatch[2]);
+    const symbol = modernMatch[3] === "+" ? "+" : "x";
+    const right = Number(modernMatch[4]);
+    return {
+      operation,
+      symbol,
+      left,
+      right,
+      leftMagnitude: Math.abs(left),
+      rightMagnitude: Math.abs(right),
+    };
+  }
+
+  const legacyMatch = key.match(/^(-?\d+)x(-?\d+)$/i);
+  const left = legacyMatch ? Number(legacyMatch[1]) : 0;
+  const right = legacyMatch ? Number(legacyMatch[2]) : 0;
   return {
+    operation: "multiplication",
+    symbol: "x",
     left,
     right,
     leftMagnitude: Math.abs(left),
@@ -3596,20 +4677,13 @@ function parseFactKey(key) {
   };
 }
 
+function formatFactLabelFromKey(key) {
+  const parsed = parseFactKey(key);
+  return `${parsed.left} ${parsed.symbol} ${parsed.right}`;
+}
+
 function getTableStatus(table) {
-  if (!table.seenFacts) {
-    return { label: "Unknown", tone: "unseen" };
-  }
-
-  if (table.accuracy >= 0.88 && table.seenFacts >= 6) {
-    return { label: "Strong!", tone: "strong" };
-  }
-
-  if (table.accuracy >= 0.72 && table.seenFacts >= 3) {
-    return { label: "Building", tone: "steady" };
-  }
-
-  return { label: "Need Reps", tone: "needs" };
+  return getBucketStatus(table.attempts, table.accuracy);
 }
 
 function getTableStats() {
@@ -3617,7 +4691,8 @@ function getTableStats() {
     key,
     progress: getFactProgress(key),
     ...parseFactKey(key),
-  }));
+  }))
+    .filter((entry) => entry.operation === "multiplication");
 
   return TABLE_FACTORS.map((factor) => {
     const relatedEntries = factEntries.filter(
@@ -3660,8 +4735,194 @@ function getTableStats() {
   });
 }
 
+function getDigitBucket(value) {
+  const magnitude = Math.abs(Number(value));
+  if (magnitude <= 9) {
+    return 1;
+  }
+  if (magnitude <= 99) {
+    return 2;
+  }
+  return 3;
+}
+
+function hasAdditionRegrouping(left, right) {
+  const sum = left + right;
+  if (sum === 10) {
+    return false;
+  }
+
+  let carry = 0;
+  let a = Math.abs(left);
+  let b = Math.abs(right);
+
+  while (a > 0 || b > 0) {
+    const column = (a % 10) + (b % 10) + carry;
+    if (column >= 10) {
+      return true;
+    }
+    carry = Math.floor(column / 10);
+    a = Math.floor(a / 10);
+    b = Math.floor(b / 10);
+  }
+
+  return false;
+}
+
+function getAdditionTrackerBucketKey(left, right) {
+  const sum = left + right;
+  if (sum === 10 && !(left === 0 && right === 0)) {
+    return "make-10";
+  }
+
+  const first = getDigitBucket(left);
+  const second = getDigitBucket(right);
+  const low = Math.min(first, second);
+  const high = Math.max(first, second);
+  return `${low}-${high}`;
+}
+
+function buildAdditionTrackerStats() {
+  const summary = Object.fromEntries(
+    ADDITION_TRACKER_BUCKETS.map((bucket) => [
+      bucket.key,
+      {
+        attempts: 0,
+        correct: 0,
+        regroupAttempts: 0,
+        regroupCorrect: 0,
+        noRegroupAttempts: 0,
+        noRegroupCorrect: 0,
+      },
+    ]),
+  );
+
+  const additionFacts = getFactEntriesByOperation("addition");
+  additionFacts.forEach((fact) => {
+    if (!fact.attempts) {
+      return;
+    }
+
+    const bucketKey = getAdditionTrackerBucketKey(fact.left, fact.right);
+    if (!summary[bucketKey]) {
+      return;
+    }
+
+    const bucket = summary[bucketKey];
+    bucket.attempts += fact.attempts;
+    bucket.correct += fact.correct;
+
+    const regrouping = hasAdditionRegrouping(fact.left, fact.right);
+    if (regrouping) {
+      bucket.regroupAttempts += fact.attempts;
+      bucket.regroupCorrect += fact.correct;
+    } else {
+      bucket.noRegroupAttempts += fact.attempts;
+      bucket.noRegroupCorrect += fact.correct;
+    }
+  });
+
+  return summary;
+}
+
+function getRatioLabel(correct, attempts) {
+  if (!attempts) {
+    return "No reps yet";
+  }
+  return `${correct} / ${attempts} (${formatPercent(getAccuracy(correct, attempts))})`;
+}
+
+function renderAdditionTracker() {
+  const statsByBucket = buildAdditionTrackerStats();
+  elements.tableGrid.classList.add("addition-table-grid");
+
+  elements.tableGrid.innerHTML = ADDITION_TRACKER_BUCKETS.map((bucketMeta) => {
+    const bucket = statsByBucket[bucketMeta.key];
+    const overallRatio = bucket.attempts ? bucket.correct / bucket.attempts : 0;
+    const status = getBucketStatus(bucket.attempts, overallRatio);
+    return `
+      <button
+        class="table-card ${status.tone} addition-bucket-card"
+        type="button"
+        data-addition-bucket-card="${bucketMeta.key}"
+        aria-pressed="false"
+        aria-label="${bucketMeta.label} bucket details"
+      >
+        <div class="addition-bucket-face addition-bucket-front">
+          <div class="table-card-top">
+            <div class="table-name">${bucketMeta.label}</div>
+            <span class="table-pill ${bucket.attempts ? status.tone : "unseen"}">${
+              bucket.attempts ? formatPercent(overallRatio) : "--"
+            }</span>
+          </div>
+          <div class="table-card-stats">
+            <span class="fact-meta">${bucket.attempts ? getRatioLabel(bucket.correct, bucket.attempts) : "No reps yet"}</span>
+          </div>
+          <div class="table-card-bottom">
+            <span class="table-pill ${status.tone}">${status.label}</span>
+            <span class="fact-meta">Tap for regrouping split</span>
+          </div>
+        </div>
+        <div class="addition-bucket-face addition-bucket-back">
+          <div class="table-card-top">
+            <div class="table-name">${bucketMeta.label}</div>
+            <span class="table-pill ${status.tone}">${status.label}</span>
+          </div>
+          <div class="fact-meta table-card-middle">Without regrouping: ${getRatioLabel(
+            bucket.noRegroupCorrect,
+            bucket.noRegroupAttempts,
+          )}</div>
+          <div class="fact-meta">With regrouping: ${getRatioLabel(
+            bucket.regroupCorrect,
+            bucket.regroupAttempts,
+          )}</div>
+          <div class="fact-meta">Tap to return</div>
+        </div>
+      </button>
+    `;
+  }).join("");
+}
+
+function getAdditionTechniqueGridMarkup() {
+  return ADDITION_LESSONS.map(
+    (lesson) => `
+      <button
+        class="technique-card ${lesson.status === "under-construction" ? "is-building" : ""}"
+        type="button"
+        data-addition-technique="${lesson.id}"
+        ${lesson.selectable ? "" : "disabled"}
+      >
+        <span class="technique-card-pill">${
+          lesson.status === "under-construction" ? "Under Construction" : "Coming Soon"
+        }</span>
+        <strong>${lesson.title}</strong>
+        <span class="technique-card-note">${lesson.description}</span>
+      </button>
+    `,
+  ).join("");
+}
+
 function renderTableRadar() {
-  if (!state.progress.totalAttempted) {
+  const factOperation = getFactOperationFilterValue();
+  elements.tableGrid.classList.remove("addition-table-grid");
+  if (elements.factsSlideTitle) {
+    const operationCopy =
+      factOperation === "addition"
+        ? "addition"
+        : factOperation === "multiplication"
+          ? "multiplication"
+          : "";
+    elements.factsSlideTitle.textContent = operationCopy
+      ? `Track the development of your ${operationCopy} skills.`
+      : "Track the development of your skills.";
+  }
+
+  if (factOperation === "addition") {
+    renderAdditionTracker();
+    return;
+  }
+
+  if (!getFactEntriesByOperation("multiplication").some((fact) => fact.attempts > 0)) {
     elements.tableGrid.innerHTML = `
       <div class="table-card unseen">
         <div class="table-name">Start a workout</div>
@@ -3756,6 +5017,9 @@ function buildCalendarMarkup(monthDate) {
 
     if (dateKey === todayKey) {
       classes.push("today");
+    }
+    if (record.attempted || record.correct || record.sessionsCompleted) {
+      classes.push("has-activity");
     }
     if (record.attemptGoalEarned) {
       classes.push("has-attempt-goal");
@@ -3955,11 +5219,55 @@ function handleSettingsChange(event) {
   }
   toggleSetupFields();
   renderSetupPreview();
-  saveSettingsSnapshot(getCurrentSettingsPreview());
+}
+
+function handleChangeWorkoutTypeRequest() {
+  setCheckedValue("sessionType", "");
+  toggleSetupFields();
+  renderSetupPreview();
+}
+
+function handleChangeOperationRequest() {
+  setCheckedValue("operation", "");
+  setCheckedValue("sessionType", "");
+  setCheckedValue("additionDifficulty", "");
+  toggleSetupFields();
+  renderSetupPreview();
+}
+
+function handleOverviewOperationFilterChange() {
+  renderOverall();
+}
+
+function handleFocusOperationFilterChange() {
+  renderProgressFocusAreas();
+}
+
+function handleCoachOperationFilterChange() {
+  renderCoachTip();
+}
+
+function handleFactOperationFilterChange() {
+  renderTableRadar();
+}
+
+function handleRecordsFilterChange() {
+  syncRecordsModeOptions();
+  renderWorkoutHistory();
+}
+
+function handleAdditionBucketCardToggle(event) {
+  const button = event.target.closest("[data-addition-bucket-card]");
+  if (!(button instanceof HTMLButtonElement)) {
+    return;
+  }
+
+  const flipped = button.classList.toggle("is-flipped");
+  button.setAttribute("aria-pressed", flipped ? "true" : "false");
 }
 
 function resetProgress() {
-  const shouldReset = window.confirm("Reset all saved multiplication progress on this browser?");
+  const shouldReset = window.confirm("Reset all saved trainer progress on this browser?");
   if (!shouldReset) {
     return;
   }
@@ -3986,9 +5294,24 @@ function initialise() {
   elements.heroMessage.textContent = getHeroMessage();
   state.displayMonthKey = getMonthKey(getCurrentMonthDate());
 
-  const savedSettings = loadSettingsSnapshot();
-  applySettingsSnapshot(savedSettings);
-  toggleSetupFields();
+  resetSetupForNextWorkout();
+  updatePracticeInputMode();
+  if (elements.overviewOperationFilter) {
+    elements.overviewOperationFilter.value = "all";
+  }
+  if (elements.focusOperationFilter) {
+    elements.focusOperationFilter.value = "all";
+  }
+  if (elements.coachOperationFilter) {
+    elements.coachOperationFilter.value = "all";
+  }
+  if (elements.factOperationFilter) {
+    elements.factOperationFilter.value = "multiplication";
+  }
+  if (elements.recordsOperationSelect) {
+    elements.recordsOperationSelect.value = "all";
+  }
+  syncRecordsModeOptions();
   renderSetupPreview();
   renderDailyProgress();
   renderOverall();
@@ -4021,9 +5344,21 @@ function initialise() {
 
   elements.settingsForm.addEventListener("input", handleSettingsChange);
   elements.settingsForm.addEventListener("change", handleSettingsChange);
+  elements.operationInputs.forEach((input) => {
+    input.addEventListener("change", handleSettingsChange);
+  });
+  elements.sessionTypeInputs.forEach((input) => {
+    input.addEventListener("change", handleSettingsChange);
+  });
+  elements.additionDifficultyInputs.forEach((input) => {
+    input.addEventListener("change", handleSettingsChange);
+  });
+  elements.changeWorkoutTypeButton?.addEventListener("click", handleChangeWorkoutTypeRequest);
+  elements.changeOperationButton?.addEventListener("click", handleChangeOperationRequest);
   document.addEventListener("keydown", handleGlobalKeydown);
   elements.answerForm.addEventListener("submit", handleSubmit);
   elements.skipButton.addEventListener("click", handleSkip);
+  elements.practiceKeypad?.addEventListener("click", handlePracticeKeypadClick);
   elements.finishSessionButton.addEventListener("click", handleFinishSession);
   elements.repeatSessionButton.addEventListener("click", () => {
     if (state.settings) {
@@ -4052,7 +5387,13 @@ function initialise() {
     state.pendingTechniqueView = null;
   });
   elements.resetProgressButton.addEventListener("click", resetProgress);
-  elements.recordsModeSelect.addEventListener("change", renderPersonalBests);
+  elements.overviewOperationFilter?.addEventListener("change", handleOverviewOperationFilterChange);
+  elements.focusOperationFilter?.addEventListener("change", handleFocusOperationFilterChange);
+  elements.coachOperationFilter?.addEventListener("change", handleCoachOperationFilterChange);
+  elements.factOperationFilter?.addEventListener("change", handleFactOperationFilterChange);
+  elements.tableGrid?.addEventListener("click", handleAdditionBucketCardToggle);
+  elements.recordsOperationSelect?.addEventListener("change", handleRecordsFilterChange);
+  elements.recordsModeSelect.addEventListener("change", renderWorkoutHistory);
   elements.progressMonthPrevButton.addEventListener("click", () => shiftDisplayedMonth(-1));
   elements.progressMonthNextButton.addEventListener("click", () => shiftDisplayedMonth(1));
   elements.resultsMonthPrevButton.addEventListener("click", () => shiftDisplayedMonth(-1));
@@ -4070,8 +5411,10 @@ function initialise() {
 
   elements.techniqueScreenShell.addEventListener("click", handleTechniqueTableClick);
   elements.techniqueScreenShell.addEventListener("click", handleTechniqueLessonClick);
+  elements.techniqueScreenShell.addEventListener("change", handleTechniqueMenuChange);
   elements.techniqueScreenShell.addEventListener("submit", handleTechniqueLessonSubmit);
   elements.techniqueScreenShell.addEventListener("input", handleTechniqueInput);
+  window.addEventListener("resize", updatePracticeInputMode);
 
   elements.viewButtons.forEach((button) => {
     button.addEventListener("click", () => {
