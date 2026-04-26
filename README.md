@@ -1,26 +1,33 @@
 # Math Muscle Trainer
 
-A strength-themed multiplication practice webapp built with plain HTML, CSS, and JavaScript.
+A strength-themed arithmetic practice webapp built with plain HTML, CSS, and JavaScript.
 
 ## What it does
 
 - Uses a slimmer app-style shell with a separate header band and dedicated Setup, Practice, Results, and Progress screens
 - Adds a Learn / Techniques mode with a full-screen `10x` lesson flow for learning a table trick before drilling it
-- Supports mixed-table practice or a focused single-table mode
+- Supports operation-based training with Addition and Multiplication (Subtraction and Division are planned)
+- Supports mixed-table multiplication practice or a focused single-table isolation mode
 - Supports High Intensity Training, Target Reps, Zen Mode, and Spar Mode workout types
+- Supports all workout modes for Addition except Isolation
+- Supports addition difficulty presets (`easy`, `medium`, `hard`) for quick setup
 - Supports positive and negative integer multiplication while keeping the practice range magnitude-based
 - Keeps the practice screen minimal with a question timer, workout timer, countdown start, and quick right/wrong feedback
+- Adds a touch-first number pad with Enter for iPad/tablet-friendly answering
 - Uses adaptive question weighting to bring back new or missed facts more often
 - Tracks daily star and heart goals with browser-local workout history
 - Shows a shared month-view workout tracker calendar across Results and Progress
 - Uses carousel-style Results and Progress screens to reduce scrolling
 - Shows Positive Progress before weaker targets so the feedback loop starts with wins
-- Shows a fact tracker so weaker and stronger multiplication facts are easy to spot
+- Shows operation-aware fact tracking:
+  - multiplication table tracker
+  - addition bucket tracker with overall, regrouping, and non-regrouping stats
 - Includes personal bests, recent workouts, and daily record stats like most attempts in a day
 - Uses a custom in-app end-workout modal instead of the browser confirm popup
 - Uses a matching in-app lesson exit modal for leaving a technique mid-way
 - Saves completed table lessons in the browser so finished techniques can be shown on the menu
-- Remembers your preferred setup in the browser between visits
+- Uses operation selection in Learn / Techniques to load operation-specific lessons
+- Keeps a rolling recent-progress window for dated history data to keep storage lean
 - Saves long-term progress in the browser with localStorage
 - Uses a dark workout-inspired theme with rotating strength-building banner messages
 

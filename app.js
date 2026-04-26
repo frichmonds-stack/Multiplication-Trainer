@@ -1,7 +1,9 @@
 const STORAGE_KEY = "multiplication-trainer-progress-v2";
 const HERO_MESSAGE_KEY = "multiplication-trainer-hero-message-v1";
 const RESULTS_MESSAGE_KEY_PREFIX = "multiplication-trainer-results-message-v1";
-const APP_VERSION = "v0.7.1";
+const THEME_STORAGE_KEY = "multiplication-trainer-theme-v1";
+const KEYPAD_PREFERENCE_STORAGE_KEY = "multiplication-trainer-keypad-preference-v1";
+const APP_VERSION = "v0.7.2";
 const FACTOR_LIMIT = 12;
 const TABLE_FACTORS = Array.from({ length: FACTOR_LIMIT }, (_, index) => index + 1);
 const QUESTION_PRESETS = [10, 20, 30];
@@ -83,6 +85,27 @@ const TECHNIQUE_STEPS = [
   { id: "guided", label: "Assisted Reps" },
   { id: "quick-check", label: "Solo Reps" },
 ];
+const THEME_OPTIONS = [
+  { key: "original", label: "Original" },
+  { key: "sunny-beach-day", label: "Sunny Beach Day" },
+  { key: "jungle", label: "Jungle" },
+  { key: "frozen", label: "Frozen" },
+  { key: "aang", label: "Aang" },
+];
+const KEYPAD_PREFERENCE_OPTIONS = ["auto", "always-on", "always-off"];
+const FACT_TRACKER_DETAIL_OPTIONS = {
+  addition: [
+    { key: "overall", label: "Overall" },
+    { key: "with-regrouping", label: "With regrouping" },
+    { key: "without-regrouping", label: "Without regrouping" },
+  ],
+  multiplication: [
+    { key: "overall", label: "Overall" },
+    { key: "positive", label: "Positive Integers" },
+    { key: "all-integers", label: "All Integers" },
+  ],
+};
+const MULTIPLICATION_SIGNED_TOTAL_FACTS = (TABLE_FACTORS.length - 1) * 4 + 3;
 
 const OPERATION_OPTIONS = ["multiplication", "addition"];
 const OPERATION_LABELS = {
@@ -101,6 +124,10 @@ const BUCKET_TREND_WINDOW_DAYS = 7;
 const BUCKET_TREND_MIN_TOTAL_ATTEMPTS = 6;
 const BUCKET_TREND_MIN_RECENT_ATTEMPTS = 3;
 const BUCKET_TREND_DELTA_THRESHOLD = 0.08;
+const ROLLING_WINDOW_DAYS = 31;
+const ADDITION_BUCKET_EXAMPLE_CAP = 5;
+const ADDITION_BUCKET_EXAMPLE_DISPLAY_LIMIT = 5;
+const PROGRESS_SAVE_DEBOUNCE_MS = 250;
 const ADDITION_DIGIT_BUCKETS = {
   easy: [
     [1, 1],
@@ -124,6 +151,9 @@ const ADDITION_TRACKER_BUCKETS = [
   { key: "2-3", label: "3-digit + 2-digit" },
   { key: "3-3", label: "3-digit + 3-digit" },
 ];
+const ADDITION_TRACKER_BUCKET_KEYS = new Set(
+  ADDITION_TRACKER_BUCKETS.map((bucket) => bucket.key),
+);
 const ADDITION_LESSONS = [
   {
     id: "make-10",
@@ -238,8 +268,7 @@ const elements = {
   settingsForm: document.getElementById("settingsForm"),
   sessionTypeField: document.getElementById("sessionTypeField"),
   setupSettingsPanel: document.getElementById("setupSettingsPanel"),
-  changeWorkoutTypeButton: document.getElementById("changeWorkoutTypeButton"),
-  changeOperationButton: document.getElementById("changeOperationButton"),
+  setupSettingsAwaiting: document.getElementById("setupSettingsAwaiting"),
   setupStartButton: document.getElementById("setupStartButton"),
   minFactor: document.getElementById("minFactor"),
   maxFactor: document.getElementById("maxFactor"),
@@ -307,6 +336,7 @@ const elements = {
   focusOperationFilter: document.getElementById("focusOperationFilter"),
   coachOperationFilter: document.getElementById("coachOperationFilter"),
   factOperationFilter: document.getElementById("factOperationFilter"),
+  factDetailFilter: document.getElementById("factDetailFilter"),
   progressSlides: Array.from(document.querySelectorAll(".progress-slide")),
   overallAnswered: document.getElementById("overallAnswered"),
   overallAccuracy: document.getElementById("overallAccuracy"),
@@ -347,6 +377,8 @@ const elements = {
   exitTechniqueDialog: document.getElementById("exitTechniqueDialog"),
   cancelExitTechniqueButton: document.getElementById("cancelExitTechniqueButton"),
   confirmExitTechniqueButton: document.getElementById("confirmExitTechniqueButton"),
+  themeSelect: document.getElementById("themeSelect"),
+  keypadPreferenceSelect: document.getElementById("keypadPreferenceSelect"),
 };
 
 const state = {
@@ -360,14 +392,18 @@ const state = {
   sessionStartedAt: 0,
   sessionEndedAt: 0,
   lastQuestionKey: null,
+  questionPool: [],
   advanceTimeoutId: null,
   techniqueAdvanceTimeoutId: null,
   countdownTimeoutId: null,
   hudIntervalId: null,
+  progressSaveTimeoutId: null,
   resultsSlideIndex: 0,
   progressSlideIndex: 0,
   displayMonthKey: "",
   useTouchKeypad: false,
+  theme: loadTheme(),
+  keypadPreference: loadKeypadPreference(),
   session: createEmptySession(),
   technique: createTechniqueState(),
   pendingTechniqueView: null,
@@ -483,6 +519,7 @@ function defaultProgress() {
     facts: {},
     dailyRecords: {},
     bucketDaily: {},
+    additionBucketExamples: {},
     workoutHistory: [],
     techniques: {},
   };
@@ -603,6 +640,89 @@ function normaliseBucketDailyEntry(entry) {
     attempted,
     correct,
   };
+}
+
+function normaliseAdditionBucketExampleEntry(entry) {
+  if (!entry || typeof entry !== "object") {
+    return null;
+  }
+
+  const parsed = parseFactKey(String(entry.factKey || ""));
+  const leftValue = Number(entry.left);
+  const rightValue = Number(entry.right);
+  const left = Number.isFinite(leftValue)
+    ? Math.trunc(leftValue)
+    : parsed.operation === "addition"
+      ? parsed.left
+      : NaN;
+  const right = Number.isFinite(rightValue)
+    ? Math.trunc(rightValue)
+    : parsed.operation === "addition"
+      ? parsed.right
+      : NaN;
+
+  if (!Number.isFinite(left) || !Number.isFinite(right)) {
+    return null;
+  }
+
+  const low = Math.min(left, right);
+  const high = Math.max(left, right);
+  const factKey = `addition:${low}+${high}`;
+  const attempts = clampNumber(Number(entry.attempts), 0, 9999, 0);
+  const correct = clampNumber(Number(entry.correct), 0, attempts, 0);
+  const regrouping =
+    typeof entry.regrouping === "boolean"
+      ? entry.regrouping
+      : hasAdditionRegrouping(low, high);
+
+  return {
+    factKey,
+    left: low,
+    right: high,
+    regrouping,
+    attempts,
+    correct,
+    lastSeenAt: clampNumber(Number(entry.lastSeenAt), 0, Number.MAX_SAFE_INTEGER, 0),
+  };
+}
+
+function normaliseAdditionBucketExamples(examplesByBucket) {
+  const source = examplesByBucket && typeof examplesByBucket === "object" ? examplesByBucket : {};
+  const normalised = {};
+
+  ADDITION_TRACKER_BUCKETS.forEach((bucket) => {
+    const entries = Array.isArray(source[bucket.key]) ? source[bucket.key] : [];
+    const mergedByFact = new Map();
+
+    entries.forEach((entry) => {
+      const clean = normaliseAdditionBucketExampleEntry(entry);
+      if (!clean) {
+        return;
+      }
+
+      const existing = mergedByFact.get(clean.factKey);
+      if (existing) {
+        const mergedAttempts = clampNumber(existing.attempts + clean.attempts, 0, 9999, 0);
+        const mergedCorrect = clampNumber(existing.correct + clean.correct, 0, mergedAttempts, 0);
+        mergedByFact.set(clean.factKey, {
+          ...existing,
+          attempts: mergedAttempts,
+          correct: mergedCorrect,
+          lastSeenAt: Math.max(existing.lastSeenAt, clean.lastSeenAt),
+          regrouping: clean.regrouping,
+        });
+        return;
+      }
+
+      mergedByFact.set(clean.factKey, clean);
+    });
+
+    normalised[bucket.key] = Array.from(mergedByFact.values())
+      .sort((left, right) => right.lastSeenAt - left.lastSeenAt)
+      .slice(0, ADDITION_BUCKET_EXAMPLE_CAP);
+  });
+
+  return normalised;
 }
 
 function sanitiseSettingsSnapshot(settings) {
@@ -740,11 +860,13 @@ function loadProgress() {
         normaliseBucketDailyEntry(record),
       ]),
     );
+    const additionBucketExamples = normaliseAdditionBucketExamples(
+      parsed.additionBucketExamples,
+    );
     const workoutHistory = Array.isArray(parsed.workoutHistory)
       ? parsed.workoutHistory.map(normaliseWorkoutRecord).slice(0, 50)
       : [];
-
-    return {
+    const progress = {
       ...defaultProgress(),
       ...parsed,
       totalAttempted: clampNumber(
@@ -765,9 +887,12 @@ function loadProgress() {
       facts: parsed.facts || {},
       dailyRecords,
       bucketDaily,
+      additionBucketExamples,
       workoutHistory,
       techniques: parsed.techniques || {},
     };
+
+    return pruneProgressForRollingWindow(progress);
   } catch (error) {
     return defaultProgress();
   }
@@ -775,7 +900,74 @@ function loadProgress() {
 
 function saveProgress() {
   try {
+    window.clearTimeout(state.progressSaveTimeoutId);
+    state.progressSaveTimeoutId = null;
+    pruneProgressForRollingWindow(state.progress);
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state.progress));
+  } catch (error) {
+    // Ignore storage failures so the app still works in restricted contexts.
+  }
+}
+
+function queueProgressSave() {
+  window.clearTimeout(state.progressSaveTimeoutId);
+  state.progressSaveTimeoutId = window.setTimeout(() => {
+    state.progressSaveTimeoutId = null;
+    saveProgress();
+  }, PROGRESS_SAVE_DEBOUNCE_MS);
+}
+
+function sanitiseTheme(themeValue) {
+  const value = String(themeValue || "");
+  return THEME_OPTIONS.some((theme) => theme.key === value) ? value : "original";
+}
+
+function loadTheme() {
+  try {
+    const raw = window.localStorage.getItem(THEME_STORAGE_KEY);
+    return sanitiseTheme(raw);
+  } catch (error) {
+    return "original";
+  }
+}
+
+function saveTheme(theme) {
+  try {
+    window.localStorage.setItem(THEME_STORAGE_KEY, sanitiseTheme(theme));
+  } catch (error) {
+    // Ignore storage failures so the app still works in restricted contexts.
+  }
+}
+
+function applyTheme(theme) {
+  const nextTheme = sanitiseTheme(theme);
+  state.theme = nextTheme;
+  document.body.dataset.theme = nextTheme;
+  if (elements.themeSelect) {
+    elements.themeSelect.value = nextTheme;
+  }
+}
+
+function sanitiseKeypadPreference(value) {
+  const key = String(value || "");
+  return KEYPAD_PREFERENCE_OPTIONS.includes(key) ? key : "auto";
+}
+
+function loadKeypadPreference() {
+  try {
+    const raw = window.localStorage.getItem(KEYPAD_PREFERENCE_STORAGE_KEY);
+    return sanitiseKeypadPreference(raw);
+  } catch (error) {
+    return "auto";
+  }
+}
+
+function saveKeypadPreference(value) {
+  try {
+    window.localStorage.setItem(
+      KEYPAD_PREFERENCE_STORAGE_KEY,
+      sanitiseKeypadPreference(value),
+    );
   } catch (error) {
     // Ignore storage failures so the app still works in restricted contexts.
   }
@@ -801,6 +993,46 @@ function shiftDateKey(key, days) {
 
 function getTodayDateKey() {
   return formatDateKey(new Date());
+}
+
+function isDateKey(value) {
+  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
+}
+
+function getRollingWindowCutoffDateKey(days = ROLLING_WINDOW_DAYS) {
+  return shiftDateKey(getTodayDateKey(), -days);
+}
+
+function pruneProgressForRollingWindow(progress) {
+  if (!progress || typeof progress !== "object") {
+    return progress;
+  }
+
+  const cutoffDateKey = getRollingWindowCutoffDateKey();
+  progress.dailyRecords = Object.fromEntries(
+    Object.entries(progress.dailyRecords || {}).filter(([dateKey]) =>
+      isDateKey(dateKey) ? dateKey >= cutoffDateKey : false,
+    ),
+  );
+  progress.bucketDaily = Object.fromEntries(
+    Object.entries(progress.bucketDaily || {}).filter(([storageKey]) => {
+      const { dateKey } = parseBucketDailyKey(storageKey);
+      return isDateKey(dateKey) ? dateKey >= cutoffDateKey : false;
+    }),
+  );
+  progress.workoutHistory = (Array.isArray(progress.workoutHistory) ? progress.workoutHistory : [])
+    .filter((record) => {
+      if (isDateKey(record?.dateKey)) {
+        return record.dateKey >= cutoffDateKey;
+      }
+      if (Number.isFinite(Number(record?.recordedAt))) {
+        return formatDateKey(new Date(Number(record.recordedAt))) >= cutoffDateKey;
+      }
+      return true;
+    })
+    .slice(0, 50);
+
+  return progress;
 }
 
 function getCurrentMonthDate() {
@@ -1065,14 +1297,13 @@ function toggleSetupFields() {
   });
 
   if (elements.setupSettingsPanel) {
-    elements.setupSettingsPanel.classList.toggle("is-collapsed", !showAdvancedSettings);
-    elements.setupSettingsPanel.classList.toggle("is-expanded", showAdvancedSettings);
+    elements.setupSettingsPanel.classList.toggle("is-ready", showAdvancedSettings);
   }
-  if (elements.changeOperationButton) {
-    elements.changeOperationButton.classList.toggle("is-hidden", !hasOperation);
+  if (elements.setupSettingsAwaiting) {
+    elements.setupSettingsAwaiting.classList.toggle("is-hidden", showAdvancedSettings);
   }
-  if (elements.changeWorkoutTypeButton) {
-    elements.changeWorkoutTypeButton.classList.toggle("is-hidden", !hasSessionType);
+  if (elements.settingsForm) {
+    elements.settingsForm.classList.toggle("is-hidden", !showAdvancedSettings);
   }
   if (elements.setupStartButton) {
     elements.setupStartButton.disabled = !showAdvancedSettings;
@@ -3079,7 +3310,11 @@ function getFactProgress(key) {
 }
 
 function pickQuestion() {
-  const pool = buildPool(state.settings);
+  const pool = state.questionPool.length ? state.questionPool : buildPool(state.settings);
+  if (!pool.length) {
+    return null;
+  }
+
   const weightedPool = pool.map((fact) => {
     const factProgress = getFactProgress(fact.key);
     let weight = 1;
@@ -3387,7 +3622,13 @@ function setFeedback(message, tone = "") {
 }
 
 function askNextQuestion() {
-  state.currentQuestion = pickQuestion();
+  const nextQuestion = pickQuestion();
+  if (!nextQuestion) {
+    completeSession("manual");
+    return;
+  }
+
+  state.currentQuestion = nextQuestion;
   state.questionStartedAt = window.performance.now();
   state.lastQuestionKey = state.currentQuestion.key;
 
@@ -3484,6 +3725,11 @@ function startSession(settings) {
   state.active = true;
   state.countingDown = true;
   state.settings = settings;
+  state.questionPool = buildPool(settings);
+  if (!state.questionPool.length) {
+    const fallbackFactor = settings.operation === "addition" ? 1 : 2;
+    state.questionPool = [createFact(settings.operation, fallbackFactor, fallbackFactor)];
+  }
   state.session = createEmptySession();
   state.currentQuestion = null;
   state.lastQuestionKey = null;
@@ -3727,7 +3973,7 @@ function registerAnswer(evaluation, answerValue, options = {}) {
     registerRecentAnswer(answerValue, evaluation, false, responseTimeMs);
   }
 
-  saveProgress();
+  queueProgressSave();
   renderDailyProgress();
   renderPracticeProgress();
 
@@ -3929,6 +4175,7 @@ function completeSession(reason = "manual") {
 
   state.active = false;
   state.countingDown = false;
+  state.questionPool = [];
   state.sessionEndedAt = state.sessionStartedAt ? window.performance.now() : 0;
   window.clearTimeout(state.advanceTimeoutId);
   stopHudTimer();
@@ -4000,6 +4247,41 @@ function getFactOperationFilterValue() {
   return elements.factOperationFilter.value === "addition" ? "addition" : "multiplication";
 }
 
+function syncFactDetailFilterOptions() {
+  if (!elements.factDetailFilter) {
+    return;
+  }
+
+  const operation = getFactOperationFilterValue();
+  const definitions =
+    operation === "addition"
+      ? FACT_TRACKER_DETAIL_OPTIONS.addition
+      : FACT_TRACKER_DETAIL_OPTIONS.multiplication;
+  const previousValue = elements.factDetailFilter.value;
+
+  elements.factDetailFilter.innerHTML = definitions
+    .map((definition) => `<option value="${definition.key}">${definition.label}</option>`)
+    .join("");
+  elements.factDetailFilter.value = definitions.some((definition) => definition.key === previousValue)
+    ? previousValue
+    : definitions[0].key;
+}
+
+function getFactDetailFilterValue() {
+  const operation = getFactOperationFilterValue();
+  const definitions =
+    operation === "addition"
+      ? FACT_TRACKER_DETAIL_OPTIONS.addition
+      : FACT_TRACKER_DETAIL_OPTIONS.multiplication;
+  const fallback = definitions[0]?.key || "overall";
+  if (!elements.factDetailFilter) {
+    return fallback;
+  }
+
+  const value = elements.factDetailFilter.value;
+  return definitions.some((definition) => definition.key === value) ? value : fallback;
+}
+
 function getRecordsOperationFilterValue() {
   if (!elements.recordsOperationSelect) {
     return "all";
@@ -4042,8 +4324,18 @@ function prefersTouchKeypad() {
   return coarsePointer && maxSide >= 768;
 }
 
+function shouldUseTouchKeypad() {
+  if (state.keypadPreference === "always-on") {
+    return true;
+  }
+  if (state.keypadPreference === "always-off") {
+    return false;
+  }
+  return prefersTouchKeypad();
+}
+
 function updatePracticeInputMode() {
-  state.useTouchKeypad = prefersTouchKeypad();
+  state.useTouchKeypad = shouldUseTouchKeypad();
   if (elements.practiceKeypad) {
     elements.practiceKeypad.classList.toggle("is-hidden", !state.useTouchKeypad);
   }
@@ -4388,6 +4680,9 @@ function updateBucketDailyProgress(question, isCorrect) {
   }
 
   state.progress.bucketDaily = state.progress.bucketDaily || {};
+  if (question.operation === "addition") {
+    updateAdditionBucketExamples(question, isCorrect);
+  }
   buckets.forEach((bucketKey) => {
     const storageKey = createBucketDailyKey(dateKey, question.operation, bucketKey);
     const current = normaliseBucketDailyEntry(state.progress.bucketDaily[storageKey] || {});
@@ -4396,6 +4691,46 @@ function updateBucketDailyProgress(question, isCorrect) {
       correct: current.correct + (isCorrect ? 1 : 0),
     };
   });
+}
+
+function updateAdditionBucketExamples(question, isCorrect) {
+  if (!question || question.operation !== "addition") {
+    return;
+  }
+
+  const bucketKey = getAdditionTrackerBucketKey(question.a, question.b);
+  if (!ADDITION_TRACKER_BUCKET_KEYS.has(bucketKey)) {
+    return;
+  }
+
+  state.progress.additionBucketExamples = state.progress.additionBucketExamples || {};
+  const existingExamples = Array.isArray(state.progress.additionBucketExamples[bucketKey])
+    ? state.progress.additionBucketExamples[bucketKey]
+    : [];
+  const byFact = new Map(existingExamples.map((entry) => [entry.factKey, entry]));
+  const existing = byFact.get(question.key);
+  const now = Date.now();
+  const nextAttempts = clampNumber(Number(existing?.attempts ?? 0) + 1, 0, 9999, 1);
+  const nextCorrect = clampNumber(
+    Number(existing?.correct ?? 0) + (isCorrect ? 1 : 0),
+    0,
+    nextAttempts,
+    0,
+  );
+
+  byFact.set(question.key, {
+    factKey: question.key,
+    left: question.a,
+    right: question.b,
+    regrouping: hasAdditionRegrouping(question.a, question.b),
+    attempts: nextAttempts,
+    correct: nextCorrect,
+    lastSeenAt: now,
+  });
+
+  state.progress.additionBucketExamples[bucketKey] = Array.from(byFact.values())
+    .sort((left, right) => right.lastSeenAt - left.lastSeenAt)
+    .slice(0, ADDITION_BUCKET_EXAMPLE_CAP);
 }
 
 function buildBucketTrendItem(operation, bucketKey) {
@@ -4686,13 +5021,30 @@ function getTableStatus(table) {
   return getBucketStatus(table.attempts, table.accuracy);
 }
 
-function getTableStats() {
-  const factEntries = Object.entries(state.progress.facts).map(([key, progress]) => ({
-    key,
-    progress: getFactProgress(key),
-    ...parseFactKey(key),
-  }))
+function getMultiplicationFactEntries() {
+  return Object.entries(state.progress.facts)
+    .map(([key]) => ({
+      key,
+      progress: getFactProgress(key),
+      ...parseFactKey(key),
+    }))
     .filter((entry) => entry.operation === "multiplication");
+}
+
+function getSignedFactGroupKey(entry) {
+  const left = `${entry.left >= 0 ? "+" : "-"}${entry.leftMagnitude}`;
+  const right = `${entry.right >= 0 ? "+" : "-"}${entry.rightMagnitude}`;
+  return [left, right].sort().join("x");
+}
+
+function getTableStats(detailMode = "overall") {
+  const trackerMode =
+    detailMode === "positive" || detailMode === "all-integers" ? detailMode : "overall";
+  const allFactEntries = getMultiplicationFactEntries();
+  const factEntries =
+    trackerMode === "positive"
+      ? allFactEntries.filter((entry) => entry.left >= 0 && entry.right >= 0)
+      : allFactEntries;
 
   return TABLE_FACTORS.map((factor) => {
     const relatedEntries = factEntries.filter(
@@ -4700,9 +5052,12 @@ function getTableStats() {
     );
     const seenGroupKeys = new Set(
       relatedEntries.map((entry) => {
+        if (trackerMode === "all-integers") {
+          return getSignedFactGroupKey(entry);
+        }
         const low = Math.min(entry.leftMagnitude, entry.rightMagnitude);
         const high = Math.max(entry.leftMagnitude, entry.rightMagnitude);
-      return `${low}x${high}`;
+        return `${low}x${high}`;
       }),
     );
     const totals = relatedEntries.reduce(
@@ -4720,15 +5075,24 @@ function getTableStats() {
     );
 
     const accuracy = getAccuracy(totals.correct, totals.attempts);
+    const totalFacts =
+      trackerMode === "all-integers" ? MULTIPLICATION_SIGNED_TOTAL_FACTS : TABLE_FACTORS.length;
+    const detailLabel =
+      trackerMode === "all-integers"
+        ? `${seenGroupKeys.size}/${totalFacts} signed facts`
+        : trackerMode === "positive"
+          ? `${seenGroupKeys.size}/${totalFacts} positive facts`
+          : `${seenGroupKeys.size}/${totalFacts} fact groups`;
 
     return {
       factor,
-      totalFacts: TABLE_FACTORS.length,
+      totalFacts,
+      detailLabel,
       accuracy,
       seenFacts: seenGroupKeys.size,
       ...totals,
       ...getTableStatus({
-        seenFacts: seenGroupKeys.size,
+        attempts: totals.attempts,
         accuracy,
       }),
     };
@@ -4827,58 +5191,86 @@ function buildAdditionTrackerStats() {
 
 function getRatioLabel(correct, attempts) {
   if (!attempts) {
-    return "No reps yet";
+    return "No attempts yet";
   }
   return `${correct} / ${attempts} (${formatPercent(getAccuracy(correct, attempts))})`;
 }
 
-function renderAdditionTracker() {
+function getAdditionMetricSummary(bucket, detailMode) {
+  if (detailMode === "with-regrouping") {
+    return {
+      key: "with-regrouping",
+      label: "With regrouping",
+      attempts: bucket.regroupAttempts,
+      correct: bucket.regroupCorrect,
+    };
+  }
+
+  if (detailMode === "without-regrouping") {
+    return {
+      key: "without-regrouping",
+      label: "Without regrouping",
+      attempts: bucket.noRegroupAttempts,
+      correct: bucket.noRegroupCorrect,
+    };
+  }
+
+  return {
+    key: "overall",
+    label: "Overall",
+    attempts: bucket.attempts,
+    correct: bucket.correct,
+  };
+}
+
+function getAdditionBucketExamples(bucketKey, detailMode = "overall") {
+  const source = Array.isArray(state.progress.additionBucketExamples?.[bucketKey])
+    ? state.progress.additionBucketExamples[bucketKey]
+    : [];
+
+  const filtered =
+    detailMode === "with-regrouping"
+      ? source.filter((entry) => entry.regrouping)
+      : detailMode === "without-regrouping"
+        ? source.filter((entry) => !entry.regrouping)
+        : source;
+
+  return filtered.slice(0, ADDITION_BUCKET_EXAMPLE_DISPLAY_LIMIT);
+}
+
+function renderAdditionTracker(detailMode = "overall") {
+  const activeMode =
+    detailMode === "with-regrouping" || detailMode === "without-regrouping"
+      ? detailMode
+      : "overall";
   const statsByBucket = buildAdditionTrackerStats();
   elements.tableGrid.classList.add("addition-table-grid");
 
   elements.tableGrid.innerHTML = ADDITION_TRACKER_BUCKETS.map((bucketMeta) => {
     const bucket = statsByBucket[bucketMeta.key];
-    const overallRatio = bucket.attempts ? bucket.correct / bucket.attempts : 0;
-    const status = getBucketStatus(bucket.attempts, overallRatio);
+    const metric = getAdditionMetricSummary(bucket, activeMode);
+    const ratio = metric.attempts ? metric.correct / metric.attempts : 0;
+    const status = getBucketStatus(metric.attempts, ratio);
+    const examples = getAdditionBucketExamples(bucketMeta.key, activeMode);
+    const examplesSummary = examples.length
+      ? examples.map((entry) => `${entry.left} + ${entry.right}`).join(" | ")
+      : "No recent examples yet";
+
     return `
-      <button
-        class="table-card ${status.tone} addition-bucket-card"
-        type="button"
-        data-addition-bucket-card="${bucketMeta.key}"
-        aria-pressed="false"
-        aria-label="${bucketMeta.label} bucket details"
-      >
-        <div class="addition-bucket-face addition-bucket-front">
-          <div class="table-card-top">
-            <div class="table-name">${bucketMeta.label}</div>
-            <span class="table-pill ${bucket.attempts ? status.tone : "unseen"}">${
-              bucket.attempts ? formatPercent(overallRatio) : "--"
-            }</span>
-          </div>
-          <div class="table-card-stats">
-            <span class="fact-meta">${bucket.attempts ? getRatioLabel(bucket.correct, bucket.attempts) : "No reps yet"}</span>
-          </div>
-          <div class="table-card-bottom">
-            <span class="table-pill ${status.tone}">${status.label}</span>
-            <span class="fact-meta">Tap for regrouping split</span>
-          </div>
+      <article class="table-card ${status.tone}">
+        <div class="table-card-top">
+          <div class="table-name">${bucketMeta.label}</div>
+          <span class="table-pill ${status.tone}">${status.label}</span>
         </div>
-        <div class="addition-bucket-face addition-bucket-back">
-          <div class="table-card-top">
-            <div class="table-name">${bucketMeta.label}</div>
-            <span class="table-pill ${status.tone}">${status.label}</span>
-          </div>
-          <div class="fact-meta table-card-middle">Without regrouping: ${getRatioLabel(
-            bucket.noRegroupCorrect,
-            bucket.noRegroupAttempts,
-          )}</div>
-          <div class="fact-meta">With regrouping: ${getRatioLabel(
-            bucket.regroupCorrect,
-            bucket.regroupAttempts,
-          )}</div>
-          <div class="fact-meta">Tap to return</div>
+        <div class="fact-meta table-card-middle">${metric.label}</div>
+        <div class="bar-track" aria-hidden="true">
+          <div class="bar-fill ${status.tone}" style="width: ${Math.round(ratio * 100)}%"></div>
         </div>
-      </button>
+        <div class="table-card-stats">
+          <span>${getRatioLabel(metric.correct, metric.attempts)}</span>
+        </div>
+        <div class="fact-meta">Recent examples: ${examplesSummary}</div>
+      </article>
     `;
   }).join("");
 }
@@ -4904,6 +5296,7 @@ function getAdditionTechniqueGridMarkup() {
 
 function renderTableRadar() {
   const factOperation = getFactOperationFilterValue();
+  const factDetail = getFactDetailFilterValue();
   elements.tableGrid.classList.remove("addition-table-grid");
   if (elements.factsSlideTitle) {
     const operationCopy =
@@ -4918,28 +5311,33 @@ function renderTableRadar() {
   }
 
   if (factOperation === "addition") {
-    renderAdditionTracker();
+    renderAdditionTracker(factDetail);
     return;
   }
 
-  if (!getFactEntriesByOperation("multiplication").some((fact) => fact.attempts > 0)) {
+  const tableStats = getTableStats(factDetail);
+  if (!tableStats.some((table) => table.attempts > 0)) {
+    const emptyDetailCopy =
+      factDetail === "positive"
+        ? "No positive-integer attempts yet."
+        : factDetail === "all-integers"
+          ? "No signed-integer attempts yet."
+          : "The fact tracker fills in after you answer a few facts.";
     elements.tableGrid.innerHTML = `
       <div class="table-card unseen">
         <div class="table-name">Start a workout</div>
-        <div class="fact-meta">The fact tracker fills in after you answer a few facts.</div>
+        <div class="fact-meta">${emptyDetailCopy}</div>
       </div>
     `;
     return;
   }
 
-  elements.tableGrid.innerHTML = getTableStats()
+  elements.tableGrid.innerHTML = tableStats
     .map((table) => {
       const accuracyLabel = table.attempts
         ? `${formatPercent(table.accuracy)} accuracy`
         : "No attempts yet";
-      const detailLabel = table.attempts
-        ? `${table.seenFacts}/${table.totalFacts} facts`
-        : "Fresh range";
+      const detailLabel = table.attempts ? table.detailLabel : "Fresh range";
 
       return `
         <article class="table-card ${table.tone}">
@@ -5221,20 +5619,6 @@ function handleSettingsChange(event) {
   renderSetupPreview();
 }
 
-function handleChangeWorkoutTypeRequest() {
-  setCheckedValue("sessionType", "");
-  toggleSetupFields();
-  renderSetupPreview();
-}
-
-function handleChangeOperationRequest() {
-  setCheckedValue("operation", "");
-  setCheckedValue("sessionType", "");
-  setCheckedValue("additionDifficulty", "");
-  toggleSetupFields();
-  renderSetupPreview();
-}
-
 function handleOverviewOperationFilterChange() {
   renderOverall();
 }
@@ -5248,6 +5632,11 @@ function handleCoachOperationFilterChange() {
 }
 
 function handleFactOperationFilterChange() {
+  syncFactDetailFilterOptions();
+  renderTableRadar();
+}
+
+function handleFactDetailFilterChange() {
   renderTableRadar();
 }
 
@@ -5256,14 +5645,25 @@ function handleRecordsFilterChange() {
   renderWorkoutHistory();
 }
 
-function handleAdditionBucketCardToggle(event) {
-  const button = event.target.closest("[data-addition-bucket-card]");
-  if (!(button instanceof HTMLButtonElement)) {
+function handleThemeChange(event) {
+  const select = event.target;
+  if (!(select instanceof HTMLSelectElement)) {
     return;
   }
+  const theme = sanitiseTheme(select.value);
+  applyTheme(theme);
+  saveTheme(theme);
+}
 
-  const flipped = button.classList.toggle("is-flipped");
-  button.setAttribute("aria-pressed", flipped ? "true" : "false");
+function handleKeypadPreferenceChange(event) {
+  const select = event.target;
+  if (!(select instanceof HTMLSelectElement)) {
+    return;
+  }
+  const preference = sanitiseKeypadPreference(select.value);
+  state.keypadPreference = preference;
+  saveKeypadPreference(preference);
+  updatePracticeInputMode();
 }
 
 function resetProgress() {
@@ -5291,6 +5691,10 @@ function initialise() {
   if (elements.appVersion) {
     elements.appVersion.textContent = APP_VERSION;
   }
+  applyTheme(state.theme);
+  if (elements.keypadPreferenceSelect) {
+    elements.keypadPreferenceSelect.value = state.keypadPreference;
+  }
   elements.heroMessage.textContent = getHeroMessage();
   state.displayMonthKey = getMonthKey(getCurrentMonthDate());
 
@@ -5308,6 +5712,7 @@ function initialise() {
   if (elements.factOperationFilter) {
     elements.factOperationFilter.value = "multiplication";
   }
+  syncFactDetailFilterOptions();
   if (elements.recordsOperationSelect) {
     elements.recordsOperationSelect.value = "all";
   }
@@ -5353,8 +5758,6 @@ function initialise() {
   elements.additionDifficultyInputs.forEach((input) => {
     input.addEventListener("change", handleSettingsChange);
   });
-  elements.changeWorkoutTypeButton?.addEventListener("click", handleChangeWorkoutTypeRequest);
-  elements.changeOperationButton?.addEventListener("click", handleChangeOperationRequest);
   document.addEventListener("keydown", handleGlobalKeydown);
   elements.answerForm.addEventListener("submit", handleSubmit);
   elements.skipButton.addEventListener("click", handleSkip);
@@ -5391,9 +5794,11 @@ function initialise() {
   elements.focusOperationFilter?.addEventListener("change", handleFocusOperationFilterChange);
   elements.coachOperationFilter?.addEventListener("change", handleCoachOperationFilterChange);
   elements.factOperationFilter?.addEventListener("change", handleFactOperationFilterChange);
-  elements.tableGrid?.addEventListener("click", handleAdditionBucketCardToggle);
+  elements.factDetailFilter?.addEventListener("change", handleFactDetailFilterChange);
   elements.recordsOperationSelect?.addEventListener("change", handleRecordsFilterChange);
   elements.recordsModeSelect.addEventListener("change", renderWorkoutHistory);
+  elements.themeSelect?.addEventListener("change", handleThemeChange);
+  elements.keypadPreferenceSelect?.addEventListener("change", handleKeypadPreferenceChange);
   elements.progressMonthPrevButton.addEventListener("click", () => shiftDisplayedMonth(-1));
   elements.progressMonthNextButton.addEventListener("click", () => shiftDisplayedMonth(1));
   elements.resultsMonthPrevButton.addEventListener("click", () => shiftDisplayedMonth(-1));

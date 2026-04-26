@@ -1,0 +1,53 @@
+1) Run Info
+Date: 2026-04-26 19:47:23 +08:00
+Tester: Rich F
+Build/Branch: main
+Commit (if any): be31afa
+Environment:
+    OS: Windows 10 Home (10.0.19045.7184)
+    PowerShell: 5.1.19041.7181
+    Node: Not installed/found
+    Python: Not available in this shell
+    Working tree: dirty (CHANGELOG.md, PROJECT_NOTES.md, README.md, app.js, index.html, styles.css, plus docs/Testing/
+    Browser: Google Chrome - Version 147.0.7727.117 (Official Build) (64-bit)
+Cutoff date for rolling 31 days (for this cycle): March 26, 2026
+2) Result Summary
+Overall: PASS / FAIL
+Blockers found: 0
+Non-blockers found: 0
+Ship decision: GO / NO-GO
+3) Checklist Results
+ID	Area    |   Result (PASS/FAIL)  |    Notes / Evidence
+C1	App loads with existing saved progress  |   PASS    |   App loaded; backup saved at docs/Testing/localStorage-backup-2026-04-26.json        
+C2	Multiplication timed    |   PASS  
+C3	Multiplication question-goal    |   PASS
+C4	Multiplication endless zen  |   PASS	
+C5	Multiplication endless spar (3 strikes) |   PASS
+C6	Multiplication isolation    |   PASS		
+C7	Addition timed  |   PASS
+C8	Addition question-goal  |   PASS		
+C9	Addition endless zen    |   PASS		
+C10	Addition endless spar	|   PASS		
+C11	Tracker status reflects real attempts/accuracy  |   PASS	
+C12	Session-stable pool behavior in-session |   PASS
+C13	New session refreshes pool behavior	|   PASS	
+C14	dailyRecords pruned to 31 days  |   PASS	
+C15	bucketDaily pruned to 31 days   |   PASS	
+C16	workoutHistory pruned to 31 days    |   PASS		
+C17	Addition examples capped to 5 per bucket    |   PASS	
+C18	Oldest evicted on 6th example    |   PASS		
+C19	Regrouping views: overall/with/without correct    |   PASS		
+C20	No leaked timers after repeated start/end cycles    |   PASS		
+C21	No duplicate listeners (single action per click/submit)    |   PASS		
+C22	Migration loads old saved profiles cleanly    |   PASS		
+C23	README/Changelog parity    |   PASS		
+4) Defect Log
+Defect ID	Severity (Blocker/Major/Minor)	Steps to Reproduce	Expected	Actual	Screenshot/Note
+D-001					
+5) Retest Log
+Defect ID	Fix Verified (Y/N)	Retest Result	Notes
+D-001			
+6) Final Signoff
+All blockers resolved: YES / NO
+Ready to ship Pass 1: YES / NO
+Signoff by: Name + date

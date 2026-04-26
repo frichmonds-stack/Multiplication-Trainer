@@ -6,6 +6,28 @@ The format is inspired by Keep a Changelog and uses a simple project-friendly ve
 
 ## [Unreleased]
 
+### Changed
+- Fixed multiplication fact-tracker table status chips so attempt-driven status labels render correctly.
+- Switched question selection to use a session-stable question pool (rebuilt at workout start instead of every prompt).
+- Added rolling-window pruning for dated progress stores (`dailyRecords`, `bucketDaily`, `workoutHistory`) to keep browser storage bounded.
+- Added capped addition example memory by bucket (5 recent examples per bucket) and surfaced recent examples directly on addition tracker cards.
+
+## [0.7.2] - 2026-04-25
+
+### Added
+- App appearance palettes in Options with five selectable themes: `Original`, `Sunny Beach Day`, `Jungle`, `Frozen`, and `Aang`.
+- Number-pad preference control in Options with `Auto`, `Always On`, and `Always Off`.
+- Fact Tracker secondary selector:
+  - Addition: `Overall`, `With regrouping`, `Without regrouping`
+  - Multiplication: `Overall`, `Positive Integers`, `All Integers`
+
+### Changed
+- Setup now starts in split layout and keeps the right panel visible from the beginning.
+- Removed setup backtrack buttons and moved backtracking to inline editing of earlier choices.
+- Setup settings panel now unlocks after workout type selection, with a guided waiting message beforehand.
+- Addition fact tracker cards now use the same static card style as multiplication cards (selector-driven detail view instead of tap-flip).
+- Migrated accent-hardcoded UI reds to theme-aware accent tokens so palette changes apply consistently across the app shell.
+
 ## [0.7.1] - 2026-04-25
 
 ### Changed
