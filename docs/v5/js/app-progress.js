@@ -1,0 +1,1599 @@
+function getOperationFilterValue(selectElement, fallback = "all") {
+  if (!(selectElement instanceof HTMLSelectElement)) {
+    return fallback;
+  }
+
+  const value = selectElement.value;
+  return value === "addition" || value === "multiplication" || value === "all"
+    ? value
+    : fallback;
+}
+
+function getOverviewOperationFilterValue() {
+  return getOperationFilterValue(elements.overviewOperationFilter, "all");
+}
+
+function getFocusOperationFilterValue() {
+  return getOperationFilterValue(elements.focusOperationFilter, "all");
+}
+
+function getCoachOperationFilterValue() {
+  return getOperationFilterValue(elements.coachOperationFilter, "all");
+}
+
+function getFactOperationFilterValue() {
+  if (!elements.factOperationFilter) {
+    return "multiplication";
+  }
+  return elements.factOperationFilter.value === "addition" ? "addition" : "multiplication";
+}
+
+function syncFactDetailFilterOptions() {
+  if (!elements.factDetailFilter) {
+    return;
+  }
+
+  const operation = getFactOperationFilterValue();
+  const definitions =
+    operation === "addition"
+      ? FACT_TRACKER_DETAIL_OPTIONS.addition
+      : FACT_TRACKER_DETAIL_OPTIONS.multiplication;
+  const previousValue = elements.factDetailFilter.value;
+
+  elements.factDetailFilter.innerHTML = definitions
+    .map((definition) => `<option value="${definition.key}">${definition.label}</option>`)
+    .join("");
+  elements.factDetailFilter.value = definitions.some((definition) => definition.key === previousValue)
+    ? previousValue
+    : definitions[0].key;
+}
+
+function getFactDetailFilterValue() {
+  const operation = getFactOperationFilterValue();
+  const definitions =
+    operation === "addition"
+      ? FACT_TRACKER_DETAIL_OPTIONS.addition
+      : FACT_TRACKER_DETAIL_OPTIONS.multiplication;
+  const fallback = definitions[0]?.key || "overall";
+  if (!elements.factDetailFilter) {
+    return fallback;
+  }
+
+  const value = elements.factDetailFilter.value;
+  return definitions.some((definition) => definition.key === value) ? value : fallback;
+}
+
+function getRecordsOperationFilterValue() {
+  if (!elements.recordsOperationSelect) {
+    return "all";
+  }
+  const value = elements.recordsOperationSelect.value;
+  return value === "addition" || value === "multiplication" || value === "all"
+    ? value
+    : "all";
+}
+
+function matchesOperationFilter(operation, filterValue) {
+  return filterValue === "all" ? true : operation === filterValue;
+}
+
+function getFactEntriesByOperation(filterValue = "all") {
+  return Object.entries(state.progress.facts)
+    .map(([key, value]) => {
+      const parsed = parseFactKey(key);
+      const progress = getFactProgress(key);
+      return {
+        key,
+        ...parsed,
+        ...progress,
+        operation: progress.operation || parsed.operation || "multiplication",
+        symbol: progress.symbol || parsed.symbol || "x",
+      };
+    })
+    .filter((entry) => matchesOperationFilter(entry.operation, filterValue));
+}
+
+function getWorkoutHistoryByOperation(filterValue = "all") {
+  return state.progress.workoutHistory.filter((record) =>
+    matchesOperationFilter(record.operation || "multiplication", filterValue),
+  );
+}
+
+function prefersTouchKeypad() {
+  const coarsePointer = window.matchMedia("(pointer: coarse)").matches;
+  const maxSide = Math.max(window.innerWidth, window.innerHeight);
+  return coarsePointer && maxSide >= 768;
+}
+
+function shouldUseTouchKeypad() {
+  if (state.keypadPreference === "always-on") {
+    return true;
+  }
+  if (state.keypadPreference === "always-off") {
+    return false;
+  }
+  return prefersTouchKeypad();
+}
+
+function updatePracticeInputMode() {
+  state.useTouchKeypad = shouldUseTouchKeypad();
+  if (elements.practiceKeypad) {
+    elements.practiceKeypad.classList.toggle("is-hidden", !state.useTouchKeypad);
+  }
+  if (elements.practicePanel) {
+    elements.practicePanel.classList.toggle("has-touch-keypad", state.useTouchKeypad);
+  }
+  syncKeypadSignToggleState();
+}
+
+function getBestAttemptsInDay(records) {
+  const totalsByDay = {};
+
+  records.forEach((record) => {
+    const key = record.dateKey || getTodayDateKey();
+    totalsByDay[key] = (totalsByDay[key] || 0) + Number(record.attempted || 0);
+  });
+
+  return Object.values(totalsByDay).reduce((best, value) => Math.max(best, value), 0);
+}
+
+function getOverallStats(filterValue = "all") {
+  const factEntries = getFactEntriesByOperation(filterValue);
+  const workoutHistory = getWorkoutHistoryByOperation(filterValue);
+  const totals = factEntries.reduce(
+    (summary, entry) => {
+      summary.attempted += entry.attempts;
+      summary.correct += entry.correct;
+      summary.bestStreak = Math.max(summary.bestStreak, entry.bestStreak || 0);
+      return summary;
+    },
+    { attempted: 0, correct: 0, bestStreak: 0 },
+  );
+
+  let fastestAverageMs = null;
+  workoutHistory.forEach((record) => {
+    if (record.averageMs === null || record.averageMs === undefined) {
+      return;
+    }
+    fastestAverageMs =
+      fastestAverageMs === null ? record.averageMs : Math.min(fastestAverageMs, record.averageMs);
+  });
+
+  return {
+    attempted: totals.attempted,
+    correct: totals.correct,
+    bestStreak: totals.bestStreak,
+    fastestAverageMs,
+    workoutsCompleted: workoutHistory.length,
+    bestAttemptsInDay: getBestAttemptsInDay(workoutHistory),
+  };
+}
+
+function renderOverall() {
+  const filterValue = getOverviewOperationFilterValue();
+  const stats = getOverallStats(filterValue);
+  const accuracy = getAccuracy(stats.correct, stats.attempted);
+  elements.overallAnswered.textContent = `${stats.attempted}`;
+  elements.overallAccuracy.textContent = formatPercent(accuracy);
+  elements.overallBestStreak.textContent = `${stats.bestStreak}`;
+  elements.overallBestPace.textContent = formatQuestionDuration(stats.fastestAverageMs);
+  elements.overallWorkoutCount.textContent = `${stats.workoutsCompleted}`;
+  elements.overallBestDayAttempts.textContent = `${stats.bestAttemptsInDay}`;
+}
+
+function getRecordsModeSortValue(record, modeKey) {
+  if (modeKey === "timed") {
+    return [record.correct, record.accuracy, record.attempted, -(record.averageMs ?? Number.MAX_SAFE_INTEGER)];
+  }
+
+  if (modeKey === "question-goal") {
+    return [record.accuracy, -(record.averageMs ?? Number.MAX_SAFE_INTEGER), record.correct, record.bestStreak];
+  }
+
+  if (modeKey === "isolation") {
+    return [record.accuracy, record.correct, -(record.averageMs ?? Number.MAX_SAFE_INTEGER), record.bestStreak];
+  }
+
+  if (modeKey === "spar") {
+    return [record.correct, record.attempted, record.accuracy, record.bestStreak];
+  }
+
+  return [record.correct, record.attempted, record.accuracy, record.bestStreak];
+}
+
+function compareWorkoutRecords(left, right, modeKey) {
+  const leftValues = getRecordsModeSortValue(left, modeKey);
+  const rightValues = getRecordsModeSortValue(right, modeKey);
+
+  for (let index = 0; index < leftValues.length; index += 1) {
+    if (leftValues[index] !== rightValues[index]) {
+      return rightValues[index] - leftValues[index];
+    }
+  }
+
+  return right.recordedAt - left.recordedAt;
+}
+
+function getRecordModeDefinitions(filterOperation) {
+  if (filterOperation === "addition" || filterOperation === "multiplication") {
+    return WORKOUT_MODE_DEFINITIONS[filterOperation];
+  }
+
+  const merged = new Map();
+  Object.values(WORKOUT_MODE_DEFINITIONS).forEach((definitions) => {
+    definitions.forEach((item) => {
+      if (!merged.has(item.key)) {
+        merged.set(item.key, item);
+      }
+    });
+  });
+  return Array.from(merged.values());
+}
+
+function syncRecordsModeOptions() {
+  if (!elements.recordsModeSelect) {
+    return;
+  }
+
+  const operationFilter = getRecordsOperationFilterValue();
+  const definitions = getRecordModeDefinitions(operationFilter);
+  const previousValue = elements.recordsModeSelect.value;
+
+  elements.recordsModeSelect.innerHTML = definitions
+    .map((item) => `<option value="${item.key}">${item.label}</option>`)
+    .join("");
+
+  const nextValue = definitions.some((item) => item.key === previousValue)
+    ? previousValue
+    : definitions[0]?.key || "timed";
+  elements.recordsModeSelect.value = nextValue;
+}
+
+function renderPersonalBests() {
+  if (!elements.personalBestsList || !elements.recordsModeSelect) {
+    return;
+  }
+
+  syncRecordsModeOptions();
+  const operationFilter = getRecordsOperationFilterValue();
+  const selectedMode = elements.recordsModeSelect.value || "timed";
+  const bests = getWorkoutHistoryByOperation(operationFilter)
+    .filter((record) => record.modeKey === selectedMode)
+    .sort((left, right) => compareWorkoutRecords(left, right, selectedMode))
+    .slice(0, 3);
+
+  if (!bests.length) {
+    const operationLabel =
+      operationFilter === "all" ? "selected operation set" : getOperationLabel(operationFilter);
+    elements.personalBestsList.innerHTML = `
+      <div class="focus-card empty-state">
+        <div class="fact-meta">No records yet for ${operationLabel} in this workout type.</div>
+      </div>
+    `;
+    return;
+  }
+
+  elements.personalBestsList.innerHTML = bests
+    .map((record, index) => `
+      <article class="focus-card record-card">
+        <div class="focus-card-top">
+          <div class="fact-name">#${index + 1} ${getWorkoutModeLabel(record)}</div>
+          <div class="focus-chip success-chip">${record.correct} correct</div>
+        </div>
+        <div class="fact-meta">${getOperationLabel(record.operation || "multiplication")}${
+          record.operation === "addition" ? ` (${record.additionDifficulty})` : ""
+        }</div>
+        <div class="fact-meta">${formatRecordDateLabel(record)}</div>
+        <div class="fact-meta">${record.attempted} attempts | ${formatPercent(record.accuracy)} accuracy</div>
+        <div class="fact-meta">${record.averageMs === null ? "No pace yet" : `${formatQuestionDuration(record.averageMs)} avg pace`}</div>
+      </article>
+    `)
+    .join("");
+}
+
+function renderRecentWorkouts() {
+  if (!elements.recentWorkoutsList) {
+    return;
+  }
+
+  const operationFilter = getRecordsOperationFilterValue();
+  const selectedMode = elements.recordsModeSelect?.value || "timed";
+  const recent = getWorkoutHistoryByOperation(operationFilter)
+    .filter((record) => record.modeKey === selectedMode)
+    .slice(0, 5);
+
+  if (!recent.length) {
+    elements.recentWorkoutsList.innerHTML = `
+      <div class="focus-card empty-state">
+        <div class="fact-meta">No recent workouts match these filters yet.</div>
+      </div>
+    `;
+    return;
+  }
+
+  elements.recentWorkoutsList.innerHTML = recent
+    .map((record) => `
+      <article class="focus-card record-card">
+        <div class="focus-card-top">
+          <div class="fact-name">${getWorkoutModeLabel(record)}</div>
+          <div class="focus-chip subtle-chip">${formatRecordDateLabel(record)}</div>
+        </div>
+        <div class="fact-meta">${getOperationLabel(record.operation || "multiplication")}${
+          record.operation === "addition" ? ` (${record.additionDifficulty})` : ""
+        }</div>
+        <div class="fact-meta">${record.correct} correct out of ${record.attempted} attempts</div>
+        <div class="fact-meta">${formatPercent(record.accuracy)} accuracy${record.averageMs === null ? "" : ` | ${formatQuestionDuration(record.averageMs)} avg pace`}</div>
+      </article>
+    `)
+    .join("");
+}
+
+function renderWorkoutHistory() {
+  renderPersonalBests();
+  renderRecentWorkouts();
+}
+
+function getTroubleFacts(limit = 5, filterValue = "all") {
+  return getFactEntriesByOperation(filterValue)
+    .map((value) => ({
+      ...value,
+      mastery: value.attempts ? value.correct / value.attempts : 0,
+      weight:
+        value.misses * 4 +
+        Math.round((1 - (value.attempts ? value.correct / value.attempts : 0)) * 6) +
+        (value.attempts < 3 ? 1 : 0),
+    }))
+    .filter((fact) => fact.attempts > 0 && (fact.misses > 0 || fact.mastery < 0.8))
+    .sort((left, right) => right.weight - left.weight || left.mastery - right.mastery)
+    .slice(0, limit);
+}
+
+function renderPriorityList(target, troubleFacts) {
+  if (!target) {
+    return;
+  }
+
+  if (!troubleFacts.length) {
+    target.innerHTML = `
+      <div class="focus-card empty-state">
+        <div class="fact-meta">No priority targets yet. Your recent facts are holding together well.</div>
+      </div>
+    `;
+    return;
+  }
+
+  target.innerHTML = troubleFacts
+    .map((fact) => {
+      let chipLabel = "Low Accuracy";
+
+      if (fact.attempts <= 1 && fact.correct === 0) {
+        chipLabel = "Fresh Miss";
+      } else if (fact.mastery < 0.45) {
+        chipLabel = "Needs Reps";
+      } else if (fact.misses >= 3) {
+        chipLabel = "Sticking Point";
+      }
+
+      return `
+        <article class="focus-card">
+          <div class="focus-card-top">
+            <div class="fact-name">${formatFactLabelFromKey(fact.key)}</div>
+            <div class="focus-chip">${chipLabel}</div>
+          </div>
+          <div class="fact-meta">${fact.correct} / ${fact.attempts} correct</div>
+          <div class="fact-meta">${Math.round(fact.mastery * 100)}% accuracy</div>
+        </article>
+      `;
+    })
+    .join("");
+}
+
+function getBucketLabel(operation, bucketKey) {
+  if (operation === "addition") {
+    return ADDITION_TRACKER_BUCKETS.find((bucket) => bucket.key === bucketKey)?.label || bucketKey;
+  }
+
+  if (operation === "multiplication") {
+    return /^x\d+$/.test(bucketKey) ? bucketKey.replace("x", "x ") : bucketKey;
+  }
+
+  return bucketKey;
+}
+
+function getBucketStatus(attempts, accuracy) {
+  if (!attempts) {
+    return { tone: "unseen", label: "No reps yet" };
+  }
+
+  if (
+    attempts >= BUCKET_STATUS_STRONG_MIN_ATTEMPTS &&
+    accuracy >= BUCKET_STATUS_STRONG_MIN_ACCURACY
+  ) {
+    return { tone: "strong", label: "Strong" };
+  }
+
+  if (
+    attempts >= BUCKET_STATUS_MIN_ATTEMPTS &&
+    accuracy >= BUCKET_STATUS_BUILDING_MIN_ACCURACY
+  ) {
+    return { tone: "steady", label: "Building" };
+  }
+
+  return { tone: "needs", label: "Need Reps" };
+}
+
+function createBucketDailyKey(dateKey, operation, bucketKey) {
+  return `${dateKey}|${operation}|${bucketKey}`;
+}
+
+function parseBucketDailyKey(key) {
+  const [dateKey = "", operation = "multiplication", ...rest] = String(key).split("|");
+  return {
+    dateKey,
+    operation: operation === "addition" ? "addition" : "multiplication",
+    bucketKey: rest.join("|"),
+  };
+}
+
+function getBucketsForQuestion(question) {
+  if (!question) {
+    return [];
+  }
+
+  if (question.operation === "addition") {
+    return [getAdditionTrackerBucketKey(question.a, question.b)];
+  }
+
+  if (question.operation === "multiplication") {
+    const factors = new Set([Math.abs(question.a), Math.abs(question.b)]);
+    return Array.from(factors)
+      .filter((factor) => factor >= 1 && factor <= FACTOR_LIMIT)
+      .map((factor) => `x${factor}`);
+  }
+
+  return [];
+}
+
+function updateBucketDailyProgress(question, isCorrect) {
+  const dateKey = getTodayDateKey();
+  const buckets = getBucketsForQuestion(question);
+  if (!buckets.length) {
+    return;
+  }
+
+  state.progress.bucketDaily = state.progress.bucketDaily || {};
+  if (question.operation === "addition") {
+    updateAdditionBucketExamples(question, isCorrect);
+  }
+  buckets.forEach((bucketKey) => {
+    const storageKey = createBucketDailyKey(dateKey, question.operation, bucketKey);
+    const current = normaliseBucketDailyEntry(state.progress.bucketDaily[storageKey] || {});
+    state.progress.bucketDaily[storageKey] = {
+      attempted: current.attempted + 1,
+      correct: current.correct + (isCorrect ? 1 : 0),
+    };
+  });
+}
+
+function updateAdditionBucketExamples(question, isCorrect) {
+  if (!question || question.operation !== "addition") {
+    return;
+  }
+
+  const bucketKey = getAdditionTrackerBucketKey(question.a, question.b);
+  if (!ADDITION_TRACKER_BUCKET_KEYS.has(bucketKey)) {
+    return;
+  }
+
+  state.progress.additionBucketExamples = state.progress.additionBucketExamples || {};
+  const existingExamples = Array.isArray(state.progress.additionBucketExamples[bucketKey])
+    ? state.progress.additionBucketExamples[bucketKey]
+    : [];
+  const byFact = new Map(existingExamples.map((entry) => [entry.factKey, entry]));
+  const existing = byFact.get(question.key);
+  const now = Date.now();
+  const nextAttempts = clampNumber(Number(existing?.attempts ?? 0) + 1, 0, 9999, 1);
+  const nextCorrect = clampNumber(
+    Number(existing?.correct ?? 0) + (isCorrect ? 1 : 0),
+    0,
+    nextAttempts,
+    0,
+  );
+
+  byFact.set(question.key, {
+    factKey: question.key,
+    left: question.a,
+    right: question.b,
+    regrouping: hasAdditionRegrouping(question.a, question.b),
+    attempts: nextAttempts,
+    correct: nextCorrect,
+    lastSeenAt: now,
+  });
+
+  state.progress.additionBucketExamples[bucketKey] = Array.from(byFact.values())
+    .sort((left, right) => right.lastSeenAt - left.lastSeenAt)
+    .slice(0, ADDITION_BUCKET_EXAMPLE_CAP);
+}
+
+function buildBucketTrendItem(operation, bucketKey) {
+  const todayKey = getTodayDateKey();
+  const total = { attempted: 0, correct: 0 };
+
+  Object.entries(state.progress.bucketDaily || {}).forEach(([storageKey, record]) => {
+    const parsed = parseBucketDailyKey(storageKey);
+    if (parsed.operation !== operation || parsed.bucketKey !== bucketKey) {
+      return;
+    }
+    const normalised = normaliseBucketDailyEntry(record);
+    total.attempted += normalised.attempted;
+    total.correct += normalised.correct;
+  });
+
+  const lastWindow = { attempted: 0, correct: 0 };
+  const previousWindow = { attempted: 0, correct: 0 };
+
+  for (let index = 0; index < BUCKET_TREND_WINDOW_DAYS; index += 1) {
+    const lastDateKey = shiftDateKey(todayKey, -index);
+    const previousDateKey = shiftDateKey(todayKey, -(index + BUCKET_TREND_WINDOW_DAYS));
+
+    const lastEntry = normaliseBucketDailyEntry(
+      state.progress.bucketDaily?.[createBucketDailyKey(lastDateKey, operation, bucketKey)] || {},
+    );
+    const previousEntry = normaliseBucketDailyEntry(
+      state.progress.bucketDaily?.[
+        createBucketDailyKey(previousDateKey, operation, bucketKey)
+      ] || {},
+    );
+
+    lastWindow.attempted += lastEntry.attempted;
+    lastWindow.correct += lastEntry.correct;
+    previousWindow.attempted += previousEntry.attempted;
+    previousWindow.correct += previousEntry.correct;
+  }
+
+  const totalAccuracy = getAccuracy(total.correct, total.attempted);
+  const lastAccuracy = getAccuracy(lastWindow.correct, lastWindow.attempted);
+  const previousAccuracy = getAccuracy(previousWindow.correct, previousWindow.attempted);
+  const status = getBucketStatus(total.attempted, totalAccuracy);
+
+  return {
+    operation,
+    bucketKey,
+    label: getBucketLabel(operation, bucketKey),
+    totalAttempted: total.attempted,
+    totalCorrect: total.correct,
+    totalAccuracy,
+    lastAttempted: lastWindow.attempted,
+    lastCorrect: lastWindow.correct,
+    lastAccuracy,
+    previousAttempted: previousWindow.attempted,
+    previousCorrect: previousWindow.correct,
+    previousAccuracy,
+    delta: lastAccuracy - previousAccuracy,
+    status,
+  };
+}
+
+function getBucketTrendItems(filterValue = "all") {
+  const operations =
+    filterValue === "all" ? ["multiplication", "addition"] : [filterValue];
+  const items = [];
+
+  operations.forEach((operation) => {
+    if (operation === "multiplication") {
+      TABLE_FACTORS.forEach((factor) => {
+        items.push(buildBucketTrendItem("multiplication", `x${factor}`));
+      });
+      return;
+    }
+
+    ADDITION_TRACKER_BUCKETS.forEach((bucket) => {
+      items.push(buildBucketTrendItem("addition", bucket.key));
+    });
+  });
+
+  return items;
+}
+
+function getPositiveProgressItems(limit = 3, filterValue = "all") {
+  return getBucketTrendItems(filterValue)
+    .filter(
+      (item) =>
+        item.totalAttempted >= BUCKET_TREND_MIN_TOTAL_ATTEMPTS &&
+        item.lastAttempted >= BUCKET_TREND_MIN_RECENT_ATTEMPTS &&
+        item.delta >= BUCKET_TREND_DELTA_THRESHOLD,
+    )
+    .sort(
+      (left, right) =>
+        right.delta - left.delta ||
+        right.lastAccuracy - left.lastAccuracy ||
+        right.totalAttempted - left.totalAttempted,
+    )
+    .slice(0, limit);
+}
+
+function getGrowthOpportunityItems(limit = 4, filterValue = "all") {
+  return getBucketTrendItems(filterValue)
+    .filter(
+      (item) =>
+        item.totalAttempted >= BUCKET_TREND_MIN_TOTAL_ATTEMPTS &&
+        item.lastAttempted >= BUCKET_TREND_MIN_RECENT_ATTEMPTS &&
+        (item.delta <= -BUCKET_TREND_DELTA_THRESHOLD || item.lastAccuracy < 0.7),
+    )
+    .sort(
+      (left, right) =>
+        left.delta - right.delta ||
+        left.lastAccuracy - right.lastAccuracy ||
+        right.totalAttempted - left.totalAttempted,
+    )
+    .slice(0, limit);
+}
+
+function formatBucketTrendDelta(delta) {
+  const percent = Math.round(delta * 100);
+  if (percent > 0) {
+    return `+${percent}% vs prior week`;
+  }
+  if (percent < 0) {
+    return `${percent}% vs prior week`;
+  }
+  return "No change vs prior week";
+}
+
+function renderGrowthList(target, items) {
+  if (!target) {
+    return;
+  }
+
+  if (!items.length) {
+    target.innerHTML = `
+      <div class="focus-card empty-state">
+        <div class="fact-meta">Growth opportunities will appear once bucket trends settle in.</div>
+      </div>
+    `;
+    return;
+  }
+
+  target.innerHTML = items
+    .map((item) => `
+      <article class="focus-card">
+        <div class="focus-card-top">
+          <div class="fact-name">${item.label}</div>
+          <div class="focus-chip warning-chip">${item.status.label}</div>
+        </div>
+        <div class="fact-meta">${item.operation === "addition" ? "Addition bucket" : "Multiplication table"}</div>
+        <div class="fact-meta">Last 7 days: ${item.lastCorrect} / ${item.lastAttempted} (${formatPercent(item.lastAccuracy)})</div>
+        <div class="fact-meta">${formatBucketTrendDelta(item.delta)}</div>
+      </article>
+    `)
+    .join("");
+}
+
+function renderPositiveProgressList(target, items) {
+  if (!target) {
+    return;
+  }
+
+  if (!items.length) {
+    target.innerHTML = `
+      <div class="focus-card empty-state">
+        <div class="fact-meta">Positive progress buckets will appear after a few days of reps.</div>
+      </div>
+    `;
+    return;
+  }
+
+  target.innerHTML = items
+    .map((item) => `
+      <article class="focus-card">
+        <div class="focus-card-top">
+          <div class="fact-name">${item.label}</div>
+          <div class="focus-chip success-chip">${item.status.label}</div>
+        </div>
+        <div class="fact-meta">${item.operation === "addition" ? "Addition bucket" : "Multiplication table"}</div>
+        <div class="fact-meta">Overall: ${item.totalCorrect} / ${item.totalAttempted} (${formatPercent(item.totalAccuracy)})</div>
+        <div class="fact-meta">${formatBucketTrendDelta(item.delta)}</div>
+      </article>
+    `)
+    .join("");
+}
+
+function renderProgressFocusAreas() {
+  const filterValue = getFocusOperationFilterValue();
+  const troubleFacts = getTroubleFacts(5, filterValue);
+  const growthItems = getGrowthOpportunityItems(4, filterValue);
+  const positiveItems = getPositiveProgressItems(3, filterValue);
+
+  renderPositiveProgressList(elements.progressWinsList, positiveItems);
+  renderGrowthList(elements.progressGrowthList, growthItems);
+  renderPriorityList(elements.progressPriorityList, troubleFacts);
+}
+
+function renderResultsFocusAreas() {
+  const filterValue = "all";
+  const troubleFacts = getTroubleFacts(5, filterValue);
+  const growthItems = getGrowthOpportunityItems(4, filterValue);
+  const positiveItems = getPositiveProgressItems(3, filterValue);
+
+  renderPositiveProgressList(elements.resultsWinsList, positiveItems);
+  renderGrowthList(elements.resultsGrowthList, growthItems);
+  renderPriorityList(elements.resultsPriorityList, troubleFacts);
+}
+
+function renderFocusAreas() {
+  renderResultsFocusAreas();
+  renderProgressFocusAreas();
+}
+
+function renderCoachTip() {
+  const filterValue = getCoachOperationFilterValue();
+  const stats = getOverallStats(filterValue);
+  const totalAttempted = stats.attempted;
+  const troubleFacts = getTroubleFacts(1, filterValue);
+
+  if (!totalAttempted) {
+    elements.coachTip.innerHTML =
+      "<strong>Start simple.</strong> A short workout is enough to give the trainer a baseline.";
+    return;
+  }
+
+  if (troubleFacts.length) {
+    const factLabel = formatFactLabelFromKey(troubleFacts[0].key);
+    elements.coachTip.innerHTML = `<strong>Next best target:</strong> spend a few rounds on <strong>${factLabel}</strong> and nearby facts. That pair is costing you the most right now.`;
+    return;
+  }
+
+  if (stats.bestStreak >= 15) {
+    elements.coachTip.innerHTML =
+      "<strong>You have momentum.</strong> Push the range wider, try a timed workout, or stretch things out with Free Training.";
+    return;
+  }
+
+  elements.coachTip.innerHTML =
+    "<strong>Consistency wins.</strong> Lock in the star first, then chase the heart with cleaner answers.";
+}
+
+function parseFactKey(key) {
+  if (typeof key !== "string") {
+    return {
+      operation: "multiplication",
+      symbol: "x",
+      left: 0,
+      right: 0,
+      leftMagnitude: 0,
+      rightMagnitude: 0,
+    };
+  }
+
+  const modernMatch = key.match(/^(multiplication|addition):(-?\d+)([x+])(-?\d+)$/i);
+  if (modernMatch) {
+    const operation = modernMatch[1] === "addition" ? "addition" : "multiplication";
+    const left = Number(modernMatch[2]);
+    const symbol = modernMatch[3] === "+" ? "+" : "x";
+    const right = Number(modernMatch[4]);
+    return {
+      operation,
+      symbol,
+      left,
+      right,
+      leftMagnitude: Math.abs(left),
+      rightMagnitude: Math.abs(right),
+    };
+  }
+
+  const legacyMatch = key.match(/^(-?\d+)x(-?\d+)$/i);
+  const left = legacyMatch ? Number(legacyMatch[1]) : 0;
+  const right = legacyMatch ? Number(legacyMatch[2]) : 0;
+  return {
+    operation: "multiplication",
+    symbol: "x",
+    left,
+    right,
+    leftMagnitude: Math.abs(left),
+    rightMagnitude: Math.abs(right),
+  };
+}
+
+function formatFactLabelFromKey(key) {
+  const parsed = parseFactKey(key);
+  return `${parsed.left} ${parsed.symbol} ${parsed.right}`;
+}
+
+function getTableStatus(table) {
+  return getBucketStatus(table.attempts, table.accuracy);
+}
+
+function getMultiplicationFactEntries() {
+  return Object.entries(state.progress.facts)
+    .map(([key]) => ({
+      key,
+      progress: getFactProgress(key),
+      ...parseFactKey(key),
+    }))
+    .filter((entry) => entry.operation === "multiplication");
+}
+
+function getSignedFactGroupKey(entry) {
+  const left = `${entry.left >= 0 ? "+" : "-"}${entry.leftMagnitude}`;
+  const right = `${entry.right >= 0 ? "+" : "-"}${entry.rightMagnitude}`;
+  return [left, right].sort().join("x");
+}
+
+function getTableStats(detailMode = "overall") {
+  const trackerMode =
+    detailMode === "positive" || detailMode === "all-integers" ? detailMode : "overall";
+  const allFactEntries = getMultiplicationFactEntries();
+  const factEntries =
+    trackerMode === "positive"
+      ? allFactEntries.filter((entry) => entry.left >= 0 && entry.right >= 0)
+      : allFactEntries;
+
+  return TABLE_FACTORS.map((factor) => {
+    const relatedEntries = factEntries.filter(
+      (entry) => entry.leftMagnitude === factor || entry.rightMagnitude === factor,
+    );
+    const seenGroupKeys = new Set(
+      relatedEntries.map((entry) => {
+        if (trackerMode === "all-integers") {
+          return getSignedFactGroupKey(entry);
+        }
+        const low = Math.min(entry.leftMagnitude, entry.rightMagnitude);
+        const high = Math.max(entry.leftMagnitude, entry.rightMagnitude);
+        return `${low}x${high}`;
+      }),
+    );
+    const totals = relatedEntries.reduce(
+      (summary, entry) => {
+        summary.attempts += entry.progress.attempts;
+        summary.correct += entry.progress.correct;
+        summary.misses += entry.progress.misses;
+        return summary;
+      },
+      {
+        attempts: 0,
+        correct: 0,
+        misses: 0,
+      },
+    );
+
+    const accuracy = getAccuracy(totals.correct, totals.attempts);
+    const totalFacts =
+      trackerMode === "all-integers" ? MULTIPLICATION_SIGNED_TOTAL_FACTS : TABLE_FACTORS.length;
+    const detailLabel =
+      trackerMode === "all-integers"
+        ? `${seenGroupKeys.size}/${totalFacts} signed facts`
+        : trackerMode === "positive"
+          ? `${seenGroupKeys.size}/${totalFacts} positive facts`
+          : `${seenGroupKeys.size}/${totalFacts} fact groups`;
+
+    return {
+      factor,
+      totalFacts,
+      detailLabel,
+      accuracy,
+      seenFacts: seenGroupKeys.size,
+      ...totals,
+      ...getTableStatus({
+        attempts: totals.attempts,
+        accuracy,
+      }),
+    };
+  });
+}
+
+function getDigitBucket(value) {
+  const magnitude = Math.abs(Number(value));
+  if (magnitude <= 9) {
+    return 1;
+  }
+  if (magnitude <= 99) {
+    return 2;
+  }
+  return 3;
+}
+
+function hasAdditionRegrouping(left, right) {
+  const sum = left + right;
+  if (sum === 10) {
+    return false;
+  }
+
+  let carry = 0;
+  let a = Math.abs(left);
+  let b = Math.abs(right);
+
+  while (a > 0 || b > 0) {
+    const column = (a % 10) + (b % 10) + carry;
+    if (column >= 10) {
+      return true;
+    }
+    carry = Math.floor(column / 10);
+    a = Math.floor(a / 10);
+    b = Math.floor(b / 10);
+  }
+
+  return false;
+}
+
+function getAdditionTrackerBucketKey(left, right) {
+  const sum = left + right;
+  if (sum === 10 && !(left === 0 && right === 0)) {
+    return "make-10";
+  }
+
+  const first = getDigitBucket(left);
+  const second = getDigitBucket(right);
+  const low = Math.min(first, second);
+  const high = Math.max(first, second);
+  return `${low}-${high}`;
+}
+
+function buildAdditionTrackerStats() {
+  const summary = Object.fromEntries(
+    ADDITION_TRACKER_BUCKETS.map((bucket) => [
+      bucket.key,
+      {
+        attempts: 0,
+        correct: 0,
+        regroupAttempts: 0,
+        regroupCorrect: 0,
+        noRegroupAttempts: 0,
+        noRegroupCorrect: 0,
+      },
+    ]),
+  );
+
+  const additionFacts = getFactEntriesByOperation("addition");
+  additionFacts.forEach((fact) => {
+    if (!fact.attempts) {
+      return;
+    }
+
+    const bucketKey = getAdditionTrackerBucketKey(fact.left, fact.right);
+    if (!summary[bucketKey]) {
+      return;
+    }
+
+    const bucket = summary[bucketKey];
+    bucket.attempts += fact.attempts;
+    bucket.correct += fact.correct;
+
+    const regrouping = hasAdditionRegrouping(fact.left, fact.right);
+    if (regrouping) {
+      bucket.regroupAttempts += fact.attempts;
+      bucket.regroupCorrect += fact.correct;
+    } else {
+      bucket.noRegroupAttempts += fact.attempts;
+      bucket.noRegroupCorrect += fact.correct;
+    }
+  });
+
+  return summary;
+}
+
+function getRatioLabel(correct, attempts) {
+  if (!attempts) {
+    return "No attempts yet";
+  }
+  return `${correct} / ${attempts} (${formatPercent(getAccuracy(correct, attempts))})`;
+}
+
+function getAdditionMetricSummary(bucket, detailMode) {
+  if (detailMode === "with-regrouping") {
+    return {
+      key: "with-regrouping",
+      label: "With regrouping",
+      attempts: bucket.regroupAttempts,
+      correct: bucket.regroupCorrect,
+    };
+  }
+
+  if (detailMode === "without-regrouping") {
+    return {
+      key: "without-regrouping",
+      label: "Without regrouping",
+      attempts: bucket.noRegroupAttempts,
+      correct: bucket.noRegroupCorrect,
+    };
+  }
+
+  return {
+    key: "overall",
+    label: "Overall",
+    attempts: bucket.attempts,
+    correct: bucket.correct,
+  };
+}
+
+function getAdditionBucketExamples(bucketKey, detailMode = "overall") {
+  const source = Array.isArray(state.progress.additionBucketExamples?.[bucketKey])
+    ? state.progress.additionBucketExamples[bucketKey]
+    : [];
+
+  const filtered =
+    detailMode === "with-regrouping"
+      ? source.filter((entry) => entry.regrouping)
+      : detailMode === "without-regrouping"
+        ? source.filter((entry) => !entry.regrouping)
+        : source;
+
+  return filtered.slice(0, ADDITION_BUCKET_EXAMPLE_DISPLAY_LIMIT);
+}
+
+function renderAdditionTracker(detailMode = "overall") {
+  const activeMode =
+    detailMode === "with-regrouping" || detailMode === "without-regrouping"
+      ? detailMode
+      : "overall";
+  const statsByBucket = buildAdditionTrackerStats();
+  elements.tableGrid.classList.add("addition-table-grid");
+
+  elements.tableGrid.innerHTML = ADDITION_TRACKER_BUCKETS.map((bucketMeta) => {
+    const bucket = statsByBucket[bucketMeta.key];
+    const metric = getAdditionMetricSummary(bucket, activeMode);
+    const ratio = metric.attempts ? metric.correct / metric.attempts : 0;
+    const status = getBucketStatus(metric.attempts, ratio);
+    const examples = getAdditionBucketExamples(bucketMeta.key, activeMode);
+    const examplesSummary = examples.length
+      ? examples.map((entry) => `${entry.left} + ${entry.right}`).join(" | ")
+      : "No recent examples yet";
+
+    return `
+      <article class="table-card ${status.tone}">
+        <div class="table-card-top">
+          <div class="table-name">${bucketMeta.label}</div>
+          <span class="table-pill ${status.tone}">${status.label}</span>
+        </div>
+        <div class="fact-meta table-card-middle">${metric.label}</div>
+        <div class="bar-track" aria-hidden="true">
+          <div class="bar-fill ${status.tone}" style="width: ${Math.round(ratio * 100)}%"></div>
+        </div>
+        <div class="table-card-stats">
+          <span>${getRatioLabel(metric.correct, metric.attempts)}</span>
+        </div>
+        <div class="fact-meta">Recent examples: ${examplesSummary}</div>
+      </article>
+    `;
+  }).join("");
+}
+
+function getAdditionTechniqueGridMarkup() {
+  return ADDITION_LESSONS.map(
+    (lesson) => `
+      <button
+        class="technique-card ${lesson.status === "under-construction" ? "is-building" : ""}"
+        type="button"
+        data-addition-technique="${lesson.id}"
+        ${lesson.selectable ? "" : "disabled"}
+      >
+        <span class="technique-card-pill">${
+          lesson.status === "under-construction" ? "Under Construction" : "Coming Soon"
+        }</span>
+        <strong>${lesson.title}</strong>
+        <span class="technique-card-note">${lesson.description}</span>
+      </button>
+    `,
+  ).join("");
+}
+
+function renderTableRadar() {
+  const factOperation = getFactOperationFilterValue();
+  const factDetail = getFactDetailFilterValue();
+  elements.tableGrid.classList.remove("addition-table-grid");
+  if (elements.factsSlideTitle) {
+    const operationCopy =
+      factOperation === "addition"
+        ? "addition"
+        : factOperation === "multiplication"
+          ? "multiplication"
+          : "";
+    elements.factsSlideTitle.textContent = operationCopy
+      ? `Track the development of your ${operationCopy} skills.`
+      : "Track the development of your skills.";
+  }
+
+  if (factOperation === "addition") {
+    renderAdditionTracker(factDetail);
+    return;
+  }
+
+  const tableStats = getTableStats(factDetail);
+  if (!tableStats.some((table) => table.attempts > 0)) {
+    const emptyDetailCopy =
+      factDetail === "positive"
+        ? "No positive-integer attempts yet."
+        : factDetail === "all-integers"
+          ? "No signed-integer attempts yet."
+          : "The fact tracker fills in after you answer a few facts.";
+    elements.tableGrid.innerHTML = `
+      <div class="table-card unseen">
+        <div class="table-name">Start a workout</div>
+        <div class="fact-meta">${emptyDetailCopy}</div>
+      </div>
+    `;
+    return;
+  }
+
+  elements.tableGrid.innerHTML = tableStats
+    .map((table) => {
+      const accuracyLabel = table.attempts
+        ? `${formatPercent(table.accuracy)} accuracy`
+        : "No attempts yet";
+      const detailLabel = table.attempts ? table.detailLabel : "Fresh range";
+
+      return `
+        <article class="table-card ${table.tone}">
+          <div class="table-card-top">
+            <div class="table-name">x ${table.factor}</div>
+            <span class="table-pill ${table.tone}">${table.label}</span>
+          </div>
+          <div class="fact-meta table-card-middle">${detailLabel}</div>
+          <div class="bar-track" aria-hidden="true">
+            <div class="bar-fill ${table.tone}" style="width: ${Math.round(table.accuracy * 100)}%"></div>
+          </div>
+          <div class="table-card-stats">
+            <span>${accuracyLabel}</span>
+          </div>
+        </article>
+      `;
+    })
+    .join("");
+}
+
+function getAvailableMonthKeys() {
+  const monthKeys = new Set([getMonthKey(getCurrentMonthDate())]);
+
+  Object.entries(state.progress.dailyRecords).forEach(([dateKey, record]) => {
+    const normalised = normaliseDailyRecord(record);
+    if (normalised.attempted || normalised.correct || normalised.sessionsCompleted) {
+      monthKeys.add(getMonthKey(parseDateKey(dateKey)));
+    }
+  });
+
+  return Array.from(monthKeys).sort();
+}
+
+function ensureDisplayMonthKey() {
+  const availableMonthKeys = getAvailableMonthKeys();
+  if (!availableMonthKeys.includes(state.displayMonthKey)) {
+    state.displayMonthKey = availableMonthKeys[availableMonthKeys.length - 1];
+  }
+}
+
+function getMonthNavigationState() {
+  const availableMonthKeys = getAvailableMonthKeys();
+  const currentMonthKey = getMonthKey(getCurrentMonthDate());
+  const activeIndex = availableMonthKeys.indexOf(state.displayMonthKey);
+
+  return {
+    availableMonthKeys,
+    activeIndex,
+    canMovePrev: activeIndex > 0,
+    canMoveNext:
+      activeIndex > -1 &&
+      activeIndex < availableMonthKeys.length - 1 &&
+      state.displayMonthKey !== currentMonthKey,
+  };
+}
+
+function buildCalendarMarkup(monthDate) {
+  const year = monthDate.getFullYear();
+  const month = monthDate.getMonth();
+  const firstDay = new Date(year, month, 1, 12);
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const leadingBlankDays = firstDay.getDay();
+  const cells = [];
+  const todayKey = getTodayDateKey();
+
+  for (let index = 0; index < leadingBlankDays; index += 1) {
+    cells.push('<div class="calendar-day empty"></div>');
+  }
+
+  for (let day = 1; day <= daysInMonth; day += 1) {
+    const date = new Date(year, month, day, 12);
+    const dateKey = formatDateKey(date);
+    const record = getDailyRecord(dateKey);
+    const classes = ["calendar-day"];
+
+    if (dateKey === todayKey) {
+      classes.push("today");
+    }
+    if (record.attempted || record.correct || record.sessionsCompleted) {
+      classes.push("has-activity");
+    }
+    if (record.attemptGoalEarned) {
+      classes.push("has-attempt-goal");
+    }
+    if (record.accuracyGoalEarned) {
+      classes.push("has-accuracy-goal");
+    }
+
+    cells.push(`
+      <div class="${classes.join(" ")}">
+        <div class="calendar-day-top">
+          <span class="day-number">${day}</span>
+        </div>
+        <div class="calendar-day-body">
+          <span class="day-icons">
+            ${record.attemptGoalEarned ? '<span class="day-attempt" aria-label="Heart earned"><svg viewBox="0 0 72 72" role="presentation"><path d="M36 57.024 14.448 35.472c-5.304-5.304-5.304-13.896 0-19.2 5.304-5.304 13.896-5.304 19.2 0L36 18.624l2.352-2.352c5.304-5.304 13.896-5.304 19.2 0 5.304 5.304 5.304 13.896 0 19.2Z"/></svg></span>' : ""}
+            ${record.accuracyGoalEarned ? '<span class="day-accuracy" aria-label="Star earned"><svg viewBox="0 0 72 72" role="presentation"><path d="M36 8 44.552 25.33 63.678 28.108 49.839 41.6 53.106 60.648 36 51.652 18.894 60.648 22.161 41.6 8.322 28.108 27.448 25.33Z"/></svg></span>' : ""}
+          </span>
+        </div>
+      </div>
+    `);
+  }
+
+  while (cells.length % 7 !== 0) {
+    cells.push('<div class="calendar-day empty"></div>');
+  }
+
+  return cells.join("");
+}
+
+function renderMonthNavigation() {
+  ensureDisplayMonthKey();
+  const currentMonthDate = createMonthDateFromKey(state.displayMonthKey);
+  const navState = getMonthNavigationState();
+  const label = formatMonthLabel(currentMonthDate);
+
+  elements.currentMonthLabel.textContent = label;
+  elements.resultsMonthLabel.textContent = label;
+
+  [
+    elements.progressMonthPrevButton,
+    elements.resultsMonthPrevButton,
+  ].forEach((button) => {
+    button.disabled = !navState.canMovePrev;
+  });
+
+  [
+    elements.progressMonthNextButton,
+    elements.resultsMonthNextButton,
+  ].forEach((button) => {
+    button.disabled = !navState.canMoveNext;
+  });
+}
+
+function renderCalendars() {
+  ensureDisplayMonthKey();
+  const displayMonthDate = createMonthDateFromKey(state.displayMonthKey);
+  const calendarMarkup = buildCalendarMarkup(displayMonthDate);
+
+  renderMonthNavigation();
+  elements.calendarGrid.innerHTML = calendarMarkup;
+  elements.resultsCalendarGrid.innerHTML = calendarMarkup;
+}
+
+function getDisplayedMonthSummary() {
+  ensureDisplayMonthKey();
+  const displayMonthDate = createMonthDateFromKey(state.displayMonthKey);
+  const monthKey = getMonthKey(displayMonthDate);
+
+  return Object.entries(state.progress.dailyRecords).reduce(
+    (summary, [dateKey, record]) => {
+      if (getMonthKey(parseDateKey(dateKey)) !== monthKey) {
+        return summary;
+      }
+
+      const normalised = normaliseDailyRecord(record);
+      if (normalised.sessionsCompleted > 0) {
+        summary.sessions += normalised.sessionsCompleted;
+      }
+      if (normalised.attemptGoalEarned) {
+        summary.hearts += 1;
+      }
+      if (normalised.accuracyGoalEarned) {
+        summary.stars += 1;
+      }
+      return summary;
+    },
+    {
+      sessions: 0,
+      hearts: 0,
+      stars: 0,
+    },
+  );
+}
+
+function shiftDisplayedMonth(direction) {
+  const navState = getMonthNavigationState();
+  if (
+    (direction < 0 && !navState.canMovePrev) ||
+    (direction > 0 && !navState.canMoveNext)
+  ) {
+    return;
+  }
+
+  state.displayMonthKey = navState.availableMonthKeys[navState.activeIndex + direction];
+  renderCalendars();
+}
+
+function renderStreakPanel() {
+  const streakSummary = getPracticeStreakSummary();
+  const monthSummary = getDisplayedMonthSummary();
+
+  elements.currentPracticeStreak.textContent = `${streakSummary.current}`;
+  elements.bestPracticeDayStreak.textContent = `${streakSummary.best}`;
+  elements.resultsCurrentPracticeStreak.textContent = `${streakSummary.current}`;
+  elements.resultsBestPracticeDayStreak.textContent = `${streakSummary.best}`;
+  elements.progressMonthSessions.textContent = `${monthSummary.sessions}`;
+  elements.progressMonthHearts.textContent = `${monthSummary.hearts}`;
+  elements.progressMonthStars.textContent = `${monthSummary.stars}`;
+  elements.resultsMonthSessions.textContent = `${monthSummary.sessions}`;
+  elements.resultsMonthHearts.textContent = `${monthSummary.hearts}`;
+  elements.resultsMonthStars.textContent = `${monthSummary.stars}`;
+}
+
+function buildCarouselIndicatorMarkup(currentIndex, total) {
+  const dots = Array.from({ length: total }, (_, index) => {
+    const active = index === currentIndex;
+    return `<span class="carousel-position-dot ${active ? "is-active" : ""}" aria-hidden="true"></span>`;
+  }).join("");
+  return `
+    <span class="carousel-position-copy">${currentIndex + 1} / ${total}</span>
+    <span class="carousel-position-dots" aria-hidden="true">${dots}</span>
+  `;
+}
+
+function syncCarouselHeight(container, slideSelector, activeKey, keyAttribute) {
+  if (!(container instanceof HTMLElement)) {
+    return;
+  }
+  const activeSlide = container.querySelector(`${slideSelector}[${keyAttribute}="${activeKey}"]`);
+  if (!(activeSlide instanceof HTMLElement)) {
+    return;
+  }
+
+  container.style.removeProperty("--carousel-target-height");
+  const measuredHeight = Math.ceil(activeSlide.scrollHeight);
+  if (!Number.isFinite(measuredHeight) || measuredHeight <= 0) {
+    return;
+  }
+  container.style.setProperty("--carousel-target-height", `${measuredHeight}px`);
+}
+
+function renderResultsCarousel() {
+  elements.resultsSlides.forEach((slide) => {
+    const isActiveSlide =
+      slide.dataset.resultsSlide === RESULTS_SLIDES[state.resultsSlideIndex];
+    slide.classList.toggle("is-active", isActiveSlide);
+    slide.setAttribute("aria-hidden", isActiveSlide ? "false" : "true");
+  });
+
+  const atStart = state.resultsSlideIndex === 0;
+  const atEnd = state.resultsSlideIndex === RESULTS_SLIDES.length - 1;
+  elements.resultsPrevButton.hidden = false;
+  elements.resultsNextButton.hidden = false;
+  elements.resultsPrevButton.disabled = atStart;
+  elements.resultsNextButton.disabled = atEnd;
+  if (elements.resultsCarouselIndicator) {
+    elements.resultsCarouselIndicator.innerHTML = buildCarouselIndicatorMarkup(
+      state.resultsSlideIndex,
+      RESULTS_SLIDES.length,
+    );
+  }
+  syncCarouselHeight(
+    elements.resultsCarousel,
+    ".results-slide",
+    RESULTS_SLIDES[state.resultsSlideIndex],
+    "data-results-slide",
+  );
+}
+
+function shiftResultsCarousel(direction) {
+  state.resultsSlideIndex = clampNumber(
+    state.resultsSlideIndex + direction,
+    0,
+    RESULTS_SLIDES.length - 1,
+    state.resultsSlideIndex,
+  );
+  renderResultsCarousel();
+}
+
+function renderProgressCarousel() {
+  elements.progressSlides.forEach((slide) => {
+    const isActiveSlide =
+      slide.dataset.progressSlide === PROGRESS_SLIDES[state.progressSlideIndex];
+    slide.classList.toggle("is-active", isActiveSlide);
+    slide.setAttribute("aria-hidden", isActiveSlide ? "false" : "true");
+  });
+
+  const atStart = state.progressSlideIndex === 0;
+  const atEnd = state.progressSlideIndex === PROGRESS_SLIDES.length - 1;
+  elements.progressPrevButton.hidden = false;
+  elements.progressNextButton.hidden = false;
+  elements.progressPrevButton.disabled = atStart;
+  elements.progressNextButton.disabled = atEnd;
+  if (elements.progressCarouselIndicator) {
+    elements.progressCarouselIndicator.innerHTML = buildCarouselIndicatorMarkup(
+      state.progressSlideIndex,
+      PROGRESS_SLIDES.length,
+    );
+  }
+  syncCarouselHeight(
+    elements.progressCarousel,
+    ".progress-slide",
+    PROGRESS_SLIDES[state.progressSlideIndex],
+    "data-progress-slide",
+  );
+}
+
+function shiftProgressCarousel(direction) {
+  state.progressSlideIndex = clampNumber(
+    state.progressSlideIndex + direction,
+    0,
+    PROGRESS_SLIDES.length - 1,
+    state.progressSlideIndex,
+  );
+  renderProgressCarousel();
+}
+
+function bindCarouselSwipe(container, onSwipeNext, onSwipePrev) {
+  if (!(container instanceof HTMLElement)) {
+    return;
+  }
+
+  const swipeState = {
+    startX: 0,
+    startY: 0,
+    tracking: false,
+  };
+
+  container.addEventListener(
+    "touchstart",
+    (event) => {
+      if (event.touches.length !== 1) {
+        swipeState.tracking = false;
+        return;
+      }
+      swipeState.tracking = true;
+      swipeState.startX = event.touches[0].clientX;
+      swipeState.startY = event.touches[0].clientY;
+    },
+    { passive: true },
+  );
+
+  container.addEventListener(
+    "touchend",
+    (event) => {
+      if (!swipeState.tracking || event.changedTouches.length !== 1) {
+        swipeState.tracking = false;
+        return;
+      }
+
+      const endX = event.changedTouches[0].clientX;
+      const endY = event.changedTouches[0].clientY;
+      const deltaX = endX - swipeState.startX;
+      const deltaY = endY - swipeState.startY;
+      swipeState.tracking = false;
+
+      if (Math.abs(deltaX) < 56 || Math.abs(deltaY) > 76) {
+        return;
+      }
+
+      if (deltaX < 0) {
+        onSwipeNext();
+        return;
+      }
+
+      onSwipePrev();
+    },
+    { passive: true },
+  );
+}
+
+function initialiseCarouselGestures() {
+  bindCarouselSwipe(
+    elements.resultsCarousel,
+    () => shiftResultsCarousel(1),
+    () => shiftResultsCarousel(-1),
+  );
+  bindCarouselSwipe(
+    elements.progressCarousel,
+    () => shiftProgressCarousel(1),
+    () => shiftProgressCarousel(-1),
+  );
+}
+
+function registerBackdropClose(dialog) {
+  dialog.addEventListener("click", (event) => {
+    const bounds = dialog.getBoundingClientRect();
+    const isInside =
+      event.clientX >= bounds.left &&
+      event.clientX <= bounds.right &&
+      event.clientY >= bounds.top &&
+      event.clientY <= bounds.bottom;
+
+    if (!isInside) {
+      dialog.close();
+    }
+  });
+}
+
+function handleSettingsChange(event) {
+  const changedField =
+    event?.target?.id === "minFactor" ? "min" : event?.target?.id === "maxFactor" ? "max" : "";
+  if (changedField) {
+    syncIsolationRangeControls(changedField);
+  }
+  toggleSetupFields();
+}
+
+function handleOverviewOperationFilterChange() {
+  renderOverall();
+}
+
+function handleFocusOperationFilterChange() {
+  renderProgressFocusAreas();
+}
+
+function handleCoachOperationFilterChange() {
+  renderCoachTip();
+}
+
+function handleFactOperationFilterChange() {
+  syncFactDetailFilterOptions();
+  renderTableRadar();
+}
+
+function handleFactDetailFilterChange() {
+  renderTableRadar();
+}
+
+function handleRecordsFilterChange() {
+  syncRecordsModeOptions();
+  renderWorkoutHistory();
+}
+
+function handleThemeChange(event) {
+  const select = event.target;
+  if (!(select instanceof HTMLSelectElement)) {
+    return;
+  }
+  const theme = sanitiseTheme(select.value);
+  applyTheme(theme);
+  saveTheme(theme);
+}
+
+function handleColorModeChange(event) {
+  const select = event.target;
+  if (!(select instanceof HTMLSelectElement)) {
+    return;
+  }
+  const mode = sanitiseColorMode(select.value);
+  applyColorMode(mode);
+  saveColorMode(mode);
+}
+
+function handleKeypadPreferenceChange(event) {
+  const select = event.target;
+  if (!(select instanceof HTMLSelectElement)) {
+    return;
+  }
+  const preference = sanitiseKeypadPreference(select.value);
+  state.keypadPreference = preference;
+  saveKeypadPreference(preference);
+  updatePracticeInputMode();
+}
+
+function resetProgress() {
+  const shouldReset = window.confirm("Reset all saved trainer progress on this browser?");
+  if (!shouldReset) {
+    return;
+  }
+
+  state.progress = defaultProgress();
+  state.displayMonthKey = getMonthKey(getCurrentMonthDate());
+  saveProgress();
+  renderDailyProgress();
+  renderOverall();
+  renderFocusAreas();
+  renderWorkoutHistory();
+  renderCoachTip();
+  renderTableRadar();
+  renderCalendars();
+  renderStreakPanel();
+  renderProgressCarousel();
+  window.alert("Saved progress cleared.");
+}
+
