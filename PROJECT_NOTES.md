@@ -76,6 +76,7 @@ Use it for:
   - timer expiry ends the run immediately
   - focus on speed, streaks, and competitive chaining
 - After the current structural refinement settles, do a dedicated motion pass for screen transitions, lesson-step transitions, carousel movement, and subtle reveal/feedback animations.
+- Add a theme/color mode changer so learners can switch visual style (not only dark red gym theme), based on user testing preference feedback.
 
 ## Session Notes
 
@@ -135,3 +136,78 @@ Use it for:
 - Added subtle motion polish with reduced-motion support to keep the app feeling lively without forcing animation-heavy behavior.
 - Removed duplicate `app.js` definitions that could drift over time (results title overrides and technique stage metadata).
 - Captured a note for the next major update: add optional sound design with a mute control.
+
+### 2026-04-24
+
+- Keep the rewards mechanic unchanged for the current feature pass.
+- User testing feedback: the current reward mechanic (heart/star) was unclear and should be revisited in a dedicated rewards update.
+- User testing feedback: negatives in multiplication did not feel evenly randomized across sign combinations (`- x -`, `- x +`, `+ x +`) and should be rebalanced.
+- User testing feedback: current colors/theme did not resonate for some learners; add a color mode/theme switcher in a future UI pass.
+- Addition negatives are planned for a future release, but implementation is intentionally deferred until the rules/UX are finalized.
+- Major build pass shipped:
+  - setup now includes an operation selector (Addition + Multiplication active; Subtraction/Division marked coming soon)
+  - setup preview panel was removed and replaced with operation-aware settings flow
+  - Addition supports timed/target/endless modes, with difficulty presets (`easy`, `medium`, `hard`) and no isolation mode yet
+  - progress now supports operation filtering, records dual filters, and fact tracker operation switching
+  - addition fact tracker buckets added with regrouping / non-regrouping splits and an overall view
+  - techniques menu now starts with an operation selector and loads operation-specific lesson cards
+  - iPad-first answer flow now includes an on-screen number pad with Enter to reduce virtual keyboard intrusion
+
+### 2026-04-25
+
+- Began a bundled polish pass with implementation deferred to a single release merge.
+- Decided that Progress filters should be contextual per slide, not a single persistent global filter.
+- Confirmed Workout Tracker should not show an operation filter.
+- Confirmed Workout Records keeps both operation and workout-type filters together in the top-right heading area.
+- Addition Fact Tracker polish direction:
+  - move to clearer digit-based labels
+  - use a 4-column layout on larger screens
+  - reduce info density with tap-to-reveal card details
+  - show status language as `Need Reps`, `Building`, `Strong`, and clean no-data states
+- Positive Progress and Growth Opportunities should use bucket/table level signals instead of individual fact cards.
+- Addition techniques menu polish direction:
+  - `Make 10` stays selectable and marked `Under Construction`
+  - non-built lessons are marked `Coming Soon`
+  - lesson order now includes adding-by-place-value cards (`1s`, `10s`, `100s`, `1000s`) immediately after `Make 10`.
+- Deferred items captured from the extended refinement session (discussed but not shipped in `v0.7.2`):
+  - Addition techniques content pass:
+    - Full reorder target:
+      - `Make 10`
+      - `Counting On (Easy)`
+      - `Counting On (Medium)`
+      - `Adding by 10`
+      - `Adding by 100`
+      - `Adding by 1000`
+      - then `Bridging` ladder from easy to expert
+    - Add split-technique cards:
+      - `Split Technique (Easy)` (2-digit + 2-digit place-value split)
+      - `Split Technique (Medium)` (2-digit + 3-digit place-value split)
+      - `Split Technique (Hard)` (3-digit + 3-digit place-value split)
+    - Add a dedicated addition `Skip Counting` section with cards for skip counting by `2` through `12`.
+  - Techniques operation expansion:
+    - Add `Subtraction` and `Division` to the Techniques operation selector and show their lesson frames as `Coming Soon`.
+  - Practice feedback clarity:
+    - Replace text-first right/wrong feedback with tick/cross-first signaling in Practice.
+    - Add broader, easier-to-notice correctness feedback (not only subtle color + small text under input).
+    - Continue a streak/combo polish pass to make momentum states more obvious at a glance.
+  - iPad/input consistency follow-ups:
+    - Add mitigation for iPad double-tap zoom while entering repeated digits (for example `22`) in Practice.
+    - Review consistency between Learn and Practice for number-pad/input behavior.
+  - Question generation polish:
+    - Add a guard to avoid serving the exact same question twice in a row.
+  - Progress/statistics review:
+    - Run a focused usefulness review of tracker/statistics panels to confirm they provide actionable value.
+  - Reflection/journaling:
+    - Keep post-session reflection response as deferred (`not now`) until reliable user data collection/analysis path exists.
+  - Major architecture note:
+    - Plan a major revision to make the page feel like a self-contained webapp shell (not header + app), to reduce vertical scrolling and prepare for fuller app implementation.
+  - Copy/content note:
+    - Add motivation quote candidate in rotation:
+      - `Attitudes determine your actions. Actions determine your destiny.`
+  - Deploy workflow note:
+    - Current patch was intentionally `build only`; docs sync + GitHub/web publish remains a separate explicit step when requested.
+
+### 2026-04-27
+
+- Confirmed end-goal layout direction: move to a single-display app shell so the full page behaves like an app surface, not a webpage with a persistent header band.
+- Current persistent header + Workout Tracker rail is now treated as a transitional structure because it distorts sizing/space allocation; future layout pass should fold this into a unified app viewport architecture.

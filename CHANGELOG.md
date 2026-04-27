@@ -6,11 +6,34 @@ The format is inspired by Keep a Changelog and uses a simple project-friendly ve
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-04-27
+
+### Added
+- Added app-wide `Dark` / `Light` mode in Options (separate from color palette selection).
+- Added touch swipe navigation for Results and Progress carousels.
+- Added top-center carousel position indicators (`current / total` + dots) for Results and Progress.
+
 ### Changed
 - Fixed multiplication fact-tracker table status chips so attempt-driven status labels render correctly.
 - Switched question selection to use a session-stable question pool (rebuilt at workout start instead of every prompt).
 - Added rolling-window pruning for dated progress stores (`dailyRecords`, `bucketDaily`, `workoutHistory`) to keep browser storage bounded.
 - Added capped addition example memory by bucket (5 recent examples per bucket) and surfaced recent examples directly on addition tracker cards.
+- Split monolithic runtime logic from `app.js` into focused files under `js/` (`app-core`, `app-techniques`, `app-practice`, `app-progress`, `app-init`) to reduce maintenance drag before feature expansion.
+- Updated skip semantics so skipping no longer advances question-goal completion, while still counting as a missed fact signal for tracker difficulty stats.
+- Added fact-progress compaction caps (per operation + global) with retention based on recency and difficulty signals to keep `facts` storage bounded.
+- Renamed session/progress internals toward `answered` semantics while retaining legacy `attempted` mirrors for backward compatibility.
+- Reworked Setup operation cards so selected operation exposes a `Change` reset action (no confirmation) and cleanly returns setup to the starting state.
+- Removed forced keypad lockout so keyboard input remains available even when number pad is visible.
+- Replaced keypad minus entry with a sign-toggle control to reduce delete/retype friction.
+- Removed duplicate submit pathway in keypad mode by dropping the extra keypad `Enter` row.
+- Tightened practice vertical spacing (HUD, problem area, keypad, and feedback) for better tablet fit.
+- Restyled floating carousel arrows with stronger contrast and moved them to overlap frame boundaries for clearer affordance.
+- Added soft carousel height governance with bounded min/max behavior (no hard fixed height).
+- Upgraded Learn stage pills to explicit states (`current`, `unlocked`, `locked`) with lock icon treatment for inaccessible steps.
+- Added stage-pill click navigation for unlocked Learn steps.
+- Added color-coded technique input rendering so typed answers visually match factor/zero example color language.
+- Improved Frozen palette contrast where factor and zero highlight colors were colliding.
+- Widened Options dialog and added internal scroll containment for longer settings/update content.
 
 ## [0.7.2] - 2026-04-25
 

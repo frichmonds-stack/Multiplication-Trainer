@@ -13,11 +13,13 @@ A strength-themed arithmetic practice webapp built with plain HTML, CSS, and Jav
 - Supports addition difficulty presets (`easy`, `medium`, `hard`) for quick setup
 - Supports positive and negative integer multiplication while keeping the practice range magnitude-based
 - Keeps the practice screen minimal with a question timer, workout timer, countdown start, and quick right/wrong feedback
-- Adds a touch-first number pad with Enter for iPad/tablet-friendly answering
+- Adds a touch-first number pad for iPad/tablet-friendly answering without disabling keyboard input
 - Uses adaptive question weighting to bring back new or missed facts more often
 - Tracks daily star and heart goals with browser-local workout history
 - Shows a shared month-view workout tracker calendar across Results and Progress
 - Uses carousel-style Results and Progress screens to reduce scrolling
+- Supports swipe gestures and visible slide-position indicators on carousel screens
+- Applies soft min/max carousel height bounds to reduce layout jumps across different slides
 - Shows Positive Progress before weaker targets so the feedback loop starts with wins
 - Shows operation-aware fact tracking:
   - multiplication table tracker
@@ -27,9 +29,10 @@ A strength-themed arithmetic practice webapp built with plain HTML, CSS, and Jav
 - Uses a matching in-app lesson exit modal for leaving a technique mid-way
 - Saves completed table lessons in the browser so finished techniques can be shown on the menu
 - Uses operation selection in Learn / Techniques to load operation-specific lessons
+- Uses staged Learn progress pills with explicit unlocked/current/locked states
 - Keeps a rolling recent-progress window for dated history data to keep storage lean
 - Saves long-term progress in the browser with localStorage
-- Uses a dark workout-inspired theme with rotating strength-building banner messages
+- Supports independent palette and dark/light mode appearance controls with rotating strength-building banner messages
 
 ## Run it
 
@@ -47,9 +50,13 @@ Then open `http://localhost:8000`.
 
 - `index.html` contains the app structure
 - `styles.css` contains the visual design and responsive layout
-- `app.js` contains the training logic and saved-progress behavior
+- `js/app-core.js` contains shared constants, state setup, sanitising, and setup helpers
+- `js/app-techniques.js` contains Learn / Techniques screen logic
+- `js/app-practice.js` contains question generation, session flow, and answer handling
+- `js/app-progress.js` contains results/progress trackers, filters, and analytics rendering
+- `js/app-init.js` contains startup rendering and event wiring
 
 ## Versioning
 
-- The in-app version shown in Options is sourced from `APP_VERSION` in `app.js`.
+- The in-app version shown in Options is sourced from `APP_VERSION` in `js/app-core.js`.
 - For each release: bump `APP_VERSION` and add an entry in `CHANGELOG.md`.

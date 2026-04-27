@@ -149,7 +149,18 @@
                     <input type="radio" name="operation" value="addition" />
                     <span class="operation-choice-copy">
                       <strong>Addition</strong>
-                      <small>Ready</small>
+                      <span class="operation-choice-meta">
+                        <small class="operation-choice-status">Ready</small>
+                        <button
+                          class="operation-change-button is-hidden"
+                          type="button"
+                          data-operation-reset
+                          aria-label="Change operation"
+                        >
+                          <span aria-hidden="true">&#10227;</span>
+                          <span>Change</span>
+                        </button>
+                      </span>
                     </span>
                   </label>
 
@@ -157,7 +168,18 @@
                     <input type="radio" name="operation" value="multiplication" />
                     <span class="operation-choice-copy">
                       <strong>Multiplication</strong>
-                      <small>Ready</small>
+                      <span class="operation-choice-meta">
+                        <small class="operation-choice-status">Ready</small>
+                        <button
+                          class="operation-change-button is-hidden"
+                          type="button"
+                          data-operation-reset
+                          aria-label="Change operation"
+                        >
+                          <span aria-hidden="true">&#10227;</span>
+                          <span>Change</span>
+                        </button>
+                      </span>
                     </span>
                   </label>
 
@@ -244,31 +266,19 @@
                 </div>
               </section>
 
-              <section class="panel setup-settings-panel is-collapsed" id="setupSettingsPanel">
+              <section class="panel setup-settings-panel" id="setupSettingsPanel">
                 <div class="section-heading compact setup-settings-head">
                   <div>
                     <p class="section-kicker">Setup</p>
                     <h2>Workout Settings</h2>
                   </div>
-                  <div class="setup-backtrack-row">
-                    <button
-                      class="ghost-button subtle-button is-hidden"
-                      type="button"
-                      id="changeWorkoutTypeButton"
-                    >
-                      Change Workout Type
-                    </button>
-                    <button
-                      class="ghost-button subtle-button is-hidden"
-                      type="button"
-                      id="changeOperationButton"
-                    >
-                      Change Operation
-                    </button>
-                  </div>
                 </div>
 
-                <form id="settingsForm" class="settings-form setup-settings-form">
+                <p class="setup-settings-awaiting" id="setupSettingsAwaiting">
+                  Choose operation, difficulty (for addition), and workout type to unlock these options.
+                </p>
+
+                <form id="settingsForm" class="settings-form setup-settings-form is-hidden">
                   <div class="field option-field">
                     <span>Workout Options</span>
                     <div class="setup-option-list">
@@ -525,7 +535,7 @@
                 </div>
 
                 <div class="hud-card">
-                  <span class="hud-label">Questions Attempted</span>
+                  <span class="hud-label">Questions Answered</span>
                   <span class="hud-value" id="practiceAttemptedCount">0</span>
                 </div>
               </div>
@@ -539,7 +549,7 @@
                   <span class="spar-strike-box" data-spar-strike-box="2" aria-hidden="true">X</span>
                   <span class="spar-strike-box" data-spar-strike-box="3" aria-hidden="true">X</span>
                 </div>
-                <span class="progress-text" id="progressText">0 attempted</span>
+                <span class="progress-text" id="progressText">0 answered</span>
               </div>
               <div class="combo-indicator" id="comboIndicator" aria-live="polite" aria-hidden="true">
                 COMBO x0
@@ -581,12 +591,11 @@
                 <button class="ghost-button" type="button" data-keypad-key="1">1</button>
                 <button class="ghost-button" type="button" data-keypad-key="2">2</button>
                 <button class="ghost-button" type="button" data-keypad-key="3">3</button>
-                <button class="ghost-button" type="button" data-keypad-key="-">-</button>
+                <button class="ghost-button keypad-sign-toggle" type="button" data-keypad-key="sign">
+                  &#177;
+                </button>
                 <button class="ghost-button" type="button" data-keypad-key="0">0</button>
                 <button class="ghost-button" type="button" data-keypad-key="backspace">&#9003;</button>
-                <button class="primary-button keypad-enter" type="button" data-keypad-key="enter">
-                  Enter
-                </button>
               </div>
 
               <p class="feedback" id="feedback" aria-live="polite"></p>
@@ -608,6 +617,7 @@
                 >
                   &#8249;
                 </button>
+                <div class="carousel-position-indicator" id="resultsCarouselIndicator" aria-live="polite"></div>
                 <button
                   class="carousel-button"
                   type="button"
@@ -628,7 +638,7 @@
                   <div class="stats-grid results-stats">
                     <div class="stat-block">
                       <span class="stat-value" id="resultQuestions">0</span>
-                      <span class="stat-label">Attempted</span>
+                      <span class="stat-label">Answered</span>
                     </div>
 
                     <div class="stat-block">
@@ -784,6 +794,7 @@
                 >
                   &#8249;
                 </button>
+                <div class="carousel-position-indicator" id="progressCarouselIndicator" aria-live="polite"></div>
                 <button
                   class="carousel-button"
                   type="button"
@@ -929,13 +940,19 @@
                       <p class="section-kicker">Fact Tracker</p>
                       <h2 id="factsSlideTitle">Track the development of your skills.</h2>
                     </div>
-                    <label class="records-filter facts-filter">
-                      <span class="sr-only">Fact tracker operation</span>
-                      <select id="factOperationFilter">
-                        <option value="multiplication">Multiplication</option>
-                        <option value="addition">Addition</option>
-                      </select>
-                    </label>
+                    <div class="records-filter-row facts-filter-row">
+                      <label class="records-filter facts-filter">
+                        <span class="sr-only">Fact tracker operation</span>
+                        <select id="factOperationFilter">
+                          <option value="multiplication">Multiplication</option>
+                          <option value="addition">Addition</option>
+                        </select>
+                      </label>
+                      <label class="records-filter facts-filter">
+                        <span class="sr-only">Fact tracker view</span>
+                        <select id="factDetailFilter"></select>
+                      </label>
+                    </div>
                   </div>
 
                   <div class="table-grid" id="tableGrid"></div>
@@ -1056,17 +1073,49 @@
 
           <section class="options-card">
             <p class="section-kicker">Version</p>
-            <p class="options-copy"><strong id="appVersion">v0.7.1</strong></p>
+            <p class="options-copy"><strong id="appVersion">v0.8.0</strong></p>
+          </section>
+
+          <section class="options-card">
+            <p class="section-kicker">Appearance</p>
+            <label class="field">
+              <span>Color Palette</span>
+              <select id="themeSelect">
+                <option value="original">Original</option>
+                <option value="sunny-beach-day">Sunny Beach Day</option>
+                <option value="jungle">Jungle</option>
+                <option value="frozen">Frozen</option>
+                <option value="aang">Aang</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Color Mode</span>
+              <select id="colorModeSelect">
+                <option value="dark">Dark</option>
+                <option value="light">Light</option>
+              </select>
+            </label>
+          </section>
+
+          <section class="options-card">
+            <p class="section-kicker">Input</p>
+            <label class="field">
+              <span>Number Pad</span>
+              <select id="keypadPreferenceSelect">
+                <option value="auto">Auto</option>
+                <option value="always-on">Always On</option>
+                <option value="always-off">Always Off</option>
+              </select>
+            </label>
           </section>
 
           <section class="options-card">
             <p class="section-kicker">Most Recent Updates</p>
             <ul class="options-list">
-              <li>Setup now uses a progressive flow with operation, difficulty (addition), then workout type</li>
-              <li>Workout setup includes backtracking controls for changing operation or workout type</li>
-              <li>Spar mode now uses a 3-box strike HUD with X markers instead of the strike bar</li>
-              <li>Practice HUD now shows a visible combo counter with stronger streak intensity tiers</li>
-              <li>Techniques layout and Fact Tracker copy were updated for cleaner operation-first clarity</li>
+              <li>Added dark/light mode plus palette controls in Options.</li>
+              <li>Results and Progress carousels now support swipe gestures and position indicators.</li>
+              <li>Setup operation cards now include a reset-style `Change` action.</li>
+              <li>Number pad no longer disables keyboard input and now includes a sign toggle.</li>
             </ul>
           </section>
 
@@ -1126,6 +1175,10 @@
       </dialog>
     </div>
 
-    <script src="app.js"></script>
+    <script src="js/app-core.js"></script>
+    <script src="js/app-techniques.js"></script>
+    <script src="js/app-practice.js"></script>
+    <script src="js/app-progress.js"></script>
+    <script src="js/app-init.js"></script>
   </body>
 </html>
