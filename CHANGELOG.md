@@ -6,6 +6,19 @@ The format is inspired by Keep a Changelog and uses a simple project-friendly ve
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-04-28
+
+### Added
+- Added a dedicated `Home` view as the default entry frame with quick-action cards for `Work Out`, `Learn`, and `My Progress`.
+- Added explicit `Back to Menu` actions to focused non-home views (`Work Out` setup, `Learn`, `Results`, and `My Progress`) for app-like navigation.
+
+### Changed
+- Shifted the app to a single-shell navigation model where global hero/nav/tracker framing is shown only on `Home`.
+- Removed visible cross-screen Results/Progress carousel controls and converted those areas to inline stacked sections.
+- Updated Results/Progress section rendering logic to keep all content sections visible in one continuous view.
+- Increased shell stability by moving the main stage to viewport-aware minimum height (`100dvh`) with natural scrolling.
+- Bumped in-app version from `v0.9.0` to `v0.10.0`.
+
 ## [0.9.0] - 2026-04-28
 
 ### Added
