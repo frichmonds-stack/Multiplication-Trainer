@@ -46,6 +46,18 @@ python -m http.server 8000
 
 Then open `http://localhost:8000`.
 
+## Publish on the internet
+
+This repo is prepared for GitHub Pages using the `docs/` folder.
+
+1. Push the branch to GitHub.
+2. In repository settings, open `Pages`.
+3. Set Source to `Deploy from a branch`.
+4. Select branch `main` (or your release branch) and folder `/docs`.
+5. Save and wait for Pages to publish.
+
+The latest hosted build is linked from `docs/index.html` and points to `docs/v5/`.
+
 ## Files
 
 - `index.html` contains the app structure

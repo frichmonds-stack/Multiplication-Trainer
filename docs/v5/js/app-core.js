@@ -4,7 +4,7 @@ const RESULTS_MESSAGE_KEY_PREFIX = "multiplication-trainer-results-message-v1";
 const THEME_STORAGE_KEY = "multiplication-trainer-theme-v1";
 const COLOR_MODE_STORAGE_KEY = "multiplication-trainer-color-mode-v1";
 const KEYPAD_PREFERENCE_STORAGE_KEY = "multiplication-trainer-keypad-preference-v1";
-const APP_VERSION = "v0.8.0";
+const APP_VERSION = "v0.9.0";
 const FACTOR_LIMIT = 12;
 const TABLE_FACTORS = Array.from({ length: FACTOR_LIMIT }, (_, index) => index + 1);
 const QUESTION_PRESETS = [10, 20, 30];
@@ -381,6 +381,9 @@ const elements = {
   attemptProgressLabel: document.getElementById("attemptProgressLabel"),
   accuracyProgressLabel: document.getElementById("accuracyProgressLabel"),
   endWorkoutDialog: document.getElementById("endWorkoutDialog"),
+  endWorkoutDialogTitle: document.getElementById("endWorkoutDialogTitle"),
+  endWorkoutDialogCopy: document.getElementById("endWorkoutDialogCopy"),
+  endWorkoutDialogConfirmLabel: document.getElementById("endWorkoutDialogConfirmLabel"),
   cancelEndWorkoutButton: document.getElementById("cancelEndWorkoutButton"),
   confirmEndWorkoutButton: document.getElementById("confirmEndWorkoutButton"),
   exitTechniqueDialog: document.getElementById("exitTechniqueDialog"),
@@ -418,6 +421,8 @@ const state = {
   session: createEmptySession(),
   technique: createTechniqueState(),
   pendingTechniqueView: null,
+  pendingWorkoutView: null,
+  additionTrackerFlipMap: {},
 };
 
 function createEmptySession() {
@@ -1825,9 +1830,32 @@ function formatTechniqueAnswerValue(answer, carryFactor = null) {
   return formatTechniqueNumber(answer);
 }
 
-function formatTechniqueEquation(left, right) {
-  const highlightedLeft =
-    left === TECHNIQUE_TABLE ? formatTechniqueNumber(left) : formatTechniqueFactorValue(left);
+function formatTechniqueEquation(leftOrQuestion, rightValue = null) {
+  if (
+    leftOrQuestion &&
+    typeof leftOrQuestion === "object" &&
+    Object.prototype.hasOwnProperty.call(leftOrQuestion, "left") &&
+    Object.prototype.hasOwnProperty.call(leftOrQuestion, "right")
+  ) {
+    const question = leftOrQuestion;
+    const left = Number(question.left);
+    const right = Number(question.right);
+    const leftIsCarryFactor = !question.reversed;
+    const rightIsCarryFactor = Boolean(question.reversed);
+
+    const highlightedLeft = leftIsCarryFactor
+      ? formatTechniqueFactorValue(left)
+      : formatTechniqueNumber(left);
+    const highlightedRight = rightIsCarryFactor
+      ? formatTechniqueFactorValue(right)
+      : formatTechniqueNumber(right);
+
+    return `${highlightedLeft} x ${highlightedRight}`;
+  }
+
+  const left = Number(leftOrQuestion);
+  const right = Number(rightValue);
+  const highlightedLeft = left === TECHNIQUE_TABLE ? formatTechniqueNumber(left) : formatTechniqueFactorValue(left);
   const highlightedRight =
     right === TECHNIQUE_TABLE ? formatTechniqueNumber(right) : formatTechniqueFactorValue(right);
 

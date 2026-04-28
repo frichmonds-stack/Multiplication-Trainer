@@ -119,6 +119,7 @@
                 </div>
               </article>
             </div>
+            <p class="reward-strip-note">Heart = 10 attempts. Star = 10 correct.</p>
           </section>
         </div>
       </header>
@@ -571,6 +572,10 @@
                     type="text"
                     inputmode="numeric"
                     pattern="[0-9-]*"
+                    autocapitalize="off"
+                    autocorrect="off"
+                    spellcheck="false"
+                    enterkeyhint="done"
                     placeholder="Type your answer"
                     disabled
                   />
@@ -615,7 +620,7 @@
                   id="resultsPrevButton"
                   aria-label="Previous results panel"
                 >
-                  &#8249;
+                  &#8592;
                 </button>
                 <div class="carousel-position-indicator" id="resultsCarouselIndicator" aria-live="polite"></div>
                 <button
@@ -624,7 +629,7 @@
                   id="resultsNextButton"
                   aria-label="Next results panel"
                 >
-                  &#8250;
+                  &#8594;
                 </button>
               </div>
 
@@ -792,7 +797,7 @@
                   id="progressPrevButton"
                   aria-label="Previous progress panel"
                 >
-                  &#8249;
+                  &#8592;
                 </button>
                 <div class="carousel-position-indicator" id="progressCarouselIndicator" aria-live="polite"></div>
                 <button
@@ -801,7 +806,7 @@
                   id="progressNextButton"
                   aria-label="Next progress panel"
                 >
-                  &#8250;
+                  &#8594;
                 </button>
               </div>
 
@@ -1073,7 +1078,7 @@
 
           <section class="options-card">
             <p class="section-kicker">Version</p>
-            <p class="options-copy"><strong id="appVersion">v0.8.0</strong></p>
+            <p class="options-copy"><strong id="appVersion">v0.9.0</strong></p>
           </section>
 
           <section class="options-card">
@@ -1132,12 +1137,12 @@
         <div class="options-dialog-head">
           <div>
             <p class="section-kicker">End Workout</p>
-            <h2>End workout?</h2>
+            <h2 id="endWorkoutDialogTitle">End workout?</h2>
           </div>
         </div>
 
         <div class="options-stack">
-          <p class="options-copy">
+          <p class="options-copy" id="endWorkoutDialogCopy">
             Your results will be saved and this workout will finish.
           </p>
           <div class="button-row confirm-actions">
@@ -1145,7 +1150,7 @@
               Keep Going
             </button>
             <button class="primary-button" type="button" id="confirmEndWorkoutButton">
-              End Workout
+              <span id="endWorkoutDialogConfirmLabel">End Workout</span>
             </button>
           </div>
         </div>

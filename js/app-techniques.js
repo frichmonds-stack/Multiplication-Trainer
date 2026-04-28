@@ -74,6 +74,10 @@ function getTechniqueHintMarkup(question) {
   return `Take ${factorMarkup} and place a zero next to it.`;
 }
 
+function getTechniqueFactorDigitsForQuestion(question) {
+  return String(question?.otherFactor ?? "").replace(/[^\d]/g, "").length || 1;
+}
+
 function getTechniqueCardStatus(table) {
   if (!isTechniqueAvailable(table)) {
     return {
@@ -261,6 +265,8 @@ function getTechniquePatternRowMarkup(row) {
           inputmode="numeric"
           pattern="[0-9]*"
           value="${escapeHtml(row.value)}"
+          data-technique-factor-digits="${String(row.factor).length}"
+          data-technique-split-mode="factor-plus-zero"
           aria-label="Missing answer in ${row.factor} times 10"
           ${autofocus}
         />
@@ -388,6 +394,8 @@ function renderTechniqueMenuScreen() {
               selectedOperation === "multiplication" ? "selected" : ""
             }>Multiplication</option>
             <option value="addition" ${selectedOperation === "addition" ? "selected" : ""}>Addition</option>
+            <option value="subtraction" disabled>Subtraction (Coming Soon)</option>
+            <option value="division" disabled>Division (Coming Soon)</option>
           </select>
         </label>
       </div>
@@ -499,16 +507,19 @@ function renderTechniqueGuidedStage() {
     : feedback.tone === "error"
       ? "error"
       : "idle";
+  const factorDigits = getTechniqueFactorDigitsForQuestion(question);
 
   return `
-    <form class="technique-lesson-card technique-question-shell" data-technique-form="guided" autocomplete="off">
+    <form class="technique-lesson-card technique-question-shell technique-practice-shell" data-technique-form="guided" autocomplete="off">
       <div class="technique-question-meta">
         <span class="technique-progress-copy">Assisted rep ${
           state.technique.guidedIndex + 1
         } of ${state.technique.guidedQuestions.length}</span>
       </div>
-      <p class="technique-question">${formatTechniqueEquation(question.left, question.right)} = ?</p>
-      <div class="technique-input-row">
+      <div class="problem-wrap technique-practice-problem">
+        <p class="technique-question">${formatTechniqueEquation(question)} = ?</p>
+      </div>
+      <div class="technique-input-row technique-practice-input-row">
         <div class="technique-answer-wrap ${
           answerState === "correct" ? "is-correct" : answerState === "error" ? "is-error" : ""
         }">
@@ -521,6 +532,8 @@ function renderTechniqueGuidedStage() {
               pattern="[0-9]*"
               placeholder="Type the full answer"
               value="${escapeHtml(state.technique.guidedAnswer)}"
+              data-technique-factor-digits="${factorDigits}"
+              data-technique-split-mode="factor-plus-zero"
               ${state.technique.guidedSolved ? "disabled" : ""}
               data-technique-autofocus="true"
             />
@@ -538,6 +551,7 @@ function renderTechniqueGuidedStage() {
           ? `<div class="technique-hint">${getTechniqueHintMarkup(question)}</div>`
           : ""
       }
+      <p class="technique-feedback ${feedback.tone}">${feedback.message}</p>
       <p class="sr-only" aria-live="polite">${feedback.message}</p>
       <div class="technique-action-row">
         <button class="ghost-button" type="button" data-technique-action="prev-stage">
@@ -569,16 +583,19 @@ function renderTechniqueQuickCheckStage() {
       : "idle";
   const hintAvailable =
     state.technique.quickCheckHintVisible || state.technique.quickCheckHintOffered;
+  const factorDigits = getTechniqueFactorDigitsForQuestion(question);
 
   return `
-    <form class="technique-lesson-card technique-question-shell" data-technique-form="quick-check" autocomplete="off">
+    <form class="technique-lesson-card technique-question-shell technique-practice-shell" data-technique-form="quick-check" autocomplete="off">
       <div class="technique-question-meta">
         <span class="technique-progress-copy">Correct answers: ${
           state.technique.quickCheckCorrect
         } / ${TECHNIQUE_COMPLETION_GOAL}</span>
       </div>
-      <p class="technique-question">${formatTechniqueEquation(question.left, question.right)} = ?</p>
-      <div class="technique-input-row">
+      <div class="problem-wrap technique-practice-problem">
+        <p class="technique-question">${formatTechniqueEquation(question)} = ?</p>
+      </div>
+      <div class="technique-input-row technique-practice-input-row">
         <div class="technique-answer-wrap ${
           answerState === "correct" ? "is-correct" : answerState === "error" ? "is-error" : ""
         }">
@@ -591,6 +608,8 @@ function renderTechniqueQuickCheckStage() {
               pattern="[0-9]*"
               placeholder="Type the full answer"
               value="${escapeHtml(state.technique.quickCheckAnswer)}"
+              data-technique-factor-digits="${factorDigits}"
+              data-technique-split-mode="factor-plus-zero"
               ${state.technique.quickCheckSolved ? "disabled" : ""}
               data-technique-autofocus="true"
             />
@@ -608,6 +627,7 @@ function renderTechniqueQuickCheckStage() {
           ? `<div class="technique-hint">${getTechniqueHintMarkup(question)}</div>`
           : ""
       }
+      <p class="technique-feedback ${feedback.tone}">${feedback.message}</p>
       <p class="sr-only" aria-live="polite">${feedback.message}</p>
       <div class="technique-action-row">
         <button class="ghost-button" type="button" data-technique-action="prev-stage">
@@ -632,6 +652,12 @@ function renderTechniqueQuickCheckStage() {
 function renderTechniquePracticeStage() {
   const question = state.technique.practiceQuestion;
   const feedback = state.technique.practiceFeedback;
+  const factorDigits = getTechniqueFactorDigitsForQuestion(question);
+  const answerState = state.technique.practiceSolved
+    ? "correct"
+    : feedback.tone === "error"
+      ? "error"
+      : "idle";
 
   return `
     <div class="technique-lesson-wrap">
@@ -645,24 +671,35 @@ function renderTechniquePracticeStage() {
         </button>
       </div>
 
-      <form class="technique-lesson-card technique-question-shell" data-technique-form="practice" autocomplete="off">
+      <form class="technique-lesson-card technique-question-shell technique-practice-shell" data-technique-form="practice" autocomplete="off">
         <div class="technique-question-meta">
           <span class="technique-progress-copy">Questions can flip either way now.</span>
         </div>
-        <p class="technique-question">${formatTechniqueEquation(question.left, question.right)} = ?</p>
-        <div class="technique-input-row">
-          <label class="answer-field">
-            <span class="sr-only">Practice answer</span>
-            <input
-              type="text"
-              name="techniqueAnswer"
-              inputmode="numeric"
-              pattern="[0-9]*"
-              placeholder="Type the full answer"
-              value="${escapeHtml(state.technique.practiceAnswer)}"
-              data-technique-autofocus="true"
-            />
-          </label>
+        <div class="problem-wrap technique-practice-problem">
+          <p class="technique-question">${formatTechniqueEquation(question)} = ?</p>
+        </div>
+        <div class="technique-input-row technique-practice-input-row">
+          <div class="technique-answer-wrap ${
+            answerState === "correct" ? "is-correct" : answerState === "error" ? "is-error" : ""
+          }">
+            <label class="answer-field">
+              <span class="sr-only">Practice answer</span>
+              <input
+                type="text"
+                name="techniqueAnswer"
+                inputmode="numeric"
+                pattern="[0-9]*"
+                placeholder="Type the full answer"
+                value="${escapeHtml(state.technique.practiceAnswer)}"
+                data-technique-factor-digits="${factorDigits}"
+                data-technique-split-mode="factor-plus-zero"
+                data-technique-autofocus="true"
+              />
+            </label>
+            <span class="technique-answer-signal">
+              ${getTechniqueStatusIconMarkup(answerState, "technique-status-icon-inline")}
+            </span>
+          </div>
           <button class="primary-button" type="submit">
             Check Answer
           </button>
@@ -880,6 +917,43 @@ function openTechniqueExitDialog(targetView) {
   }
 }
 
+function getViewLabelForDialog(view) {
+  if (view === "progress") {
+    return "My Progress";
+  }
+  if (view === "techniques") {
+    return "Learn Techniques";
+  }
+  return "Work Out";
+}
+
+function setEndWorkoutDialogContent(targetView = null) {
+  const leavingToAnotherView = typeof targetView === "string" && targetView.length > 0;
+  if (elements.endWorkoutDialogTitle) {
+    elements.endWorkoutDialogTitle.textContent = leavingToAnotherView
+      ? "Leave workout?"
+      : "End workout?";
+  }
+  if (elements.endWorkoutDialogCopy) {
+    elements.endWorkoutDialogCopy.textContent = leavingToAnotherView
+      ? `Your results will be saved, then you'll move to ${getViewLabelForDialog(targetView)}.`
+      : "Your results will be saved and this workout will finish.";
+  }
+  if (elements.endWorkoutDialogConfirmLabel) {
+    elements.endWorkoutDialogConfirmLabel.textContent = leavingToAnotherView
+      ? `End Workout and Go to ${getViewLabelForDialog(targetView)}`
+      : "End Workout";
+  }
+}
+
+function openEndWorkoutDialog(targetView = null) {
+  state.pendingWorkoutView = typeof targetView === "string" ? targetView : null;
+  setEndWorkoutDialogContent(state.pendingWorkoutView);
+  if (!elements.endWorkoutDialog.open) {
+    elements.endWorkoutDialog.showModal();
+  }
+}
+
 function cancelTechniqueExit() {
   state.pendingTechniqueView = null;
   elements.exitTechniqueDialog.close();
@@ -899,7 +973,14 @@ function confirmTechniqueExit() {
 }
 
 function requestView(targetView) {
-  if (state.active || !targetView) {
+  if (!targetView) {
+    return;
+  }
+
+  if (state.active) {
+    if (!viewMatchesButton(state.view, targetView)) {
+      openEndWorkoutDialog(targetView);
+    }
     return;
   }
 
@@ -945,10 +1026,10 @@ function showView(view) {
     } else {
       button.removeAttribute("aria-current");
     }
-    button.disabled = state.active;
+    button.disabled = false;
   });
 
-  elements.optionsButton.disabled = state.active;
+  elements.optionsButton.disabled = false;
 }
 
 function isTypingTarget(target) {
@@ -1056,8 +1137,19 @@ function applyTechniqueInputColour(input) {
     return;
   }
 
-  const trailingZeros = value.match(/0+$/)?.[0]?.length || 0;
-  const factorChars = Math.max(value.length - trailingZeros, 0);
+  const splitMode = String(input.dataset.techniqueSplitMode || "");
+  const explicitFactorDigits = Math.max(1, Number(input.dataset.techniqueFactorDigits) || 1);
+  let factorChars = 0;
+
+  if (splitMode === "factor-plus-zero") {
+    factorChars =
+      value.length <= explicitFactorDigits
+        ? value.length
+        : Math.min(explicitFactorDigits, value.length - 1);
+  } else {
+    const trailingZeros = value.match(/0+$/)?.[0]?.length || 0;
+    factorChars = Math.max(value.length - trailingZeros, 0);
+  }
   const factorStop = value.length > 0 ? (factorChars / value.length) * 100 : 100;
   input.classList.add("is-technique-colored");
   input.style.setProperty("--technique-factor-stop", `${factorStop}%`);
@@ -1071,7 +1163,12 @@ function syncTechniqueInputColours() {
 
   root
     .querySelectorAll('.technique-inline-input, input[name="techniqueAnswer"]')
-    .forEach((input) => applyTechniqueInputColour(input));
+    .forEach((input) => {
+      if (!(input instanceof HTMLInputElement)) {
+        return;
+      }
+      applyTechniqueInputColour(input);
+    });
 }
 
 function updateTechniquePatternRow(name, value) {
@@ -1150,7 +1247,7 @@ function submitGuidedTechniqueAnswer() {
     state.technique.guidedSolved = true;
     state.technique.guidedHintVisible = false;
     state.technique.guidedFeedback = {
-      message: "Nice. That one is locked in.",
+      message: "Correct.",
       tone: "success",
     };
     renderTechniqueScreen();
@@ -1173,7 +1270,7 @@ function submitGuidedTechniqueAnswer() {
 
   state.technique.guidedSolved = false;
   state.technique.guidedFeedback = {
-    message: "Not yet. Keep the same fact and use the hint if you want support.",
+    message: "Not quite. Try again.",
     tone: "error",
   };
   renderTechniqueScreen();
@@ -1192,8 +1289,8 @@ function submitQuickCheckAnswer() {
     state.technique.quickCheckFeedback = {
       message:
         state.technique.quickCheckCorrect >= TECHNIQUE_COMPLETION_GOAL
-          ? "Strong work. You finished the solo reps."
-          : "Correct. Keep the pattern steady.",
+          ? "Correct. Solo reps complete."
+          : "Correct.",
       tone: "success",
     };
 
@@ -1224,7 +1321,7 @@ function submitQuickCheckAnswer() {
     state.technique.quickCheckHintVisible = false;
     state.technique.quickCheckHintOffered = true;
     state.technique.quickCheckFeedback = {
-      message: "Wrong this time. The same fact stays here, and you can ask for a hint.",
+      message: "Not quite. Try again.",
       tone: "error",
     };
   }
@@ -1240,13 +1337,13 @@ function submitTechniquePracticeAnswer() {
     state.technique.practiceSolved = true;
     state.technique.practiceHintVisible = false;
     state.technique.practiceFeedback = {
-      message: "Correct. Keep the table feeling easy.",
+      message: "Correct.",
       tone: "success",
     };
   } else {
     state.technique.practiceSolved = false;
     state.technique.practiceFeedback = {
-      message: "Not yet. Stay with the same fact and use the hint if you want support.",
+      message: "Not quite. Try again.",
       tone: "error",
     };
   }

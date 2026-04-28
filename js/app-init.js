@@ -47,6 +47,7 @@ function initialise() {
   renderQuestionTimer(0);
   renderTechniqueScreen();
   setFeedback("");
+  setEndWorkoutDialogContent(null);
   showView("setup");
   initialiseCarouselGestures();
 
@@ -76,7 +77,7 @@ function initialise() {
   });
   document.addEventListener("keydown", handleGlobalKeydown);
   elements.answerForm.addEventListener("submit", handleSubmit);
-  elements.answerInput.addEventListener("input", syncKeypadSignToggleState);
+  elements.answerInput.addEventListener("input", handlePracticeAnswerInput);
   elements.skipButton.addEventListener("click", handleSkip);
   elements.practiceKeypad?.addEventListener("click", handlePracticeKeypadClick);
   elements.finishSessionButton.addEventListener("click", handleFinishSession);
@@ -94,15 +95,27 @@ function initialise() {
   elements.cancelExitTechniqueButton.addEventListener("click", cancelTechniqueExit);
   elements.confirmExitTechniqueButton.addEventListener("click", confirmTechniqueExit);
   elements.cancelEndWorkoutButton.addEventListener("click", () => {
+    state.pendingWorkoutView = null;
+    setEndWorkoutDialogContent(null);
     elements.endWorkoutDialog.close();
   });
   elements.confirmEndWorkoutButton.addEventListener("click", () => {
+    const pendingView = state.pendingWorkoutView;
+    state.pendingWorkoutView = null;
+    setEndWorkoutDialogContent(null);
     elements.endWorkoutDialog.close();
     completeSession("manual");
+    if (pendingView) {
+      requestView(pendingView);
+    }
   });
   registerBackdropClose(elements.optionsDialog);
   registerBackdropClose(elements.endWorkoutDialog);
   registerBackdropClose(elements.exitTechniqueDialog);
+  elements.endWorkoutDialog.addEventListener("close", () => {
+    state.pendingWorkoutView = null;
+    setEndWorkoutDialogContent(null);
+  });
   elements.exitTechniqueDialog.addEventListener("close", () => {
     state.pendingTechniqueView = null;
   });
@@ -112,6 +125,8 @@ function initialise() {
   elements.coachOperationFilter?.addEventListener("change", handleCoachOperationFilterChange);
   elements.factOperationFilter?.addEventListener("change", handleFactOperationFilterChange);
   elements.factDetailFilter?.addEventListener("change", handleFactDetailFilterChange);
+  elements.tableGrid?.addEventListener("click", handleAdditionTrackerCardClick);
+  elements.tableGrid?.addEventListener("keydown", handleAdditionTrackerCardKeydown);
   elements.recordsOperationSelect?.addEventListener("change", handleRecordsFilterChange);
   elements.recordsModeSelect.addEventListener("change", renderWorkoutHistory);
   elements.themeSelect?.addEventListener("change", handleThemeChange);

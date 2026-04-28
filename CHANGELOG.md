@@ -6,6 +6,25 @@ The format is inspired by Keep a Changelog and uses a simple project-friendly ve
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-04-28
+
+### Added
+- Added navigation-aware end-workout confirmation copy so leaving an active workout can route directly to `My Progress` or `Learn Techniques` after save.
+- Added click/keyboard flip interactions for addition tracker cards so summary and recent-example views can be toggled in place.
+- Added helper text under the daily rewards strip clarifying goal semantics: `Heart = 10 attempts` and `Star = 10 correct`.
+
+### Changed
+- Updated Learn `10x` assisted reps, solo reps, and practice stage layouts to use a shared practice-style question shell for visual consistency.
+- Extended technique answer colour splitting to support factor-aware overlays for full-answer fields so entries like `40` and `100` render with clearer factor/zero separation.
+- Improved question selection to avoid immediate fact repeats when alternative questions exist.
+- Refined practice feedback copy to include explicit correct-answer guidance on misses/skips.
+- Updated active workout navigation UX to use a confirm-before-leave workflow rather than disabling top-level navigation controls.
+- Repositioned carousel indicators to top-centre and increased arrow prominence/size while pushing nav buttons further outside the carousel frame.
+- Increased Options form spacing around stacked fields (including `Color Mode`) and improved touch ergonomics for answer entry/keypad controls.
+- Enhanced focus/records information hierarchy to reduce same-weight text walls and better emphasize key metrics.
+- Expanded light-mode contrast handling across workout/session chips, streak visuals, calendar cells, and technique completion/locked states.
+- Bumped in-app version from `v0.8.0` to `v0.9.0`.
+
 ## [0.8.0] - 2026-04-27
 
 ### Added

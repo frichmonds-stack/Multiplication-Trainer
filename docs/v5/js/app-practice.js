@@ -196,24 +196,24 @@ function pickQuestion() {
       }
     }
 
-    if (fact.key === state.lastQuestionKey && pool.length > 1) {
-      weight *= 0.18;
-    }
-
     return { fact, weight };
   });
-
-  const totalWeight = weightedPool.reduce((sum, item) => sum + item.weight, 0);
+  const selectionPool =
+    pool.length > 1 && state.lastQuestionKey
+      ? weightedPool.filter((item) => item.fact.key !== state.lastQuestionKey)
+      : weightedPool;
+  const safePool = selectionPool.length ? selectionPool : weightedPool;
+  const totalWeight = safePool.reduce((sum, item) => sum + item.weight, 0);
   let target = Math.random() * totalWeight;
 
-  for (const item of weightedPool) {
+  for (const item of safePool) {
     target -= item.weight;
     if (target <= 0) {
       return randomiseDisplay(item.fact);
     }
   }
 
-  return randomiseDisplay(weightedPool[weightedPool.length - 1].fact);
+  return randomiseDisplay(safePool[safePool.length - 1].fact);
 }
 
 function getDailyRecord(dateKey = getTodayDateKey()) {
@@ -492,6 +492,27 @@ function setFeedback(message, tone = "") {
   if (tone) {
     elements.feedback.classList.add(tone);
   }
+}
+
+function sanitisePracticeAnswerInput(value) {
+  const raw = String(value || "");
+  const hasLeadingSign = raw.trim().startsWith("-");
+  const digits = raw.replace(/[^\d]/g, "");
+  const signPrefix = canUseNegativeInput() && hasLeadingSign ? "-" : "";
+  return `${signPrefix}${digits}`;
+}
+
+function handlePracticeAnswerInput(event) {
+  const input = event?.target;
+  if (!(input instanceof HTMLInputElement)) {
+    return;
+  }
+
+  const cleaned = sanitisePracticeAnswerInput(input.value);
+  if (cleaned !== input.value) {
+    input.value = cleaned;
+  }
+  syncKeypadSignToggleState();
 }
 
 function askNextQuestion() {
@@ -907,7 +928,12 @@ function handleSubmit(event) {
   };
 
   registerAnswer(evaluation, numericValue);
-  setFeedback(evaluation.isCorrect ? "Right" : "Wrong", evaluation.isCorrect ? "success" : "error");
+  setFeedback(
+    evaluation.isCorrect
+      ? "Correct."
+      : `Not quite. Correct answer: ${expectedValue}`,
+    evaluation.isCorrect ? "success" : "error",
+  );
   queueNextQuestion(evaluation.isCorrect ? 320 : 520);
 }
 
@@ -916,8 +942,9 @@ function handleSkip() {
     return;
   }
 
+  const correctAnswer = state.currentQuestion.answer;
   registerAnswer(null, "Skipped", { skipped: true });
-  setFeedback("Skipped", "error");
+  setFeedback(`Skipped. Correct answer: ${correctAnswer}`, "error");
   queueNextQuestion(420);
 }
 
@@ -971,7 +998,7 @@ function handlePracticeKeypadClick(event) {
     return;
   }
 
-  elements.answerInput.value = nextValue;
+  elements.answerInput.value = sanitisePracticeAnswerInput(nextValue);
   syncKeypadSignToggleState();
   elements.answerInput.focus();
 }
@@ -1080,6 +1107,6 @@ function handleFinishSession() {
     return;
   }
 
-  elements.endWorkoutDialog.showModal();
+  openEndWorkoutDialog();
 }
 

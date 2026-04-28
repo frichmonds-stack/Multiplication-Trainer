@@ -280,12 +280,11 @@ function renderPersonalBests() {
           <div class="fact-name">#${index + 1} ${getWorkoutModeLabel(record)}</div>
           <div class="focus-chip success-chip">${record.correct} correct</div>
         </div>
-        <div class="fact-meta">${getOperationLabel(record.operation || "multiplication")}${
+        <div class="fact-meta focus-meta-row">${getOperationLabel(record.operation || "multiplication")}${
           record.operation === "addition" ? ` (${record.additionDifficulty})` : ""
-        }</div>
-        <div class="fact-meta">${formatRecordDateLabel(record)}</div>
-        <div class="fact-meta">${record.attempted} attempts | ${formatPercent(record.accuracy)} accuracy</div>
-        <div class="fact-meta">${record.averageMs === null ? "No pace yet" : `${formatQuestionDuration(record.averageMs)} avg pace`}</div>
+        } | ${formatRecordDateLabel(record)}</div>
+        <div class="focus-metric">${record.attempted} attempts | ${formatPercent(record.accuracy)} accuracy</div>
+        <div class="fact-meta focus-meta-row">${record.averageMs === null ? "No pace yet" : `${formatQuestionDuration(record.averageMs)} avg pace`}</div>
       </article>
     `)
     .join("");
@@ -318,11 +317,11 @@ function renderRecentWorkouts() {
           <div class="fact-name">${getWorkoutModeLabel(record)}</div>
           <div class="focus-chip subtle-chip">${formatRecordDateLabel(record)}</div>
         </div>
-        <div class="fact-meta">${getOperationLabel(record.operation || "multiplication")}${
+        <div class="fact-meta focus-meta-row">${getOperationLabel(record.operation || "multiplication")}${
           record.operation === "addition" ? ` (${record.additionDifficulty})` : ""
         }</div>
-        <div class="fact-meta">${record.correct} correct out of ${record.attempted} attempts</div>
-        <div class="fact-meta">${formatPercent(record.accuracy)} accuracy${record.averageMs === null ? "" : ` | ${formatQuestionDuration(record.averageMs)} avg pace`}</div>
+        <div class="focus-metric">${record.correct} correct out of ${record.attempted} attempts</div>
+        <div class="fact-meta focus-meta-row">${formatPercent(record.accuracy)} accuracy${record.averageMs === null ? "" : ` | ${formatQuestionDuration(record.averageMs)} avg pace`}</div>
       </article>
     `)
     .join("");
@@ -380,8 +379,8 @@ function renderPriorityList(target, troubleFacts) {
             <div class="fact-name">${formatFactLabelFromKey(fact.key)}</div>
             <div class="focus-chip">${chipLabel}</div>
           </div>
-          <div class="fact-meta">${fact.correct} / ${fact.attempts} correct</div>
-          <div class="fact-meta">${Math.round(fact.mastery * 100)}% accuracy</div>
+          <div class="focus-metric">${fact.correct} / ${fact.attempts} correct</div>
+          <div class="fact-meta focus-meta-row">${Math.round(fact.mastery * 100)}% accuracy</div>
         </article>
       `;
     })
@@ -661,9 +660,9 @@ function renderGrowthList(target, items) {
           <div class="fact-name">${item.label}</div>
           <div class="focus-chip warning-chip">${item.status.label}</div>
         </div>
-        <div class="fact-meta">${item.operation === "addition" ? "Addition bucket" : "Multiplication table"}</div>
-        <div class="fact-meta">Last 7 days: ${item.lastCorrect} / ${item.lastAttempted} (${formatPercent(item.lastAccuracy)})</div>
-        <div class="fact-meta">${formatBucketTrendDelta(item.delta)}</div>
+        <div class="fact-meta focus-meta-row">${item.operation === "addition" ? "Addition bucket" : "Multiplication table"}</div>
+        <div class="focus-metric">Last 7 days: ${item.lastCorrect} / ${item.lastAttempted} (${formatPercent(item.lastAccuracy)})</div>
+        <div class="fact-meta focus-meta-row">${formatBucketTrendDelta(item.delta)}</div>
       </article>
     `)
     .join("");
@@ -690,9 +689,9 @@ function renderPositiveProgressList(target, items) {
           <div class="fact-name">${item.label}</div>
           <div class="focus-chip success-chip">${item.status.label}</div>
         </div>
-        <div class="fact-meta">${item.operation === "addition" ? "Addition bucket" : "Multiplication table"}</div>
-        <div class="fact-meta">Overall: ${item.totalCorrect} / ${item.totalAttempted} (${formatPercent(item.totalAccuracy)})</div>
-        <div class="fact-meta">${formatBucketTrendDelta(item.delta)}</div>
+        <div class="fact-meta focus-meta-row">${item.operation === "addition" ? "Addition bucket" : "Multiplication table"}</div>
+        <div class="focus-metric">Overall: ${item.totalCorrect} / ${item.totalAttempted} (${formatPercent(item.totalAccuracy)})</div>
+        <div class="fact-meta focus-meta-row">${formatBucketTrendDelta(item.delta)}</div>
       </article>
     `)
     .join("");
@@ -1020,6 +1019,30 @@ function getAdditionBucketExamples(bucketKey, detailMode = "overall") {
   return filtered.slice(0, ADDITION_BUCKET_EXAMPLE_DISPLAY_LIMIT);
 }
 
+function getAdditionTrackerFlipKey(bucketKey, detailMode) {
+  return `${detailMode}:${bucketKey}`;
+}
+
+function isAdditionTrackerBucketFlipped(bucketKey, detailMode) {
+  return Boolean(state.additionTrackerFlipMap?.[getAdditionTrackerFlipKey(bucketKey, detailMode)]);
+}
+
+function toggleAdditionTrackerBucketFlip(bucketKey, detailMode) {
+  const key = getAdditionTrackerFlipKey(bucketKey, detailMode);
+  const nextMap = {
+    ...(state.additionTrackerFlipMap || {}),
+  };
+  nextMap[key] = !nextMap[key];
+  state.additionTrackerFlipMap = nextMap;
+}
+
+function formatAdditionExampleEquation(entry) {
+  const left = Number(entry.left);
+  const right = Number(entry.right);
+  const answer = left + right;
+  return `${left} + ${right} = ${answer}`;
+}
+
 function renderAdditionTracker(detailMode = "overall") {
   const activeMode =
     detailMode === "with-regrouping" || detailMode === "without-regrouping"
@@ -1034,27 +1057,96 @@ function renderAdditionTracker(detailMode = "overall") {
     const ratio = metric.attempts ? metric.correct / metric.attempts : 0;
     const status = getBucketStatus(metric.attempts, ratio);
     const examples = getAdditionBucketExamples(bucketMeta.key, activeMode);
-    const examplesSummary = examples.length
-      ? examples.map((entry) => `${entry.left} + ${entry.right}`).join(" | ")
-      : "No recent examples yet";
+    const flipped = isAdditionTrackerBucketFlipped(bucketMeta.key, activeMode);
+    const examplesMarkup = examples.length
+      ? `
+        <ul class="addition-example-list">
+          ${examples
+            .map(
+              (entry) =>
+                `<li class="addition-example-item">${formatAdditionExampleEquation(entry)}</li>`,
+            )
+            .join("")}
+        </ul>
+      `
+      : `<div class="fact-meta addition-example-empty">No recent examples yet.</div>`;
 
     return `
-      <article class="table-card ${status.tone}">
-        <div class="table-card-top">
-          <div class="table-name">${bucketMeta.label}</div>
-          <span class="table-pill ${status.tone}">${status.label}</span>
+      <article
+        class="table-card addition-bucket-card ${status.tone} ${flipped ? "is-flipped" : ""}"
+        data-addition-bucket="${bucketMeta.key}"
+        data-addition-detail="${activeMode}"
+        role="button"
+        tabindex="0"
+        aria-pressed="${flipped ? "true" : "false"}"
+        aria-label="${flipped ? "Show summary" : "Show recent examples"} for ${bucketMeta.label}"
+      >
+        <div class="addition-bucket-face addition-bucket-front">
+          <div class="addition-bucket-head">
+            <div class="table-name">${bucketMeta.label}</div>
+            <span class="table-pill ${status.tone}">${status.label}</span>
+          </div>
+          <div class="fact-meta table-card-middle">${metric.label}</div>
+          <div class="bar-track" aria-hidden="true">
+            <div class="bar-fill ${status.tone}" style="width: ${Math.round(ratio * 100)}%"></div>
+          </div>
+          <div class="table-card-stats">
+            <span>${getRatioLabel(metric.correct, metric.attempts)}</span>
+          </div>
+          <div class="fact-meta addition-card-toggle-hint">Tap to view examples</div>
         </div>
-        <div class="fact-meta table-card-middle">${metric.label}</div>
-        <div class="bar-track" aria-hidden="true">
-          <div class="bar-fill ${status.tone}" style="width: ${Math.round(ratio * 100)}%"></div>
+        <div class="addition-bucket-face addition-bucket-back">
+          <div class="addition-bucket-head">
+            <div class="table-name">${bucketMeta.label}</div>
+            <span class="table-pill subtle-chip">Recent</span>
+          </div>
+          <div class="fact-meta table-card-middle">${metric.label} examples</div>
+          ${examplesMarkup}
+          <div class="fact-meta addition-card-toggle-hint">Tap to return to summary</div>
         </div>
-        <div class="table-card-stats">
-          <span>${getRatioLabel(metric.correct, metric.attempts)}</span>
-        </div>
-        <div class="fact-meta">Recent examples: ${examplesSummary}</div>
       </article>
     `;
   }).join("");
+}
+
+function handleAdditionTrackerCardClick(event) {
+  const target = event.target;
+  if (!(target instanceof Element)) {
+    return;
+  }
+  const card = target.closest("[data-addition-bucket]");
+  if (!(card instanceof HTMLElement)) {
+    return;
+  }
+  const bucketKey = card.dataset.additionBucket || "";
+  const detailMode = card.dataset.additionDetail || "overall";
+  if (!bucketKey) {
+    return;
+  }
+  toggleAdditionTrackerBucketFlip(bucketKey, detailMode);
+  renderAdditionTracker(getFactDetailFilterValue());
+}
+
+function handleAdditionTrackerCardKeydown(event) {
+  const target = event.target;
+  if (!(target instanceof Element)) {
+    return;
+  }
+  const card = target.closest("[data-addition-bucket]");
+  if (!(card instanceof HTMLElement)) {
+    return;
+  }
+  if (event.key !== "Enter" && event.key !== " ") {
+    return;
+  }
+  event.preventDefault();
+  const bucketKey = card.dataset.additionBucket || "";
+  const detailMode = card.dataset.additionDetail || "overall";
+  if (!bucketKey) {
+    return;
+  }
+  toggleAdditionTrackerBucketFlip(bucketKey, detailMode);
+  renderAdditionTracker(getFactDetailFilterValue());
 }
 
 function getAdditionTechniqueGridMarkup() {
