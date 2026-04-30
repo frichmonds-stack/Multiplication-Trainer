@@ -63,6 +63,69 @@ function getFactDetailFilterValue() {
   return definitions.some((definition) => definition.key === value) ? value : fallback;
 }
 
+const FACT_TRACKER_MULTIPLICATION_RANGES = [
+  { label: "x1–x6", minFactor: 1, maxFactor: 6 },
+  { label: "x7–x12", minFactor: 7, maxFactor: 12 },
+];
+
+function getFactTrackerRangeCount() {
+  return FACT_TRACKER_MULTIPLICATION_RANGES.length;
+}
+
+function clampFactTrackerRangeIndex(index) {
+  const maxIndex = getFactTrackerRangeCount() - 1;
+  return Math.max(0, Math.min(maxIndex, Number(index) || 0));
+}
+
+function resetFactTrackerRange() {
+  state.factTrackerRangeIndex = 0;
+}
+
+function updateFactTrackerRangeControls(isMultiplicationView) {
+  if (!elements.factRangeNav || !elements.factRangeLabel) {
+    return;
+  }
+
+  if (!isMultiplicationView) {
+    elements.factRangeNav.hidden = false;
+    elements.factRangeLabel.textContent = "all";
+    if (elements.factRangePrevButton) {
+      elements.factRangePrevButton.disabled = true;
+    }
+    if (elements.factRangeNextButton) {
+      elements.factRangeNextButton.disabled = true;
+    }
+    return;
+  }
+
+  elements.factRangeNav.hidden = false;
+  state.factTrackerRangeIndex = clampFactTrackerRangeIndex(state.factTrackerRangeIndex);
+  const activeRange = FACT_TRACKER_MULTIPLICATION_RANGES[state.factTrackerRangeIndex];
+  elements.factRangeLabel.textContent = activeRange.label;
+
+  if (elements.factRangePrevButton) {
+    elements.factRangePrevButton.disabled = state.factTrackerRangeIndex === 0;
+  }
+  if (elements.factRangeNextButton) {
+    elements.factRangeNextButton.disabled =
+      state.factTrackerRangeIndex >= getFactTrackerRangeCount() - 1;
+  }
+}
+
+function shiftFactTrackerRange(direction) {
+  const operation = getFactOperationFilterValue();
+  if (operation !== "multiplication") {
+    return;
+  }
+
+  const nextIndex = clampFactTrackerRangeIndex(state.factTrackerRangeIndex + direction);
+  if (nextIndex === state.factTrackerRangeIndex) {
+    return;
+  }
+  state.factTrackerRangeIndex = nextIndex;
+  renderTableRadar();
+}
+
 function getRecordsOperationFilterValue() {
   if (!elements.recordsOperationSelect) {
     return "all";
@@ -299,7 +362,7 @@ function renderRecentWorkouts() {
   const selectedMode = elements.recordsModeSelect?.value || "timed";
   const recent = getWorkoutHistoryByOperation(operationFilter)
     .filter((record) => record.modeKey === selectedMode)
-    .slice(0, 5);
+    .slice(0, 4);
 
   if (!recent.length) {
     elements.recentWorkoutsList.innerHTML = `
@@ -699,9 +762,9 @@ function renderPositiveProgressList(target, items) {
 
 function renderProgressFocusAreas() {
   const filterValue = getFocusOperationFilterValue();
-  const troubleFacts = getTroubleFacts(5, filterValue);
-  const growthItems = getGrowthOpportunityItems(4, filterValue);
-  const positiveItems = getPositiveProgressItems(3, filterValue);
+  const troubleFacts = getTroubleFacts(3, filterValue);
+  const growthItems = getGrowthOpportunityItems(2, filterValue);
+  const positiveItems = getPositiveProgressItems(2, filterValue);
 
   renderPositiveProgressList(elements.progressWinsList, positiveItems);
   renderGrowthList(elements.progressGrowthList, growthItems);
@@ -710,9 +773,9 @@ function renderProgressFocusAreas() {
 
 function renderResultsFocusAreas() {
   const filterValue = "all";
-  const troubleFacts = getTroubleFacts(5, filterValue);
-  const growthItems = getGrowthOpportunityItems(4, filterValue);
-  const positiveItems = getPositiveProgressItems(3, filterValue);
+  const troubleFacts = getTroubleFacts(3, filterValue);
+  const growthItems = getGrowthOpportunityItems(2, filterValue);
+  const positiveItems = getPositiveProgressItems(2, filterValue);
 
   renderPositiveProgressList(elements.resultsWinsList, positiveItems);
   renderGrowthList(elements.resultsGrowthList, growthItems);
@@ -1171,6 +1234,7 @@ function getAdditionTechniqueGridMarkup() {
 function renderTableRadar() {
   const factOperation = getFactOperationFilterValue();
   const factDetail = getFactDetailFilterValue();
+  elements.tableGrid.classList.remove("multiplication-table-grid");
   elements.tableGrid.classList.remove("addition-table-grid");
   if (elements.factsSlideTitle) {
     const operationCopy =
@@ -1185,9 +1249,13 @@ function renderTableRadar() {
   }
 
   if (factOperation === "addition") {
+    updateFactTrackerRangeControls(false);
     renderAdditionTracker(factDetail);
     return;
   }
+
+  updateFactTrackerRangeControls(true);
+  elements.tableGrid.classList.add("multiplication-table-grid");
 
   const tableStats = getTableStats(factDetail);
   if (!tableStats.some((table) => table.attempts > 0)) {
@@ -1206,7 +1274,12 @@ function renderTableRadar() {
     return;
   }
 
-  elements.tableGrid.innerHTML = tableStats
+  const activeRange = FACT_TRACKER_MULTIPLICATION_RANGES[clampFactTrackerRangeIndex(state.factTrackerRangeIndex)];
+  const visibleTables = tableStats.filter(
+    (table) => table.factor >= activeRange.minFactor && table.factor <= activeRange.maxFactor,
+  );
+
+  elements.tableGrid.innerHTML = visibleTables
     .map((table) => {
       const accuracyLabel = table.attempts
         ? `${formatPercent(table.accuracy)} accuracy`
@@ -1215,16 +1288,17 @@ function renderTableRadar() {
 
       return `
         <article class="table-card ${table.tone}">
-          <div class="table-card-top">
+          <div class="table-card-top table-zone table-zone-head">
             <div class="table-name">x ${table.factor}</div>
             <span class="table-pill ${table.tone}">${table.label}</span>
           </div>
-          <div class="fact-meta table-card-middle">${detailLabel}</div>
-          <div class="bar-track" aria-hidden="true">
+          <div class="fact-meta table-card-middle table-zone table-zone-summary">${detailLabel}</div>
+          <div class="bar-track table-zone table-zone-progress" aria-hidden="true">
             <div class="bar-fill ${table.tone}" style="width: ${Math.round(table.accuracy * 100)}%"></div>
           </div>
-          <div class="table-card-stats">
+          <div class="table-card-stats table-zone table-zone-footer">
             <span>${accuracyLabel}</span>
+            <span class="fact-meta table-action-cue">Keep stacking reps</span>
           </div>
         </article>
       `;
@@ -1350,10 +1424,18 @@ function renderCalendars() {
   ensureDisplayMonthKey();
   const displayMonthDate = createMonthDateFromKey(state.displayMonthKey);
   const calendarMarkup = buildCalendarMarkup(displayMonthDate);
+  const homeMonthDate = getCurrentMonthDate();
+  const homeCalendarMarkup = buildCalendarMarkup(homeMonthDate);
 
   renderMonthNavigation();
   elements.calendarGrid.innerHTML = calendarMarkup;
   elements.resultsCalendarGrid.innerHTML = calendarMarkup;
+  if (elements.homeCalendarGrid) {
+    elements.homeCalendarGrid.innerHTML = homeCalendarMarkup;
+  }
+  if (elements.homeCalendarMonthLabel) {
+    elements.homeCalendarMonthLabel.textContent = formatMonthLabel(homeMonthDate);
+  }
 }
 
 function getDisplayedMonthSummary() {
@@ -1403,6 +1485,21 @@ function shiftDisplayedMonth(direction) {
 function renderStreakPanel() {
   const streakSummary = getPracticeStreakSummary();
   const monthSummary = getDisplayedMonthSummary();
+  const currentMonthKey = getMonthKey(getCurrentMonthDate());
+  const homeMonthSummary = Object.entries(state.progress.dailyRecords).reduce(
+    (summary, [dateKey, record]) => {
+      if (getMonthKey(parseDateKey(dateKey)) !== currentMonthKey) {
+        return summary;
+      }
+
+      const normalised = normaliseDailyRecord(record);
+      summary.sessions += normalised.sessionsCompleted || 0;
+      summary.hearts += normalised.attemptGoalEarned ? 1 : 0;
+      summary.stars += normalised.accuracyGoalEarned ? 1 : 0;
+      return summary;
+    },
+    { sessions: 0, hearts: 0, stars: 0 },
+  );
 
   elements.currentPracticeStreak.textContent = `${streakSummary.current}`;
   elements.bestPracticeDayStreak.textContent = `${streakSummary.best}`;
@@ -1414,6 +1511,29 @@ function renderStreakPanel() {
   elements.resultsMonthSessions.textContent = `${monthSummary.sessions}`;
   elements.resultsMonthHearts.textContent = `${monthSummary.hearts}`;
   elements.resultsMonthStars.textContent = `${monthSummary.stars}`;
+  if (elements.homeCurrentPracticeStreak) {
+    elements.homeCurrentPracticeStreak.textContent = `${streakSummary.current}`;
+  }
+  if (elements.homeMonthSessions) {
+    elements.homeMonthSessions.textContent = `${homeMonthSummary.sessions}`;
+  }
+  if (elements.homeMonthHearts) {
+    elements.homeMonthHearts.textContent = `${homeMonthSummary.hearts}`;
+  }
+  if (elements.homeMonthStars) {
+    elements.homeMonthStars.textContent = `${homeMonthSummary.stars}`;
+  }
+  const hasHomeData =
+    streakSummary.current > 0 ||
+    homeMonthSummary.sessions > 0 ||
+    homeMonthSummary.hearts > 0 ||
+    homeMonthSummary.stars > 0;
+  if (elements.homeCalendarSummary) {
+    elements.homeCalendarSummary.classList.toggle("is-hidden", !hasHomeData);
+  }
+  if (elements.homeCalendarEmptyState) {
+    elements.homeCalendarEmptyState.classList.toggle("is-hidden", hasHomeData);
+  }
 }
 
 function buildCarouselIndicatorMarkup(currentIndex, total) {
@@ -1427,75 +1547,70 @@ function buildCarouselIndicatorMarkup(currentIndex, total) {
   `;
 }
 
-function syncCarouselHeight(container, slideSelector, activeKey, keyAttribute) {
-  if (!(container instanceof HTMLElement)) {
-    return;
-  }
-  const activeSlide = container.querySelector(`${slideSelector}[${keyAttribute}="${activeKey}"]`);
-  if (!(activeSlide instanceof HTMLElement)) {
-    return;
-  }
-
-  container.style.removeProperty("--carousel-target-height");
-  const measuredHeight = Math.ceil(activeSlide.scrollHeight);
-  if (!Number.isFinite(measuredHeight) || measuredHeight <= 0) {
-    return;
-  }
-  container.style.setProperty("--carousel-target-height", `${measuredHeight}px`);
-}
-
 function renderResultsCarousel() {
   elements.resultsSlides.forEach((slide) => {
-    slide.classList.add("is-active");
-    slide.setAttribute("aria-hidden", "false");
+    const isActiveSlide =
+      slide.dataset.resultsSlide === RESULTS_SLIDES[state.resultsSlideIndex];
+    slide.classList.toggle("is-active", isActiveSlide);
+    slide.setAttribute("aria-hidden", isActiveSlide ? "false" : "true");
   });
 
   if (elements.resultsPrevButton) {
-    elements.resultsPrevButton.hidden = true;
-    elements.resultsPrevButton.disabled = true;
+    elements.resultsPrevButton.hidden = false;
+    elements.resultsPrevButton.disabled = RESULTS_SLIDES.length < 2;
   }
   if (elements.resultsNextButton) {
-    elements.resultsNextButton.hidden = true;
-    elements.resultsNextButton.disabled = true;
+    elements.resultsNextButton.hidden = false;
+    elements.resultsNextButton.disabled = RESULTS_SLIDES.length < 2;
   }
   if (elements.resultsCarouselIndicator) {
-    elements.resultsCarouselIndicator.innerHTML = "";
-    elements.resultsCarouselIndicator.hidden = true;
-  }
-  if (elements.resultsCarousel instanceof HTMLElement) {
-    elements.resultsCarousel.style.removeProperty("--carousel-target-height");
+    elements.resultsCarouselIndicator.innerHTML = buildCarouselIndicatorMarkup(
+      state.resultsSlideIndex,
+      RESULTS_SLIDES.length,
+    );
   }
 }
 
 function shiftResultsCarousel(direction) {
-  void direction;
+  const totalSlides = RESULTS_SLIDES.length;
+  if (totalSlides < 1) {
+    return;
+  }
+  state.resultsSlideIndex = (state.resultsSlideIndex + direction + totalSlides) % totalSlides;
+  renderResultsCarousel();
 }
 
 function renderProgressCarousel() {
   elements.progressSlides.forEach((slide) => {
-    slide.classList.add("is-active");
-    slide.setAttribute("aria-hidden", "false");
+    const isActiveSlide =
+      slide.dataset.progressSlide === PROGRESS_SLIDES[state.progressSlideIndex];
+    slide.classList.toggle("is-active", isActiveSlide);
+    slide.setAttribute("aria-hidden", isActiveSlide ? "false" : "true");
   });
 
   if (elements.progressPrevButton) {
-    elements.progressPrevButton.hidden = true;
-    elements.progressPrevButton.disabled = true;
+    elements.progressPrevButton.hidden = false;
+    elements.progressPrevButton.disabled = PROGRESS_SLIDES.length < 2;
   }
   if (elements.progressNextButton) {
-    elements.progressNextButton.hidden = true;
-    elements.progressNextButton.disabled = true;
+    elements.progressNextButton.hidden = false;
+    elements.progressNextButton.disabled = PROGRESS_SLIDES.length < 2;
   }
   if (elements.progressCarouselIndicator) {
-    elements.progressCarouselIndicator.innerHTML = "";
-    elements.progressCarouselIndicator.hidden = true;
-  }
-  if (elements.progressCarousel instanceof HTMLElement) {
-    elements.progressCarousel.style.removeProperty("--carousel-target-height");
+    elements.progressCarouselIndicator.innerHTML = buildCarouselIndicatorMarkup(
+      state.progressSlideIndex,
+      PROGRESS_SLIDES.length,
+    );
   }
 }
 
 function shiftProgressCarousel(direction) {
-  void direction;
+  const totalSlides = PROGRESS_SLIDES.length;
+  if (totalSlides < 1) {
+    return;
+  }
+  state.progressSlideIndex = (state.progressSlideIndex + direction + totalSlides) % totalSlides;
+  renderProgressCarousel();
 }
 
 function bindCarouselSwipe(container, onSwipeNext, onSwipePrev) {
@@ -1593,11 +1708,13 @@ function handleCoachOperationFilterChange() {
 }
 
 function handleFactOperationFilterChange() {
+  resetFactTrackerRange();
   syncFactDetailFilterOptions();
   renderTableRadar();
 }
 
 function handleFactDetailFilterChange() {
+  resetFactTrackerRange();
   renderTableRadar();
 }
 

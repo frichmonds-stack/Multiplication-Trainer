@@ -21,8 +21,9 @@
       <div class="ambient ambient-left"></div>
       <div class="ambient ambient-right"></div>
 
+      <div class="app-shell card">
       <header class="page-header">
-        <div class="hero-copy">
+        <div class="hero-copy home-hero-banner">
           <div class="hero-title-row">
             <span class="hero-mark" aria-hidden="true">
               <svg viewBox="0 0 660 660" role="presentation">
@@ -33,10 +34,7 @@
             </span>
             <div class="hero-text-block">
               <p class="eyebrow">Novare Co. presents</p>
-              <h1>
-                <span>Math Muscle</span>
-                <span>Trainer</span>
-              </h1>
+              <h1>Math Muscle Trainer</h1>
               <p class="hero-tagline">Grow your brain &amp; begin your reign.</p>
             </div>
           </div>
@@ -65,95 +63,98 @@
                 <span>Techniques</span>
               </span>
             </button>
-            <button
-              class="nav-button nav-button-primary is-active"
-              type="button"
-              data-view-target="setup"
-            >
+            <button class="nav-button" type="button" data-view-target="setup">
               Work Out
             </button>
           </nav>
+        </div>
 
-          <section class="daily-widget card" aria-label="Today's workout tracker">
-            <div class="daily-widget-top">
-              <div>
-                <h2>Workout Tracker</h2>
+        <div class="home-dashboard-grid">
+          <div class="home-left-stack">
+            <section class="daily-widget card" aria-label="Today's workout tracker">
+              <div class="daily-widget-top">
+                <div>
+                  <p class="section-kicker">Main Dashboard</p>
+                  <h2>Workout Tracker</h2>
+                </div>
               </div>
-            </div>
 
-            <div class="daily-inspiration">
-              <span class="preview-label daily-inspiration-label">Today's Inspiration</span>
-              <p class="daily-inspiration-copy">
-                <em id="heroMessage">Strength is built one steady rep at a time.</em>
-              </p>
-            </div>
+              <div class="daily-inspiration">
+                <span class="preview-label daily-inspiration-label">Today's Inspiration</span>
+                <p class="daily-inspiration-copy">
+                  <em id="heroMessage">Strength is built one steady rep at a time.</em>
+                </p>
+              </div>
 
-            <div class="reward-strip">
-              <article class="reward-mini reward-mini-attempt" id="attemptBadge">
-                <div class="reward-glyph-shell" aria-hidden="true">
-                  <svg class="reward-glyph" viewBox="0 0 72 72" role="presentation">
-                    <path
-                      d="M36 57.024 14.448 35.472c-5.304-5.304-5.304-13.896 0-19.2 5.304-5.304 13.896-5.304 19.2 0L36 18.624l2.352-2.352c5.304-5.304 13.896-5.304 19.2 0 5.304 5.304 5.304 13.896 0 19.2Z"
-                    />
-                  </svg>
+              <div class="reward-strip">
+                <article class="reward-mini reward-mini-attempt" id="attemptBadge">
+                  <div class="reward-glyph-shell" aria-hidden="true">
+                    <svg class="reward-glyph" viewBox="0 0 72 72" role="presentation">
+                      <path
+                        d="M36 57.024 14.448 35.472c-5.304-5.304-5.304-13.896 0-19.2 5.304-5.304 13.896-5.304 19.2 0L36 18.624l2.352-2.352c5.304-5.304 13.896-5.304 19.2 0 5.304 5.304 5.304 13.896 0 19.2Z"
+                      />
+                    </svg>
+                  </div>
+
+                  <div class="reward-mini-copy">
+                    <strong>Heart</strong>
+                    <span id="attemptProgressLabel">0 / 10</span>
+                  </div>
+                </article>
+
+                <article class="reward-mini reward-mini-accuracy" id="accuracyBadge">
+                  <div class="reward-glyph-shell" aria-hidden="true">
+                    <svg class="reward-glyph" viewBox="0 0 72 72" role="presentation">
+                      <path
+                        d="M36 8 44.552 25.33 63.678 28.108 49.839 41.6 53.106 60.648 36 51.652 18.894 60.648 22.161 41.6 8.322 28.108 27.448 25.33Z"
+                      />
+                    </svg>
+                  </div>
+
+                  <div class="reward-mini-copy">
+                    <strong>Star</strong>
+                    <span id="accuracyProgressLabel">0 / 10</span>
+                  </div>
+                </article>
+              </div>
+              <p class="reward-strip-note">Heart = 10 attempts. Star = 10 correct.</p>
+            </section>
+
+            <section class="home-cta-card card" aria-label="Start workout">
+              <p class="section-kicker">Ready</p>
+              <h2>Start your next workout</h2>
+              <button class="primary-button home-start-button" type="button" data-view-target="setup">
+                Start Workout
+              </button>
+            </section>
+          </div>
+
+          <aside class="home-side-stack">
+            <section class="home-calendar-widget card" aria-label="Practice calendar preview">
+              <div class="home-calendar-head">
+                <div>
+                  <h2 id="homeCalendarMonthLabel">This month</h2>
                 </div>
+              </div>
 
-                <div class="reward-mini-copy">
-                  <strong>Heart</strong>
-                  <span id="attemptProgressLabel">0 / 10</span>
-                </div>
-              </article>
-
-              <article class="reward-mini reward-mini-accuracy" id="accuracyBadge">
-                <div class="reward-glyph-shell" aria-hidden="true">
-                  <svg class="reward-glyph" viewBox="0 0 72 72" role="presentation">
-                    <path
-                      d="M36 8 44.552 25.33 63.678 28.108 49.839 41.6 53.106 60.648 36 51.652 18.894 60.648 22.161 41.6 8.322 28.108 27.448 25.33Z"
-                    />
-                  </svg>
-                </div>
-
-                <div class="reward-mini-copy">
-                  <strong>Star</strong>
-                  <span id="accuracyProgressLabel">0 / 10</span>
-                </div>
-              </article>
-            </div>
-            <p class="reward-strip-note">Heart = 10 attempts. Star = 10 correct.</p>
-          </section>
+              <div class="calendar-weekdays compact" aria-hidden="true">
+                <span>Sun</span>
+                <span>Mon</span>
+                <span>Tue</span>
+                <span>Wed</span>
+                <span>Thu</span>
+                <span>Fri</span>
+                <span>Sat</span>
+              </div>
+              <div class="calendar-grid compact home-calendar-grid" id="homeCalendarGrid"></div>
+            </section>
+          </aside>
         </div>
       </header>
-
-      <div class="app-shell card">
         <main class="screen-stage">
-          <section class="screen is-active" data-view="home" id="homeScreen">
-            <section class="panel home-panel">
-              <div class="slide-heading">
-                <p class="section-kicker">Main Menu</p>
-                <h2>Choose your next move</h2>
-              </div>
-
-              <div class="home-action-grid">
-                <button class="home-action-card" type="button" data-view-target="setup">
-                  <span class="home-action-kicker">Work Out</span>
-                  <strong>Start or adjust your training session</strong>
-                </button>
-
-                <button class="home-action-card" type="button" data-view-target="techniques">
-                  <span class="home-action-kicker">Learn</span>
-                  <strong>Build technique with guided lessons</strong>
-                </button>
-
-                <button class="home-action-card" type="button" data-view-target="progress">
-                  <span class="home-action-kicker">My Progress</span>
-                  <strong>Review streaks, focus areas, and workout records</strong>
-                </button>
-              </div>
-            </section>
-          </section>
-
           <section class="screen" data-view="setup" id="setupScreen">
             <div class="focused-view-head">
+              <p class="focused-view-title">Work Out Setup</p>
               <button class="ghost-button" type="button" data-view-target="home">
                 Back to Menu
               </button>
@@ -533,6 +534,7 @@
           </section>
           <section class="screen" data-view="techniques" id="techniquesScreen">
             <div class="focused-view-head">
+              <p class="focused-view-title">Learn Techniques</p>
               <button class="ghost-button" type="button" data-view-target="home">
                 Back to Menu
               </button>
@@ -652,6 +654,25 @@
             <section class="panel carousel-panel results-screen-panel">
               <div class="carousel-shell-head">
                 <p class="section-kicker">Results</p>
+              </div>
+              <div class="carousel-actions carousel-actions-floating" aria-label="Results navigation">
+                <button
+                  class="carousel-button"
+                  type="button"
+                  id="resultsPrevButton"
+                  aria-label="Previous results panel"
+                >
+                  &#8249;
+                </button>
+                <div class="carousel-position-indicator" id="resultsCarouselIndicator" aria-live="polite"></div>
+                <button
+                  class="carousel-button"
+                  type="button"
+                  id="resultsNextButton"
+                  aria-label="Next results panel"
+                >
+                  &#8250;
+                </button>
               </div>
 
               <div class="results-carousel">
@@ -815,6 +836,25 @@
               <div class="carousel-shell-head">
                 <p class="section-kicker">My Progress</p>
               </div>
+              <div class="carousel-actions carousel-actions-floating" aria-label="Progress navigation">
+                <button
+                  class="carousel-button"
+                  type="button"
+                  id="progressPrevButton"
+                  aria-label="Previous progress panel"
+                >
+                  &#8249;
+                </button>
+                <div class="carousel-position-indicator" id="progressCarouselIndicator" aria-live="polite"></div>
+                <button
+                  class="carousel-button"
+                  type="button"
+                  id="progressNextButton"
+                  aria-label="Next progress panel"
+                >
+                  &#8250;
+                </button>
+              </div>
 
               <div class="progress-carousel">
                 <section class="progress-slide is-active" data-progress-slide="overview">
@@ -963,6 +1003,25 @@
                         <span class="sr-only">Fact tracker view</span>
                         <select id="factDetailFilter"></select>
                       </label>
+                      <div class="fact-range-nav" id="factRangeNav" aria-label="Fact tracker range">
+                        <button
+                          class="fact-range-button"
+                          id="factRangePrevButton"
+                          type="button"
+                          aria-label="Show previous fact range"
+                        >
+                          &#8249;
+                        </button>
+                        <span id="factRangeLabel">x1–x6</span>
+                        <button
+                          class="fact-range-button"
+                          id="factRangeNextButton"
+                          type="button"
+                          aria-label="Show next fact range"
+                        >
+                          &#8250;
+                        </button>
+                      </div>
                     </div>
                   </div>
 

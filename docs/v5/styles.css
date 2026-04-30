@@ -973,6 +973,10 @@ body[data-color-mode="light"] .nav-button-primary {
   animation: rise-in 320ms ease both;
 }
 
+.screen[aria-hidden="true"] {
+  display: none;
+}
+
 .screen-grid {
   display: grid;
   gap: 0.9rem;
@@ -2960,6 +2964,11 @@ body[data-color-mode="light"] .carousel-actions-floating .carousel-button {
   gap: 0.9rem;
   align-content: start;
   animation: slide-fade-in 280ms ease both;
+}
+
+.results-slide[aria-hidden="true"],
+.progress-slide[aria-hidden="true"] {
+  display: none;
 }
 
 .slide-heading,

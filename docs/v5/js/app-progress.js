@@ -1452,12 +1452,10 @@ function renderResultsCarousel() {
     slide.setAttribute("aria-hidden", isActiveSlide ? "false" : "true");
   });
 
-  const atStart = state.resultsSlideIndex === 0;
-  const atEnd = state.resultsSlideIndex === RESULTS_SLIDES.length - 1;
   elements.resultsPrevButton.hidden = false;
   elements.resultsNextButton.hidden = false;
-  elements.resultsPrevButton.disabled = atStart;
-  elements.resultsNextButton.disabled = atEnd;
+  elements.resultsPrevButton.disabled = RESULTS_SLIDES.length < 2;
+  elements.resultsNextButton.disabled = RESULTS_SLIDES.length < 2;
   if (elements.resultsCarouselIndicator) {
     elements.resultsCarouselIndicator.innerHTML = buildCarouselIndicatorMarkup(
       state.resultsSlideIndex,
@@ -1473,12 +1471,11 @@ function renderResultsCarousel() {
 }
 
 function shiftResultsCarousel(direction) {
-  state.resultsSlideIndex = clampNumber(
-    state.resultsSlideIndex + direction,
-    0,
-    RESULTS_SLIDES.length - 1,
-    state.resultsSlideIndex,
-  );
+  const totalSlides = RESULTS_SLIDES.length;
+  if (totalSlides < 1) {
+    return;
+  }
+  state.resultsSlideIndex = (state.resultsSlideIndex + direction + totalSlides) % totalSlides;
   renderResultsCarousel();
 }
 
@@ -1490,12 +1487,10 @@ function renderProgressCarousel() {
     slide.setAttribute("aria-hidden", isActiveSlide ? "false" : "true");
   });
 
-  const atStart = state.progressSlideIndex === 0;
-  const atEnd = state.progressSlideIndex === PROGRESS_SLIDES.length - 1;
   elements.progressPrevButton.hidden = false;
   elements.progressNextButton.hidden = false;
-  elements.progressPrevButton.disabled = atStart;
-  elements.progressNextButton.disabled = atEnd;
+  elements.progressPrevButton.disabled = PROGRESS_SLIDES.length < 2;
+  elements.progressNextButton.disabled = PROGRESS_SLIDES.length < 2;
   if (elements.progressCarouselIndicator) {
     elements.progressCarouselIndicator.innerHTML = buildCarouselIndicatorMarkup(
       state.progressSlideIndex,
@@ -1511,12 +1506,11 @@ function renderProgressCarousel() {
 }
 
 function shiftProgressCarousel(direction) {
-  state.progressSlideIndex = clampNumber(
-    state.progressSlideIndex + direction,
-    0,
-    PROGRESS_SLIDES.length - 1,
-    state.progressSlideIndex,
-  );
+  const totalSlides = PROGRESS_SLIDES.length;
+  if (totalSlides < 1) {
+    return;
+  }
+  state.progressSlideIndex = (state.progressSlideIndex + direction + totalSlides) % totalSlides;
   renderProgressCarousel();
 }
 

@@ -546,6 +546,7 @@ function renderTechniqueGuidedStage() {
           Check Answer
         </button>
       </div>
+      ${state.useTouchKeypad ? getTechniqueKeypadMarkup() : ""}
       ${
         state.technique.guidedHintVisible
           ? `<div class="technique-hint">${getTechniqueHintMarkup(question)}</div>`
@@ -622,6 +623,7 @@ function renderTechniqueQuickCheckStage() {
           Check Answer
         </button>
       </div>
+      ${state.useTouchKeypad ? getTechniqueKeypadMarkup() : ""}
       ${
         state.technique.quickCheckHintVisible
           ? `<div class="technique-hint">${getTechniqueHintMarkup(question)}</div>`
@@ -704,6 +706,7 @@ function renderTechniquePracticeStage() {
             Check Answer
           </button>
         </div>
+        ${state.useTouchKeypad ? getTechniqueKeypadMarkup() : ""}
         ${
           state.technique.practiceHintVisible
             ? `<div class="technique-hint">${getTechniqueHintMarkup(question)}</div>`
@@ -879,11 +882,13 @@ function renderTechniqueLessonScreen() {
           <p class="section-kicker">${stageMeta.kicker}</p>
           <h2>${stageMeta.title}</h2>
         </div>
+      </div>
+      <div class="technique-stage-pills">${getTechniqueStagePillsMarkup()}</div>
+      <div class="technique-context-actions">
         <button class="ghost-button subtle-button" type="button" data-technique-action="exit">
           Exit Lesson
         </button>
       </div>
-      <div class="technique-stage-pills">${getTechniqueStagePillsMarkup()}</div>
       ${getTechniqueStageMarkup()}
     </div>
   `;
@@ -915,6 +920,25 @@ function openTechniqueExitDialog(targetView) {
   if (!elements.exitTechniqueDialog.open) {
     elements.exitTechniqueDialog.showModal();
   }
+}
+
+function getTechniqueKeypadMarkup() {
+  return `
+    <div class="practice-keypad technique-keypad" aria-label="Technique number pad">
+      <button class="ghost-button" type="button" data-keypad-key="7">7</button>
+      <button class="ghost-button" type="button" data-keypad-key="8">8</button>
+      <button class="ghost-button" type="button" data-keypad-key="9">9</button>
+      <button class="ghost-button" type="button" data-keypad-key="4">4</button>
+      <button class="ghost-button" type="button" data-keypad-key="5">5</button>
+      <button class="ghost-button" type="button" data-keypad-key="6">6</button>
+      <button class="ghost-button" type="button" data-keypad-key="1">1</button>
+      <button class="ghost-button" type="button" data-keypad-key="2">2</button>
+      <button class="ghost-button" type="button" data-keypad-key="3">3</button>
+      <button class="ghost-button keypad-sign-toggle" type="button" data-keypad-key="sign" disabled>&#177;</button>
+      <button class="ghost-button" type="button" data-keypad-key="0">0</button>
+      <button class="ghost-button" type="button" data-keypad-key="backspace">&#9003;</button>
+    </div>
+  `;
 }
 
 function getViewLabelForDialog(view) {
@@ -1533,6 +1557,32 @@ function handleTechniqueAction(action) {
 }
 
 function handleTechniqueLessonClick(event) {
+  const keypadButton = event.target.closest(".technique-keypad [data-keypad-key]");
+  if (keypadButton instanceof HTMLButtonElement) {
+    const input = elements.techniqueScreenShell?.querySelector(
+      'input[name="techniqueAnswer"]:not([disabled])',
+    );
+    if (!(input instanceof HTMLInputElement)) {
+      return;
+    }
+
+    const key = String(keypadButton.dataset.keypadKey || "");
+    let nextValue = input.value;
+    if (key === "backspace") {
+      nextValue = nextValue.slice(0, -1);
+    } else if (/^\d$/.test(key)) {
+      nextValue = `${nextValue}${key}`;
+    } else {
+      return;
+    }
+
+    input.value = sanitiseTechniqueEntry(nextValue);
+    applyTechniqueInputColour(input);
+    input.focus();
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    return;
+  }
+
   const stagePill = event.target.closest("[data-technique-stage-jump]");
   if (stagePill) {
     jumpToTechniqueStage(stagePill.dataset.techniqueStageJump);

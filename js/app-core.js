@@ -348,6 +348,10 @@ const elements = {
   coachOperationFilter: document.getElementById("coachOperationFilter"),
   factOperationFilter: document.getElementById("factOperationFilter"),
   factDetailFilter: document.getElementById("factDetailFilter"),
+  factRangeNav: document.getElementById("factRangeNav"),
+  factRangeLabel: document.getElementById("factRangeLabel"),
+  factRangePrevButton: document.getElementById("factRangePrevButton"),
+  factRangeNextButton: document.getElementById("factRangeNextButton"),
   progressSlides: Array.from(document.querySelectorAll(".progress-slide")),
   overallAnswered: document.getElementById("overallAnswered"),
   overallAccuracy: document.getElementById("overallAccuracy"),
@@ -382,6 +386,14 @@ const elements = {
   accuracyBadge: document.getElementById("accuracyBadge"),
   attemptProgressLabel: document.getElementById("attemptProgressLabel"),
   accuracyProgressLabel: document.getElementById("accuracyProgressLabel"),
+  homeCalendarMonthLabel: document.getElementById("homeCalendarMonthLabel"),
+  homeCalendarGrid: document.getElementById("homeCalendarGrid"),
+  homeCurrentPracticeStreak: document.getElementById("homeCurrentPracticeStreak"),
+  homeMonthSessions: document.getElementById("homeMonthSessions"),
+  homeMonthHearts: document.getElementById("homeMonthHearts"),
+  homeMonthStars: document.getElementById("homeMonthStars"),
+  homeCalendarSummary: document.getElementById("homeCalendarSummary"),
+  homeCalendarEmptyState: document.getElementById("homeCalendarEmptyState"),
   endWorkoutDialog: document.getElementById("endWorkoutDialog"),
   endWorkoutDialogTitle: document.getElementById("endWorkoutDialogTitle"),
   endWorkoutDialogCopy: document.getElementById("endWorkoutDialogCopy"),
@@ -425,6 +437,7 @@ const state = {
   pendingTechniqueView: null,
   pendingWorkoutView: null,
   additionTrackerFlipMap: {},
+  factTrackerRangeIndex: 0,
 };
 
 function createEmptySession() {
@@ -1816,17 +1829,20 @@ function formatTechniqueFactorValue(value) {
   return formatTechniqueDigits(value, true);
 }
 
+function formatTechniqueFactorStemValue(value) {
+  return String(value)
+    .split("")
+    .map((digit) => `<span class="technique-factor">${escapeHtml(digit)}</span>`)
+    .join("");
+}
+
 function formatTechniqueCarryValue(value) {
   return value === TECHNIQUE_TABLE ? formatTechniqueNumber(value) : formatTechniqueFactorValue(value);
 }
 
 function formatTechniqueAnswerValue(answer, carryFactor = null) {
-  if (
-    carryFactor !== null &&
-    carryFactor !== TECHNIQUE_TABLE &&
-    String(answer) === `${carryFactor}${TECHNIQUE_TABLE}`
-  ) {
-    return `${formatTechniqueFactorValue(carryFactor)}<span class="technique-zero">0</span>`;
+  if (carryFactor !== null && Number(answer) === Number(carryFactor) * TECHNIQUE_TABLE) {
+    return `${formatTechniqueFactorStemValue(carryFactor)}<span class="technique-zero">0</span>`;
   }
 
   return formatTechniqueNumber(answer);

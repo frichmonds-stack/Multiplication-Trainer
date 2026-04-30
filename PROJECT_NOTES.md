@@ -77,6 +77,12 @@ Use it for:
   - focus on speed, streaks, and competitive chaining
 - After the current structural refinement settles, do a dedicated motion pass for screen transitions, lesson-step transitions, carousel movement, and subtle reveal/feedback animations.
 - Add a theme/color mode changer so learners can switch visual style (not only dark red gym theme), based on user testing preference feedback.
+- Post-`v0.10.0` single-shell stabilization backlog:
+  - Replace full vertical stacking in Results/Progress with controlled section switching (tabs or scoped carousel behavior).
+  - Re-introduce iPad swipe interactions only in intended content regions, with safe horizontal thresholds.
+  - Continue light mode contrast cleanup across progress cards, coach notes, and utility controls.
+  - Run a dedicated responsive spacing/alignment pass for tablet-first layouts.
+  - Execute a structured regression QA pass before the next snapshot publish.
 
 ## Session Notes
 
@@ -211,3 +217,8 @@ Use it for:
 
 - Confirmed end-goal layout direction: move to a single-display app shell so the full page behaves like an app surface, not a webpage with a persistent header band.
 - Current persistent header + Workout Tracker rail is now treated as a transitional structure because it distorts sizing/space allocation; future layout pass should fold this into a unified app viewport architecture.
+
+### 2026-04-28
+
+- Published `v0.9.0` refinement state to GitHub Pages first, then shipped `v0.10.0` as `docs/v6` with a single-shell navigation model.
+- Captured immediate follow-up risk: Results/Progress currently render all sections in a long vertical flow and need controlled section switching in the next stabilization pass.

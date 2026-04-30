@@ -125,6 +125,8 @@ function initialise() {
   elements.coachOperationFilter?.addEventListener("change", handleCoachOperationFilterChange);
   elements.factOperationFilter?.addEventListener("change", handleFactOperationFilterChange);
   elements.factDetailFilter?.addEventListener("change", handleFactDetailFilterChange);
+  elements.factRangePrevButton?.addEventListener("click", () => shiftFactTrackerRange(-1));
+  elements.factRangeNextButton?.addEventListener("click", () => shiftFactTrackerRange(1));
   elements.tableGrid?.addEventListener("click", handleAdditionTrackerCardClick);
   elements.tableGrid?.addEventListener("keydown", handleAdditionTrackerCardKeydown);
   elements.recordsOperationSelect?.addEventListener("change", handleRecordsFilterChange);
