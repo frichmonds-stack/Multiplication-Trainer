@@ -56,7 +56,7 @@ This repo is prepared for GitHub Pages using the `docs/` folder.
 4. Select branch `main` (or your release branch) and folder `/docs`.
 5. Save and wait for Pages to publish.
 
-The latest hosted build is linked from `docs/index.html` and points to `docs/v5/`.
+The latest hosted build is linked from `docs/index.html` and points to `docs/v7/`.
 
 ## Files
 
