@@ -40,3 +40,9 @@
 - Confirmed `scripts/check-repo.ps1` passes and the Git remote points at `Math-Muscle-Trainer.git`.
 - Kept `docs/v9` as the latest published app snapshot because no newer root app snapshot was needed for AI-documentation-only changes.
 - Recorded that GitHub Pages deployment and live-site verification must be reported after push.
+
+## 2026-05-07 - Publish Close Verified
+
+- Committed and pushed the prepared batch to `origin/main`.
+- Verified the pushed `main` branch matches the local commit before live-site checks.
+- Verified the GitHub Pages version index and `docs/v9` app are live at the `Math-Muscle-Trainer` Pages URL.

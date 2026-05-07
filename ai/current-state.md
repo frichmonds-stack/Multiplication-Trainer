@@ -7,7 +7,7 @@ Last updated: 2026-05-07
 - Project/product naming is standardized as `Math Muscle Trainer`.
 - Root app is at `v0.12.0`.
 - Latest docs snapshot is `docs/v9`, marked latest in `docs/index.html`.
-- Publish-close pass prepared the rename, versioning, docs snapshot, and AI continuity work for GitHub publication.
+- Publish-close pass pushed the rename, versioning, docs snapshot, and AI continuity work to GitHub and verified the live GitHub Pages site.
 - `AGENTS.md`, `ai/`, and `docs/decisions/` are now explicitly Codex-managed continuity files.
 - `ai/task-map.md` routes future AI sessions from work type to relevant files, pre-reads, docs, and risks.
 - Session close protocol now requires affected docs, GitHub push status, and live internet verification status to be addressed explicitly.
@@ -27,6 +27,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\check-repo.ps1
 ```
 
 - Result on 2026-05-07: `All repo checks passed.`
+- GitHub Pages verified live on 2026-05-07:
+  - `https://frichmonds-stack.github.io/Math-Muscle-Trainer/`
+  - `https://frichmonds-stack.github.io/Math-Muscle-Trainer/v9/`
 
 ## Working Tree Note
 
