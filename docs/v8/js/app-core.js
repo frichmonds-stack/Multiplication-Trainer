@@ -1,10 +1,21 @@
-const STORAGE_KEY = "math-muscle-trainer-progress-v2";
-const HERO_MESSAGE_KEY = "math-muscle-trainer-hero-message-v1";
-const RESULTS_MESSAGE_KEY_PREFIX = "math-muscle-trainer-results-message-v1";
-const THEME_STORAGE_KEY = "math-muscle-trainer-theme-v1";
-const COLOR_MODE_STORAGE_KEY = "math-muscle-trainer-color-mode-v1";
-const KEYPAD_PREFERENCE_STORAGE_KEY = "math-muscle-trainer-keypad-preference-v1";
-const APP_VERSION = "v0.10.0";
+const PRODUCT_STORAGE_PREFIX = "math-muscle-trainer";
+const LEGACY_PRODUCT_STORAGE_PREFIX = ["multiplication", "trainer"].join("-");
+const STORAGE_KEY = `${PRODUCT_STORAGE_PREFIX}-progress-v2`;
+const LEGACY_STORAGE_KEYS = [
+  `${LEGACY_PRODUCT_STORAGE_PREFIX}-progress-v2`,
+  `${LEGACY_PRODUCT_STORAGE_PREFIX}-progress-v1`,
+];
+const HERO_MESSAGE_KEY = `${PRODUCT_STORAGE_PREFIX}-hero-message-v1`;
+const RESULTS_MESSAGE_KEY_PREFIX = `${PRODUCT_STORAGE_PREFIX}-results-message-v1`;
+const THEME_STORAGE_KEY = `${PRODUCT_STORAGE_PREFIX}-theme-v1`;
+const LEGACY_THEME_STORAGE_KEYS = [`${LEGACY_PRODUCT_STORAGE_PREFIX}-theme-v1`];
+const COLOR_MODE_STORAGE_KEY = `${PRODUCT_STORAGE_PREFIX}-color-mode-v1`;
+const LEGACY_COLOR_MODE_STORAGE_KEYS = [`${LEGACY_PRODUCT_STORAGE_PREFIX}-color-mode-v1`];
+const KEYPAD_PREFERENCE_STORAGE_KEY = `${PRODUCT_STORAGE_PREFIX}-keypad-preference-v1`;
+const LEGACY_KEYPAD_PREFERENCE_STORAGE_KEYS = [
+  `${LEGACY_PRODUCT_STORAGE_PREFIX}-keypad-preference-v1`,
+];
+const APP_VERSION = "v0.11.0";
 const FACTOR_LIMIT = 12;
 const TABLE_FACTORS = Array.from({ length: FACTOR_LIMIT }, (_, index) => index + 1);
 const QUESTION_PRESETS = [10, 20, 30];
@@ -72,6 +83,20 @@ const OPERATION_CONFIG = {
       return buildAdditionPool(settings);
     },
   },
+  subtraction: {
+    label: "Subtraction",
+    symbol: "-",
+    buildPool(settings) {
+      return buildSubtractionPool(settings);
+    },
+  },
+  division: {
+    label: "Division",
+    symbol: "/",
+    buildPool(settings) {
+      return buildDivisionPool(settings);
+    },
+  },
 };
 
 const RESULTS_SLIDES = ["summary", "tracker", "focus"];
@@ -90,8 +115,9 @@ const THEME_OPTIONS = [
   { key: "original", label: "Original" },
   { key: "sunny-beach-day", label: "Sunny Beach Day" },
   { key: "jungle", label: "Jungle" },
-  { key: "frozen", label: "Frozen" },
   { key: "aang", label: "Aang" },
+  { key: "solo-leveling", label: "Solo Leveling" },
+  { key: "mudkip", label: "Mudkip" },
 ];
 const COLOR_MODE_OPTIONS = ["dark", "light"];
 const KEYPAD_PREFERENCE_OPTIONS = ["auto", "always-on", "always-off"];
@@ -101,6 +127,12 @@ const FACT_TRACKER_DETAIL_OPTIONS = {
     { key: "with-regrouping", label: "With regrouping" },
     { key: "without-regrouping", label: "Without regrouping" },
   ],
+  subtraction: [
+    { key: "overall", label: "Overall" },
+  ],
+  division: [
+    { key: "overall", label: "Overall" },
+  ],
   multiplication: [
     { key: "overall", label: "Overall" },
     { key: "positive", label: "Positive Integers" },
@@ -109,14 +141,24 @@ const FACT_TRACKER_DETAIL_OPTIONS = {
 };
 const MULTIPLICATION_SIGNED_TOTAL_FACTS = (TABLE_FACTORS.length - 1) * 4 + 3;
 
-const OPERATION_OPTIONS = ["multiplication", "addition"];
+const OPERATION_OPTIONS = ["addition", "subtraction", "multiplication", "division"];
 const OPERATION_LABELS = {
   multiplication: "Multiplication",
   addition: "Addition",
+  subtraction: "Subtraction",
+  division: "Division",
 };
 const OPERATION_SYMBOLS = {
   multiplication: "x",
   addition: "+",
+  subtraction: "-",
+  division: "/",
+};
+const OPERATION_DISPLAY_SYMBOLS = {
+  multiplication: "x",
+  addition: "+",
+  subtraction: "-",
+  division: "\u00f7",
 };
 const BUCKET_STATUS_MIN_ATTEMPTS = 6;
 const BUCKET_STATUS_STRONG_MIN_ATTEMPTS = 10;
@@ -157,6 +199,17 @@ const ADDITION_TRACKER_BUCKETS = [
 ];
 const ADDITION_TRACKER_BUCKET_KEYS = new Set(
   ADDITION_TRACKER_BUCKETS.map((bucket) => bucket.key),
+);
+const SUBTRACTION_TRACKER_BUCKETS = [
+  { key: "1-1", label: "1-digit - 1-digit" },
+  { key: "2-1", label: "2-digit - 1-digit" },
+  { key: "2-2", label: "2-digit - 2-digit" },
+  { key: "3-1", label: "3-digit - 1-digit" },
+  { key: "3-2", label: "3-digit - 2-digit" },
+  { key: "3-3", label: "3-digit - 3-digit" },
+];
+const SUBTRACTION_TRACKER_BUCKET_KEYS = new Set(
+  SUBTRACTION_TRACKER_BUCKETS.map((bucket) => bucket.key),
 );
 const ADDITION_LESSONS = [
   {
@@ -252,17 +305,50 @@ const WORKOUT_MODE_DEFINITIONS = {
     { key: "zen", label: "Zen Mode" },
     { key: "spar", label: "Spar Mode" },
   ],
+  subtraction: [
+    { key: "timed", label: "High Intensity Training" },
+    { key: "question-goal", label: "Target Reps" },
+    { key: "zen", label: "Zen Mode" },
+    { key: "spar", label: "Spar Mode" },
+  ],
+  division: [
+    { key: "timed", label: "High Intensity Training" },
+    { key: "question-goal", label: "Target Reps" },
+    { key: "isolation", label: "Isolation Training" },
+    { key: "zen", label: "Zen Mode" },
+    { key: "spar", label: "Spar Mode" },
+  ],
 };
+const SUBTRACTION_DIGIT_BUCKETS = {
+  easy: [
+    [1, 1],
+  ],
+  medium: [
+    [2, 1],
+    [2, 2],
+  ],
+  hard: [
+    [3, 1],
+    [3, 2],
+    [3, 3],
+  ],
+};
+let operationPruneTimerId = null;
 
 const elements = {
+  appShell: document.querySelector(".app-shell"),
   pageShell: document.querySelector(".page-shell"),
   pageHeader: document.querySelector(".page-header"),
   screens: Array.from(document.querySelectorAll(".screen")),
   navButtons: Array.from(document.querySelectorAll(".nav-button")),
   viewButtons: Array.from(document.querySelectorAll("[data-view-target]")),
+  globalOptionsButtons: Array.from(document.querySelectorAll("[data-open-options]")),
   optionsButton: document.getElementById("optionsButton"),
+  aboutButton: document.getElementById("aboutButton"),
   optionsDialog: document.getElementById("optionsDialog"),
+  aboutDialog: document.getElementById("aboutDialog"),
   optionsCloseButton: document.getElementById("optionsCloseButton"),
+  aboutCloseButton: document.getElementById("aboutCloseButton"),
   appVersion: document.getElementById("appVersion"),
   heroMessage: document.getElementById("heroMessage"),
   setupOperationPanel: document.getElementById("setupOperationPanel"),
@@ -272,6 +358,7 @@ const elements = {
   operationInputs: Array.from(document.querySelectorAll('input[name="operation"]')),
   sessionTypeInputs: Array.from(document.querySelectorAll('input[name="sessionType"]')),
   additionDifficultyInputs: Array.from(document.querySelectorAll('input[name="additionDifficulty"]')),
+  subtractionDifficultyInputs: Array.from(document.querySelectorAll('input[name="subtractionDifficulty"]')),
   settingsForm: document.getElementById("settingsForm"),
   sessionTypeField: document.getElementById("sessionTypeField"),
   setupSettingsPanel: document.getElementById("setupSettingsPanel"),
@@ -285,6 +372,8 @@ const elements = {
   adaptiveMode: document.getElementById("adaptiveMode"),
   negativesMode: document.getElementById("negativesMode"),
   negativesToggleRow: document.getElementById("negativesToggleRow"),
+  additionRegroupingMode: document.getElementById("additionRegroupingMode"),
+  additionRegroupingToggleRow: document.getElementById("additionRegroupingToggleRow"),
   freeTrainingField: document.getElementById("freeTrainingField"),
   sparTimingField: document.getElementById("sparTimingField"),
   timeField: document.getElementById("timeField"),
@@ -294,6 +383,7 @@ const elements = {
   questionCustomField: document.getElementById("questionCustomField"),
   questionCustom: document.getElementById("questionCustom"),
   additionDifficultyField: document.getElementById("additionDifficultyField"),
+  subtractionDifficultyField: document.getElementById("subtractionDifficultyField"),
   resetProgressButton: document.getElementById("resetProgressButton"),
   countdownNumber: document.getElementById("countdownNumber"),
   countdownCopy: document.getElementById("countdownCopy"),
@@ -313,6 +403,7 @@ const elements = {
   problemText: document.getElementById("problemText"),
   answerForm: document.getElementById("answerForm"),
   answerInput: document.getElementById("answerInput"),
+  answerStatusIcon: document.getElementById("answerStatusIcon"),
   checkButton: document.getElementById("checkButton"),
   skipButton: document.getElementById("skipButton"),
   practiceKeypad: document.getElementById("practiceKeypad"),
@@ -336,18 +427,42 @@ const elements = {
   resultsMonthNextButton: document.getElementById("resultsMonthNextButton"),
   resultsPrevButton: document.getElementById("resultsPrevButton"),
   resultsNextButton: document.getElementById("resultsNextButton"),
+  resultsCarouselKickerLabel: document.getElementById("resultsCarouselKickerLabel"),
   resultsCarouselIndicator: document.getElementById("resultsCarouselIndicator"),
   resultsCarousel: document.querySelector(".results-carousel"),
   resultsSlides: Array.from(document.querySelectorAll(".results-slide")),
   progressPrevButton: document.getElementById("progressPrevButton"),
   progressNextButton: document.getElementById("progressNextButton"),
+  progressCarouselKickerLabel: document.getElementById("progressCarouselKickerLabel"),
   progressCarouselIndicator: document.getElementById("progressCarouselIndicator"),
   progressCarousel: document.querySelector(".progress-carousel"),
   overviewOperationFilter: document.getElementById("overviewOperationFilter"),
+  overviewOperationLabel: document.getElementById("overviewOperationLabel"),
+  overviewOperationPrevButton: document.getElementById("overviewOperationPrevButton"),
+  overviewOperationNextButton: document.getElementById("overviewOperationNextButton"),
   focusOperationFilter: document.getElementById("focusOperationFilter"),
+  focusOperationLabel: document.getElementById("focusOperationLabel"),
+  focusOperationPrevButton: document.getElementById("focusOperationPrevButton"),
+  focusOperationNextButton: document.getElementById("focusOperationNextButton"),
   coachOperationFilter: document.getElementById("coachOperationFilter"),
+  coachOperationLabel: document.getElementById("coachOperationLabel"),
+  coachOperationPrevButton: document.getElementById("coachOperationPrevButton"),
+  coachOperationNextButton: document.getElementById("coachOperationNextButton"),
   factOperationFilter: document.getElementById("factOperationFilter"),
   factDetailFilter: document.getElementById("factDetailFilter"),
+  factRangeNav: document.getElementById("factRangeNav"),
+  factRangeLabel: document.getElementById("factRangeLabel"),
+  factRangePrevButton: document.getElementById("factRangePrevButton"),
+  factRangeNextButton: document.getElementById("factRangeNextButton"),
+  factsSelectorRow: document.getElementById("factsSelectorRow"),
+  factOperationSelector: document.getElementById("factOperationSelector"),
+  factDetailSelector: document.getElementById("factDetailSelector"),
+  factOperationLabel: document.getElementById("factOperationLabel"),
+  factOperationPrevButton: document.getElementById("factOperationPrevButton"),
+  factOperationNextButton: document.getElementById("factOperationNextButton"),
+  factDetailLabel: document.getElementById("factDetailLabel"),
+  factDetailPrevButton: document.getElementById("factDetailPrevButton"),
+  factDetailNextButton: document.getElementById("factDetailNextButton"),
   progressSlides: Array.from(document.querySelectorAll(".progress-slide")),
   overallAnswered: document.getElementById("overallAnswered"),
   overallAccuracy: document.getElementById("overallAccuracy"),
@@ -372,9 +487,17 @@ const elements = {
   progressWinsList: document.getElementById("progressWinsList"),
   progressPriorityList: document.getElementById("progressPriorityList"),
   tableGrid: document.getElementById("tableGrid"),
+  trackerActionHint: document.getElementById("trackerActionHint"),
   factsSlideTitle: document.getElementById("factsSlideTitle"),
   recordsOperationSelect: document.getElementById("recordsOperationSelect"),
   recordsModeSelect: document.getElementById("recordsModeSelect"),
+  recordsOperationLabel: document.getElementById("recordsOperationLabel"),
+  recordsOperationPrevButton: document.getElementById("recordsOperationPrevButton"),
+  recordsOperationNextButton: document.getElementById("recordsOperationNextButton"),
+  recordsModeLabel: document.getElementById("recordsModeLabel"),
+  recordsModePrevButton: document.getElementById("recordsModePrevButton"),
+  recordsModeNextButton: document.getElementById("recordsModeNextButton"),
+  recordsModeSelector: document.getElementById("recordsModeSelector"),
   personalBestsList: document.getElementById("personalBestsList"),
   recentWorkoutsList: document.getElementById("recentWorkoutsList"),
   techniqueScreenShell: document.getElementById("techniqueScreenShell"),
@@ -382,6 +505,19 @@ const elements = {
   accuracyBadge: document.getElementById("accuracyBadge"),
   attemptProgressLabel: document.getElementById("attemptProgressLabel"),
   accuracyProgressLabel: document.getElementById("accuracyProgressLabel"),
+  homeWeeklyStrip: document.getElementById("homeWeeklyStrip"),
+  homeDailyStats: document.getElementById("homeDailyStats"),
+  homeCalendarMonthLabel: document.getElementById("homeCalendarMonthLabel"),
+  homeCalendarGrid: document.getElementById("homeCalendarGrid"),
+  homeCurrentPracticeStreak: document.getElementById("homeCurrentPracticeStreak"),
+  homeMonthSessions: document.getElementById("homeMonthSessions"),
+  homeMonthHearts: document.getElementById("homeMonthHearts"),
+  homeMonthStars: document.getElementById("homeMonthStars"),
+  homeCalendarSummary: document.getElementById("homeCalendarSummary"),
+  homeCalendarEmptyState: document.getElementById("homeCalendarEmptyState"),
+  streakBanner: document.getElementById("streakBanner"),
+  streakBannerTitle: document.getElementById("streakBannerTitle"),
+  appPageIndicator: document.getElementById("appPageIndicator"),
   endWorkoutDialog: document.getElementById("endWorkoutDialog"),
   endWorkoutDialogTitle: document.getElementById("endWorkoutDialogTitle"),
   endWorkoutDialogCopy: document.getElementById("endWorkoutDialogCopy"),
@@ -394,6 +530,7 @@ const elements = {
   themeSelect: document.getElementById("themeSelect"),
   colorModeSelect: document.getElementById("colorModeSelect"),
   keypadPreferenceSelect: document.getElementById("keypadPreferenceSelect"),
+  keypadPreferenceOptionsSelect: document.getElementById("keypadPreferenceOptionsSelect"),
 };
 
 const state = {
@@ -425,6 +562,7 @@ const state = {
   pendingTechniqueView: null,
   pendingWorkoutView: null,
   additionTrackerFlipMap: {},
+  factTrackerRangeIndex: 0,
 };
 
 function createEmptySession() {
@@ -507,6 +645,7 @@ function createTechniqueState(table = TECHNIQUE_TABLE, mode = "menu") {
     practiceHintVisible: false,
     practiceFeedback: { message: "", tone: "" },
     practiceSolved: false,
+    make10Lesson: null,
     focusFieldName: "",
   };
 }
@@ -560,6 +699,10 @@ function defaultSettingsSnapshot() {
     timePreset: "3",
     timeLimitMinutes: 3,
     additionDifficulty: "easy",
+    additionDifficulties: ["easy"],
+    subtractionDifficulty: "easy",
+    subtractionDifficulties: ["easy"],
+    additionRegrouping: true,
   };
 }
 
@@ -571,8 +714,28 @@ function clampNumber(value, min, max, fallback) {
   return Math.min(Math.max(value, min), max);
 }
 
+function getOperationStorageSymbol(operation) {
+  return OPERATION_SYMBOLS[operation] || OPERATION_SYMBOLS.multiplication;
+}
+
+function getOperationDisplaySymbol(operation) {
+  return OPERATION_DISPLAY_SYMBOLS[operation] || getOperationStorageSymbol(operation);
+}
+
 function inferOperationFromFactKeyRaw(key) {
-  return typeof key === "string" && key.startsWith("addition:") ? "addition" : "multiplication";
+  if (typeof key !== "string") {
+    return "multiplication";
+  }
+  if (key.startsWith("addition:")) {
+    return "addition";
+  }
+  if (key.startsWith("subtraction:")) {
+    return "subtraction";
+  }
+  if (key.startsWith("division:")) {
+    return "division";
+  }
+  return "multiplication";
 }
 
 function normaliseFactProgressEntry(key, entry) {
@@ -594,15 +757,10 @@ function normaliseFactProgressEntry(key, entry) {
     source.averageMs === null || source.averageMs === undefined
       ? null
       : clampNumber(Number(source.averageMs), 0, Number.MAX_SAFE_INTEGER, null);
-  const operation =
-    source.operation === "addition" || source.operation === "multiplication"
-      ? source.operation
-      : inferOperationFromFactKeyRaw(key);
-  const symbol = source.symbol === "+" || source.symbol === "x"
-    ? source.symbol
-    : operation === "addition"
-      ? "+"
-      : "x";
+  const operation = OPERATION_OPTIONS.includes(source.operation)
+    ? source.operation
+    : inferOperationFromFactKeyRaw(key);
+  const symbol = getOperationDisplaySymbol(operation);
   const lastSeenAt = clampNumber(Number(source.lastSeenAt), 0, Number.MAX_SAFE_INTEGER, 0);
   const firstSeenAtRaw = clampNumber(
     Number(source.firstSeenAt),
@@ -661,6 +819,8 @@ function compactFactProgressMap(factsByKey) {
   const entriesByOperation = {
     multiplication: [],
     addition: [],
+    subtraction: [],
+    division: [],
   };
   allEntries.forEach((entry) => {
     entriesByOperation[entry.progress.operation].push(entry);
@@ -698,9 +858,12 @@ function syncProgressMetricAliases(progress) {
 
 function parseBucketDailyStorageKey(key) {
   const [dateKey = "", operation = "multiplication", ...rest] = String(key).split("|");
+  const normalisedOperation = OPERATION_OPTIONS.includes(operation)
+    ? operation
+    : "multiplication";
   return {
     dateKey,
-    operation: operation === "addition" ? "addition" : "multiplication",
+    operation: normalisedOperation,
     bucketKey: rest.join("|"),
   };
 }
@@ -714,10 +877,13 @@ function parseFactKeyCore(key) {
     };
   }
 
-  const modernMatch = key.match(/^(multiplication|addition):(-?\d+)([x+])(-?\d+)$/i);
+  const modernMatch = key.match(/^(multiplication|addition|subtraction|division):(-?\d+)([x+\-\/])(-?\d+)$/i);
   if (modernMatch) {
+    const operation = OPERATION_OPTIONS.includes(modernMatch[1])
+      ? modernMatch[1]
+      : "multiplication";
     return {
-      operation: modernMatch[1] === "addition" ? "addition" : "multiplication",
+      operation,
       left: Number(modernMatch[2]),
       right: Number(modernMatch[4]),
     };
@@ -793,6 +959,18 @@ function normaliseWorkoutRecord(record) {
       ? record.modeKey
       : "question-goal";
 
+  const additionDifficulty =
+    record?.additionDifficulty === "easy" ||
+    record?.additionDifficulty === "medium" ||
+    record?.additionDifficulty === "hard"
+      ? record.additionDifficulty
+      : "easy";
+  const additionDifficulties = Array.isArray(record?.additionDifficulties)
+    ? record.additionDifficulties.filter((value) =>
+        value === "easy" || value === "medium" || value === "hard",
+      )
+    : [];
+
   return {
     id: String(record?.id || `${record?.recordedAt || Date.now()}`),
     operation,
@@ -828,12 +1006,9 @@ function normaliseWorkoutRecord(record) {
       clampNumber(Number(record?.minFactor), 1, FACTOR_LIMIT, 2),
       clampNumber(Number(record?.maxFactor), 1, FACTOR_LIMIT, FACTOR_LIMIT),
     ),
-    additionDifficulty:
-      record?.additionDifficulty === "easy" ||
-      record?.additionDifficulty === "medium" ||
-      record?.additionDifficulty === "hard"
-        ? record.additionDifficulty
-        : "easy",
+    additionDifficulty,
+    additionDifficulties: additionDifficulties.length ? additionDifficulties : [additionDifficulty],
+    additionRegrouping: typeof record?.additionRegrouping === "boolean" ? record.additionRegrouping : true,
   };
 }
 
@@ -938,6 +1113,30 @@ function sanitiseSettingsSnapshot(settings) {
     settings?.additionDifficulty === "hard"
       ? settings.additionDifficulty
       : defaults.additionDifficulty;
+  const additionDifficultiesRaw = Array.isArray(settings?.additionDifficulties)
+    ? settings.additionDifficulties
+    : [];
+  const additionDifficulties = ["easy", "medium", "hard"].filter((key) =>
+    additionDifficultiesRaw.includes(key),
+  );
+  if (!additionDifficulties.length) {
+    additionDifficulties.push(additionDifficulty);
+  }
+  const subtractionDifficulty =
+    settings?.subtractionDifficulty === "easy" ||
+    settings?.subtractionDifficulty === "medium" ||
+    settings?.subtractionDifficulty === "hard"
+      ? settings.subtractionDifficulty
+      : defaults.subtractionDifficulty;
+  const subtractionDifficultiesRaw = Array.isArray(settings?.subtractionDifficulties)
+    ? settings.subtractionDifficulties
+    : [];
+  const subtractionDifficulties = ["easy", "medium", "hard"].filter((key) =>
+    subtractionDifficultiesRaw.includes(key),
+  );
+  if (!subtractionDifficulties.length) {
+    subtractionDifficulties.push(subtractionDifficulty);
+  }
   const legacyIsolationMode = settings?.questionStyle === "focus" || settings?.mode === "focus";
   const hasLegacyQuestionStyle = typeof settings?.questionStyle === "string";
   const legacySessionLength = Number(settings?.sessionLength);
@@ -955,7 +1154,7 @@ function sanitiseSettingsSnapshot(settings) {
   if (hasLegacyQuestionStyle && legacyIsolationMode) {
     sessionType = "isolation";
   }
-  if (operation === "addition" && sessionType === "isolation") {
+  if ((operation === "addition" || operation === "subtraction") && sessionType === "isolation") {
     sessionType = "question-goal";
   }
   const freeTrainingMode =
@@ -1014,7 +1213,8 @@ function sanitiseSettingsSnapshot(settings) {
       : TIME_PRESETS.includes(Number(settings?.timePreset))
         ? `${Number(settings.timePreset)}`
         : "custom";
-  const useIsolationControls = operation === "multiplication" && sessionType === "isolation";
+  const useIsolationControls =
+    (operation === "multiplication" || operation === "division") && sessionType === "isolation";
   const minFactor = useIsolationControls ? minFactorNormalised : defaults.minFactor;
   const maxFactor = useIsolationControls ? maxFactorNormalised : defaults.maxFactor;
 
@@ -1028,11 +1228,9 @@ function sanitiseSettingsSnapshot(settings) {
         ? settings.adaptiveMode
         : defaults.adaptiveMode,
     negativesMode:
-      operation === "addition"
-        ? false
-        : typeof settings?.negativesMode === "boolean"
+      operation === "multiplication" && typeof settings?.negativesMode === "boolean"
         ? settings.negativesMode
-        : defaults.negativesMode,
+        : false,
     sessionType,
     freeTrainingMode,
     sparTiming,
@@ -1041,12 +1239,35 @@ function sanitiseSettingsSnapshot(settings) {
     timePreset,
     timeLimitMinutes,
     additionDifficulty,
+    additionDifficulties,
+    subtractionDifficulty,
+    subtractionDifficulties,
+    additionRegrouping:
+      typeof settings?.additionRegrouping === "boolean"
+        ? settings.additionRegrouping
+        : defaults.additionRegrouping,
   };
+}
+
+function getLocalStorageItemWithFallback(primaryKey, fallbackKeys = []) {
+  const raw = window.localStorage.getItem(primaryKey);
+  if (raw !== null) {
+    return raw;
+  }
+
+  for (const fallbackKey of fallbackKeys) {
+    const fallbackRaw = window.localStorage.getItem(fallbackKey);
+    if (fallbackRaw !== null) {
+      return fallbackRaw;
+    }
+  }
+
+  return null;
 }
 
 function loadProgress() {
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const raw = getLocalStorageItemWithFallback(STORAGE_KEY, LEGACY_STORAGE_KEYS);
     if (!raw) {
       return defaultProgress();
     }
@@ -1137,7 +1358,7 @@ function sanitiseColorMode(value) {
 
 function loadTheme() {
   try {
-    const raw = window.localStorage.getItem(THEME_STORAGE_KEY);
+    const raw = getLocalStorageItemWithFallback(THEME_STORAGE_KEY, LEGACY_THEME_STORAGE_KEYS);
     return sanitiseTheme(raw);
   } catch (error) {
     return "original";
@@ -1154,7 +1375,10 @@ function saveTheme(theme) {
 
 function loadColorMode() {
   try {
-    const raw = window.localStorage.getItem(COLOR_MODE_STORAGE_KEY);
+    const raw = getLocalStorageItemWithFallback(
+      COLOR_MODE_STORAGE_KEY,
+      LEGACY_COLOR_MODE_STORAGE_KEYS,
+    );
     return sanitiseColorMode(raw);
   } catch (error) {
     return "dark";
@@ -1194,7 +1418,10 @@ function sanitiseKeypadPreference(value) {
 
 function loadKeypadPreference() {
   try {
-    const raw = window.localStorage.getItem(KEYPAD_PREFERENCE_STORAGE_KEY);
+    const raw = getLocalStorageItemWithFallback(
+      KEYPAD_PREFERENCE_STORAGE_KEY,
+      LEGACY_KEYPAD_PREFERENCE_STORAGE_KEYS,
+    );
     return sanitiseKeypadPreference(raw);
   } catch (error) {
     return "auto";
@@ -1327,6 +1554,19 @@ function setCheckedValue(name, value) {
   });
 }
 
+function setCheckedValues(name, values) {
+  const selected = new Set(Array.isArray(values) ? values : []);
+  document.querySelectorAll(`input[name="${name}"]`).forEach((input) => {
+    input.checked = selected.has(input.value);
+  });
+}
+
+function getCheckedValues(name) {
+  return Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map(
+    (input) => input.value,
+  );
+}
+
 function getSelectedOperationValue() {
   const value = getCheckedValue("operation");
   return OPERATION_CONFIG[value] ? value : "";
@@ -1343,8 +1583,13 @@ function hasSelectedSessionType() {
 }
 
 function hasSelectedAdditionDifficulty() {
-  const difficulty = getCheckedValue("additionDifficulty");
-  return difficulty === "easy" || difficulty === "medium" || difficulty === "hard";
+  const selected = getCheckedValues("additionDifficulty");
+  return selected.some((difficulty) => ["easy", "medium", "hard"].includes(difficulty));
+}
+
+function hasSelectedSubtractionDifficulty() {
+  const selected = getCheckedValues("subtractionDifficulty");
+  return selected.some((difficulty) => ["easy", "medium", "hard"].includes(difficulty));
 }
 
 function clearSetupFlowSelections() {
@@ -1352,7 +1597,8 @@ function clearSetupFlowSelections() {
   applySettingsSnapshot(defaults);
   setCheckedValue("operation", "");
   setCheckedValue("sessionType", "");
-  setCheckedValue("additionDifficulty", "");
+  setCheckedValues("additionDifficulty", []);
+  setCheckedValues("subtractionDifficulty", []);
 }
 
 function resetSetupForNextWorkout() {
@@ -1389,7 +1635,11 @@ function applySettingsSnapshot(settings) {
   elements.negativesMode.checked = snapshot.negativesMode;
   elements.questionCustom.value = `${snapshot.questionTarget}`;
   elements.timeCustom.value = `${snapshot.timeLimitMinutes}`;
-  setCheckedValue("additionDifficulty", snapshot.additionDifficulty);
+  setCheckedValues("additionDifficulty", snapshot.additionDifficulties);
+  setCheckedValues("subtractionDifficulty", snapshot.subtractionDifficulties);
+  if (elements.additionRegroupingMode) {
+    elements.additionRegroupingMode.checked = snapshot.additionRegrouping;
+  }
   setCheckedValue("sessionType", snapshot.sessionType);
   setCheckedValue("freeTrainingMode", snapshot.freeTrainingMode);
   setCheckedValue("sparTiming", snapshot.sparTiming);
@@ -1413,7 +1663,11 @@ function getFormSettingsSnapshot() {
     questionTarget: Number(elements.questionCustom.value),
     timePreset: getCheckedValue("timePreset"),
     timeLimitMinutes: Number(elements.timeCustom.value),
-    additionDifficulty: getCheckedValue("additionDifficulty"),
+    additionDifficulty: getCheckedValues("additionDifficulty")[0] || "easy",
+    additionDifficulties: getCheckedValues("additionDifficulty"),
+    subtractionDifficulty: getCheckedValues("subtractionDifficulty")[0] || "easy",
+    subtractionDifficulties: getCheckedValues("subtractionDifficulty"),
+    additionRegrouping: elements.additionRegroupingMode?.checked ?? true,
   });
 }
 
@@ -1470,18 +1724,46 @@ function toggleSetupFields() {
   const timePreset = getCheckedValue("timePreset");
   const defaults = defaultSettingsSnapshot();
   const additionMode = operation === "addition";
-  const difficultySelected = hasSelectedAdditionDifficulty();
-  const showDifficultyStep = additionMode && hasOperation;
-  const showWorkoutTypeStep = hasOperation && (!additionMode || difficultySelected);
-  const supportsIsolation = operation === "multiplication";
+  const subtractionMode = operation === "subtraction";
+  let difficultySelected = additionMode
+    ? hasSelectedAdditionDifficulty()
+    : subtractionMode
+      ? hasSelectedSubtractionDifficulty()
+      : true;
+  const showAdditionDifficultyStep = additionMode && hasOperation;
+  const showSubtractionDifficultyStep = subtractionMode && hasOperation;
+  const showDifficultyStep = showAdditionDifficultyStep || showSubtractionDifficultyStep;
+  let showWorkoutTypeStep = hasOperation && (!showDifficultyStep || difficultySelected);
+  const supportsIsolation = operation === "multiplication" || operation === "division";
+  const divisionMode = operation === "division";
+  const selectedOperation = hasOperation ? operation : "";
+  const previousPrunedOperation = elements.operationChoiceGrid?.dataset.prunedForOperation || "";
+  const shouldAnimateOperationPrune =
+    Boolean(selectedOperation) && previousPrunedOperation !== selectedOperation;
 
   if (!hasOperation) {
     setCheckedValue("sessionType", "");
-    setCheckedValue("additionDifficulty", "");
+    setCheckedValues("additionDifficulty", []);
+    setCheckedValues("subtractionDifficulty", []);
     sessionType = "";
   }
 
+  if (additionMode && !hasSelectedAdditionDifficulty()) {
+    setCheckedValues("additionDifficulty", ["easy"]);
+    difficultySelected = true;
+    showWorkoutTypeStep = hasOperation;
+  }
+  if (subtractionMode && !hasSelectedSubtractionDifficulty()) {
+    setCheckedValues("subtractionDifficulty", ["easy"]);
+    difficultySelected = true;
+    showWorkoutTypeStep = hasOperation;
+  }
+
   if (additionMode && !difficultySelected && sessionType) {
+    setCheckedValue("sessionType", "");
+    sessionType = "";
+  }
+  if (subtractionMode && !difficultySelected && sessionType) {
     setCheckedValue("sessionType", "");
     sessionType = "";
   }
@@ -1504,27 +1786,75 @@ function toggleSetupFields() {
   }
   if (elements.operationChoiceGrid) {
     elements.operationChoiceGrid.classList.toggle("is-pruned-view", hasOperation);
+    elements.operationChoiceGrid.classList.toggle(
+      "is-prune-transitioning",
+      hasOperation && shouldAnimateOperationPrune,
+    );
+    if (!hasOperation) {
+      elements.operationChoiceGrid.dataset.prunedForOperation = "";
+    }
   }
-  elements.operationInputs.forEach((input) => {
+  if (operationPruneTimerId) {
+    window.clearTimeout(operationPruneTimerId);
+    operationPruneTimerId = null;
+  }
+  elements.operationInputs.forEach((input, index) => {
     const option = input.closest(".operation-choice");
     if (!option) {
       return;
     }
+    if (!option.dataset.defaultOrder) {
+      option.dataset.defaultOrder = `${index}`;
+    }
     const isSelectedOption = hasOperation && input.checked;
-    option.classList.toggle("is-pruned", hasOperation && !input.checked);
+    const shouldPrune = hasOperation && !isSelectedOption;
+    option.classList.toggle("is-fading", shouldPrune && shouldAnimateOperationPrune);
+    option.classList.toggle("is-pruned", shouldPrune && !shouldAnimateOperationPrune);
     option.classList.toggle("is-selected", isSelectedOption);
+    option.style.order = hasOperation
+      ? isSelectedOption
+        ? "0"
+        : `${Number(option.dataset.defaultOrder || index) + 1}`
+      : option.dataset.defaultOrder || `${index}`;
     const changeButton = option.querySelector("[data-operation-reset]");
     if (changeButton instanceof HTMLButtonElement) {
       changeButton.classList.toggle("is-hidden", !isSelectedOption);
       changeButton.disabled = !isSelectedOption;
     }
   });
+  if (hasOperation && shouldAnimateOperationPrune && elements.operationChoiceGrid) {
+    operationPruneTimerId = window.setTimeout(() => {
+      elements.operationInputs.forEach((input) => {
+        const option = input.closest(".operation-choice");
+        if (!option) {
+          return;
+        }
+        const isSelectedOption = input.checked;
+        option.classList.toggle("is-fading", false);
+        option.classList.toggle("is-pruned", !isSelectedOption);
+      });
+      elements.operationChoiceGrid?.classList.remove("is-prune-transitioning");
+      elements.operationChoiceGrid.dataset.prunedForOperation = selectedOperation;
+      operationPruneTimerId = null;
+    }, 180);
+  } else if (hasOperation && elements.operationChoiceGrid) {
+    elements.operationChoiceGrid.dataset.prunedForOperation = selectedOperation;
+  }
 
   if (elements.additionDifficultyField) {
-    elements.additionDifficultyField.classList.toggle("is-hidden", !showDifficultyStep);
+    elements.additionDifficultyField.classList.toggle("is-hidden", !showAdditionDifficultyStep);
+  }
+  if (elements.subtractionDifficultyField) {
+    elements.subtractionDifficultyField.classList.toggle(
+      "is-hidden",
+      !showSubtractionDifficultyStep,
+    );
   }
   elements.additionDifficultyInputs.forEach((input) => {
-    input.disabled = !showDifficultyStep;
+    input.disabled = !showAdditionDifficultyStep;
+  });
+  elements.subtractionDifficultyInputs.forEach((input) => {
+    input.disabled = !showSubtractionDifficultyStep;
   });
 
   if (elements.sessionTypeField) {
@@ -1570,16 +1900,33 @@ function toggleSetupFields() {
   elements.maxFactor.disabled = !showAdvancedSettings || !isolationMode;
 
   if (elements.negativesToggleRow) {
-    elements.negativesToggleRow.classList.toggle("is-hidden", additionMode || !showAdvancedSettings);
+    elements.negativesToggleRow.classList.toggle(
+      "is-hidden",
+      additionMode || subtractionMode || divisionMode || !showAdvancedSettings,
+    );
   }
-  elements.negativesMode.disabled = additionMode || !showAdvancedSettings;
-  if (additionMode || !showAdvancedSettings) {
+  if (elements.additionRegroupingToggleRow) {
+    elements.additionRegroupingToggleRow.classList.toggle(
+      "is-hidden",
+      !additionMode || !showAdvancedSettings,
+    );
+  }
+  elements.negativesMode.disabled = additionMode || subtractionMode || divisionMode || !showAdvancedSettings;
+  if (elements.additionRegroupingMode) {
+    elements.additionRegroupingMode.disabled = !additionMode || !showAdvancedSettings;
+  }
+  if (additionMode || subtractionMode || divisionMode || !showAdvancedSettings) {
     elements.negativesMode.checked = false;
   }
   if (elements.countdownCopy) {
-    elements.countdownCopy.textContent = operation === "addition"
-      ? "Type the answer to each addition fact."
-      : "Type the answer to the times tables.";
+    elements.countdownCopy.textContent =
+      operation === "addition"
+        ? "Type the answer to each addition fact."
+        : operation === "subtraction"
+          ? "Type the answer to each subtraction fact."
+          : operation === "division"
+            ? "Type the answer to each division fact."
+            : "Type the answer to the times tables.";
   }
 
   elements.freeTrainingField.classList.toggle(
@@ -1612,14 +1959,24 @@ function readSettings() {
   const sparTiming = getCheckedValue("sparTiming");
   const questionPreset = getCheckedValue("questionPreset");
   const timePreset = getCheckedValue("timePreset");
-  const additionDifficulty = getCheckedValue("additionDifficulty");
+  const additionDifficulties = getCheckedValues("additionDifficulty").filter((value) =>
+    ["easy", "medium", "hard"].includes(value),
+  );
+  const additionDifficulty = additionDifficulties[0] || "easy";
+  const subtractionDifficulties = getCheckedValues("subtractionDifficulty").filter((value) =>
+    ["easy", "medium", "hard"].includes(value),
+  );
+  const subtractionDifficulty = subtractionDifficulties[0] || "easy";
 
   if (!operation) {
     return { error: "Choose an operation before starting." };
   }
 
   if (operation === "addition" && !hasSelectedAdditionDifficulty()) {
-    return { error: "Choose an addition difficulty before selecting the workout type." };
+    return { error: "Choose at least one addition difficulty before selecting the workout type." };
+  }
+  if (operation === "subtraction" && !hasSelectedSubtractionDifficulty()) {
+    return { error: "Choose at least one subtraction difficulty before selecting the workout type." };
   }
 
   if (
@@ -1632,15 +1989,23 @@ function readSettings() {
   }
 
   const adaptiveMode = elements.adaptiveMode.checked;
-  const negativesMode = operation === "addition" ? false : elements.negativesMode.checked;
-  const isolationMode = operation === "multiplication" && sessionType === "isolation";
-
-  syncIsolationRangeControls();
-  const minFactor = Number(elements.minFactor.value);
-  const maxFactor = Number(elements.maxFactor.value);
-  const focusFactor = Number(elements.focusFactor.value);
+  const negativesMode =
+    operation === "addition" || operation === "subtraction" || operation === "division"
+      ? false
+      : elements.negativesMode.checked;
+  const additionRegrouping = operation === "addition" ? elements.additionRegroupingMode.checked : true;
+  const defaults = defaultSettingsSnapshot();
+  const isolationMode =
+    (operation === "multiplication" || operation === "division") && sessionType === "isolation";
+  let minFactor = defaults.minFactor;
+  let maxFactor = defaults.maxFactor;
+  let focusFactor = defaults.focusFactor;
 
   if (isolationMode) {
+    syncIsolationRangeControls();
+    minFactor = Number(elements.minFactor.value);
+    maxFactor = Number(elements.maxFactor.value);
+    focusFactor = Number(elements.focusFactor.value);
     if (
       Number.isNaN(minFactor) ||
       Number.isNaN(maxFactor) ||
@@ -1689,6 +2054,10 @@ function readSettings() {
     timePreset,
     timeLimitMinutes,
     additionDifficulty,
+    additionDifficulties,
+    subtractionDifficulty,
+    subtractionDifficulties,
+    additionRegrouping,
   });
 }
 
@@ -1740,7 +2109,11 @@ function formatStopwatch(milliseconds) {
 
 function getQuestionStyleLabel(settings) {
   if (settings.operation === "addition") {
-    return `Addition (${settings.additionDifficulty})`;
+    const difficultyLabel =
+      Array.isArray(settings.additionDifficulties) && settings.additionDifficulties.length
+        ? settings.additionDifficulties.join(", ")
+        : settings.additionDifficulty;
+    return `Addition (${difficultyLabel})`;
   }
 
   return settings.sessionType === "isolation"
@@ -1816,17 +2189,20 @@ function formatTechniqueFactorValue(value) {
   return formatTechniqueDigits(value, true);
 }
 
+function formatTechniqueFactorStemValue(value) {
+  return String(value)
+    .split("")
+    .map((digit) => `<span class="technique-factor">${escapeHtml(digit)}</span>`)
+    .join("");
+}
+
 function formatTechniqueCarryValue(value) {
   return value === TECHNIQUE_TABLE ? formatTechniqueNumber(value) : formatTechniqueFactorValue(value);
 }
 
 function formatTechniqueAnswerValue(answer, carryFactor = null) {
-  if (
-    carryFactor !== null &&
-    carryFactor !== TECHNIQUE_TABLE &&
-    String(answer) === `${carryFactor}${TECHNIQUE_TABLE}`
-  ) {
-    return `${formatTechniqueFactorValue(carryFactor)}<span class="technique-zero">0</span>`;
+  if (carryFactor !== null && Number(answer) === Number(carryFactor) * TECHNIQUE_TABLE) {
+    return `${formatTechniqueFactorStemValue(carryFactor)}<span class="technique-zero">0</span>`;
   }
 
   return formatTechniqueNumber(answer);
@@ -1880,7 +2256,14 @@ function createTechniqueQuestion(table = TECHNIQUE_TABLE, forceReversed = null) 
 }
 
 function createGuidedTechniqueQuestions(table = TECHNIQUE_TABLE) {
-  const shuffledFactors = [...TABLE_FACTORS].sort(() => Math.random() - 0.5);
+  const shuffledFactors = [...TABLE_FACTORS];
+  for (let index = shuffledFactors.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [shuffledFactors[index], shuffledFactors[swapIndex]] = [
+      shuffledFactors[swapIndex],
+      shuffledFactors[index],
+    ];
+  }
   const selectedFactors = shuffledFactors.slice(0, 4);
 
   return [
@@ -1922,4 +2305,3 @@ function createGuidedTechniqueQuestions(table = TECHNIQUE_TABLE) {
 function getTechniqueStageIndex(stage) {
   return TECHNIQUE_STEPS.findIndex((step) => step.id === stage);
 }
-

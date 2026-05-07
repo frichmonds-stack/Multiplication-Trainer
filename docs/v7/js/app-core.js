@@ -1,9 +1,9 @@
-const STORAGE_KEY = "multiplication-trainer-progress-v2";
-const HERO_MESSAGE_KEY = "multiplication-trainer-hero-message-v1";
-const RESULTS_MESSAGE_KEY_PREFIX = "multiplication-trainer-results-message-v1";
-const THEME_STORAGE_KEY = "multiplication-trainer-theme-v1";
-const COLOR_MODE_STORAGE_KEY = "multiplication-trainer-color-mode-v1";
-const KEYPAD_PREFERENCE_STORAGE_KEY = "multiplication-trainer-keypad-preference-v1";
+const STORAGE_KEY = "math-muscle-trainer-progress-v2";
+const HERO_MESSAGE_KEY = "math-muscle-trainer-hero-message-v1";
+const RESULTS_MESSAGE_KEY_PREFIX = "math-muscle-trainer-results-message-v1";
+const THEME_STORAGE_KEY = "math-muscle-trainer-theme-v1";
+const COLOR_MODE_STORAGE_KEY = "math-muscle-trainer-color-mode-v1";
+const KEYPAD_PREFERENCE_STORAGE_KEY = "math-muscle-trainer-keypad-preference-v1";
 const APP_VERSION = "v0.10.0";
 const FACTOR_LIMIT = 12;
 const TABLE_FACTORS = Array.from({ length: FACTOR_LIMIT }, (_, index) => index + 1);

@@ -1,4 +1,4 @@
-﻿const STORAGE_KEY = "multiplication-trainer-progress-v1";
+const STORAGE_KEY = "math-muscle-trainer-progress-v1";
 
 const elements = {
   settingsForm: document.getElementById("settingsForm"),

@@ -48,6 +48,16 @@ python -m http.server 8000
 
 Then open `http://localhost:8000`.
 
+## Check it
+
+Run the lightweight repo checks before publishing a snapshot:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\check-repo.ps1
+```
+
+The check validates duplicate IDs, script references, release/version drift, stale `docs/` latest labels, and whether the latest docs snapshot matches the root app files.
+
 ## Publish on the internet
 
 This repo is prepared for GitHub Pages using the `docs/` folder.
@@ -58,7 +68,13 @@ This repo is prepared for GitHub Pages using the `docs/` folder.
 4. Select branch `main` (or your release branch) and folder `/docs`.
 5. Save and wait for Pages to publish.
 
-The latest hosted build is linked from `docs/index.html` and points to `docs/v7/`.
+The latest hosted build is linked from `docs/index.html`.
+
+To publish a new static snapshot after updating the root app, run:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\publish-snapshot.ps1 -SnapshotNumber 10 -Label "v0.13.0 feature snapshot"
+```
 
 ## Files
 
@@ -72,5 +88,6 @@ The latest hosted build is linked from `docs/index.html` and points to `docs/v7/
 
 ## Versioning
 
-- The in-app version shown in Options is sourced from the latest released heading in `CHANGELOG.md` (for example `## [0.10.0] - YYYY-MM-DD`).
-- `APP_VERSION` in `js/app-core.js` is kept as a runtime fallback if `CHANGELOG.md` cannot be fetched.
+- `APP_VERSION` in `js/app-core.js` is the local runtime fallback, used when the app is opened directly from disk.
+- When served over HTTP, the app also reads `CHANGELOG.md` and displays the greater of `APP_VERSION` and the latest released changelog heading.
+- `scripts/check-repo.ps1` fails if `APP_VERSION` and the latest released changelog heading drift apart.

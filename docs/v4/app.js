@@ -1,6 +1,6 @@
-const STORAGE_KEY = "multiplication-trainer-progress-v2";
-const HERO_MESSAGE_KEY = "multiplication-trainer-hero-message-v1";
-const RESULTS_MESSAGE_KEY_PREFIX = "multiplication-trainer-results-message-v1";
+const STORAGE_KEY = "math-muscle-trainer-progress-v2";
+const HERO_MESSAGE_KEY = "math-muscle-trainer-hero-message-v1";
+const RESULTS_MESSAGE_KEY_PREFIX = "math-muscle-trainer-results-message-v1";
 const APP_VERSION = "v0.7.1";
 const FACTOR_LIMIT = 12;
 const TABLE_FACTORS = Array.from({ length: FACTOR_LIMIT }, (_, index) => index + 1);

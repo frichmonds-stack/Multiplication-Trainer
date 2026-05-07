@@ -34,7 +34,7 @@ Use it for:
 
 ## Current Design Direction
 
-- Workout/strength-training framing for multiplication practice
+- Workout/strength-training framing for arithmetic practice
 - Dark, gym-inspired visual theme
 - App-style shell with dedicated Setup, Practice, Results, and Progress screens
 - Strong focus on motivation, repeat practice, and visible progress
@@ -237,3 +237,11 @@ Use it for:
   - Multiplication: operation + detail + range
 - Fact Tracker selector width is stabilized to a fixed single-line target based on `Without regrouping`.
 - Version badge parsing now resolves the highest semantic release from `CHANGELOG.md` instead of relying on one strict heading match.
+
+### 2026-05-07
+
+- Shipped `v0.11.0` as `docs/v8`.
+- Fixed Make 10's `Start Focused Workout` action by replacing the stale `applySettingsToForm` call with `applySettingsSnapshot`.
+- Fixed division tracker cards so `÷ n` starts divisor isolation training across the full quotient range.
+- Added PowerShell repo checks for version drift, stale docs latest markers, docs snapshot sync, duplicate IDs, missing script references, and removed-helper regressions.
+- Added a docs snapshot publishing helper so future root app updates can be copied into `docs/v*` consistently.

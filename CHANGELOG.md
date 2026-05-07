@@ -6,8 +6,20 @@ The format is inspired by Keep a Changelog and uses a simple project-friendly ve
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-05-07
+
+### Changed
+- Renamed project/product references to `Math Muscle Trainer` across app metadata, docs pages, snapshots, release helpers, and continuity files.
+- Updated app descriptions to frame the product as a general arithmetic trainer for addition, subtraction, multiplication, and division.
+- Renamed browser storage namespaces to `math-muscle-trainer-*` while keeping fallback reads for legacy saved progress and preferences.
+- Published `docs/v9` as the latest Math Muscle Trainer snapshot.
+
+## [0.11.0] - 2026-05-07
+
 ### Added
 - Added carousel-style left/right operation selectors for Progress panels (`Workout Log`, `Next Focus`, `Coach Notes`) and Workout Records filters while keeping native `select` controls hidden for compatibility.
+- Added lightweight PowerShell repo checks for duplicate IDs, missing script files, version drift, stale release labels, docs sync, and removed-helper regressions.
+- Added a snapshot publishing helper to copy the current app into a new `docs/v*` folder and keep the docs index's latest marker singular.
 
 ### Changed
 - Updated Fact Tracker selector behavior to operation-aware visibility:
@@ -17,7 +29,13 @@ The format is inspired by Keep a Changelog and uses a simple project-friendly ve
   - Multiplication: operation + detail + range
 - Stabilized Fact Tracker selector widths to a fixed single-line cap using `Without regrouping` as the maximum display target.
 - Switched Fact Tracker selector arrows to shared white/neutral defaults with accent hover.
-- Updated in-app version resolution to parse all semantic versions in `CHANGELOG.md` and display the highest release version.
+- Updated in-app version resolution to use the greater of the runtime fallback version and the latest released changelog version.
+
+### Fixed
+- Fixed the Make 10 lesson's `Start Focused Workout` action by routing it through the existing setup snapshot helper.
+- Fixed division tracker training so a `division by n` card starts a full divisor isolation workout instead of narrowing to one fact.
+- Centralized operation display symbols so division renders correctly while storage keys continue using `/`.
+- Fixed stale docs version index copy that marked both v6 and v7 as latest.
 
 ## [0.10.0] - 2026-04-28
 
@@ -243,7 +261,7 @@ The format is inspired by Keep a Changelog and uses a simple project-friendly ve
 ## [0.1.0] - 2026-04-19
 
 ### Added
-- Initial multiplication trainer built with plain HTML, CSS, and JavaScript.
+- Initial Math Muscle Trainer build with plain HTML, CSS, and JavaScript.
 - Mixed-table and focus-table practice modes.
 - Adaptive question weighting based on progress.
 - Session stats, saved progress, trouble spots, and recent answers.
