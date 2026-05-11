@@ -600,35 +600,10 @@ function renderComboIndicator() {
   elements.comboIndicator.textContent = visible ? `COMBO x${streak}` : "COMBO x0";
 }
 
-function renderPracticeFeedbackHistory() {
-  if (!elements.practiceResponseRail) {
-    return;
-  }
-  const items = state.session.feedbackHistory || [];
-  if (!items.length) {
-    elements.practiceResponseRail.innerHTML = "";
-    elements.practiceResponseRail.setAttribute("aria-hidden", "true");
-    return;
-  }
-  elements.practiceResponseRail.innerHTML = items
-    .map((item) => `<span class="practice-response-dot ${item}" aria-hidden="true"></span>`)
-    .join("");
-  elements.practiceResponseRail.setAttribute("aria-hidden", "false");
-}
-
-function pushPracticeFeedbackMarker(marker) {
-  const nextHistory = Array.isArray(state.session.feedbackHistory)
-    ? state.session.feedbackHistory.slice()
-    : [];
-  nextHistory.push(marker);
-  state.session.feedbackHistory = nextHistory.slice(-5);
-  renderPracticeFeedbackHistory();
-}
-
 function setFeedback(message, tone = "") {
   elements.feedback.textContent = message;
   elements.feedback.classList.remove("success", "error");
-  if (tone === "error") {
+  if (tone) {
     elements.feedback.classList.add(tone);
   }
 }
@@ -637,9 +612,6 @@ function clearAnswerFeedbackVisuals() {
   const field = elements.answerInput?.closest(".answer-field");
   if (field) {
     field.classList.remove("is-correct", "is-error", "is-sign-error");
-  }
-  if (elements.problemWrap) {
-    elements.problemWrap.classList.remove("feedback-correct", "feedback-error");
   }
   if (elements.answerStatusIcon) {
     elements.answerStatusIcon.textContent = "";
@@ -657,23 +629,20 @@ function setAnswerFeedbackVisual(tone) {
   if (tone === "success") {
     field.classList.add("is-correct");
     elements.answerStatusIcon.classList.add("is-correct");
-    elements.answerStatusIcon.textContent = "\u2713";
-    elements.problemWrap?.classList.add("feedback-correct");
+    elements.answerStatusIcon.textContent = "✓";
     return;
   }
 
   if (tone === "sign-error") {
     field.classList.add("is-sign-error");
     elements.answerStatusIcon.classList.add("is-sign-error");
-    elements.answerStatusIcon.textContent = "\u00b1";
-    elements.problemWrap?.classList.add("feedback-error");
+    elements.answerStatusIcon.textContent = "±";
     return;
   }
 
   field.classList.add("is-error");
   elements.answerStatusIcon.classList.add("is-error");
-  elements.answerStatusIcon.textContent = "\u2715";
-  elements.problemWrap?.classList.add("feedback-error");
+  elements.answerStatusIcon.textContent = "✕";
 }
 
 function sanitisePracticeAnswerInput(value) {
@@ -832,7 +801,6 @@ function startSession(settings) {
   renderQuestionTimer(0);
   renderSessionTimer();
   renderPracticeProgress();
-  renderPracticeFeedbackHistory();
   renderDailyProgress();
   setFeedback("");
   showView("countdown");
@@ -1137,13 +1105,6 @@ function registerAnswer(evaluation, answerValue, options = {}) {
   elements.skipButton.disabled = true;
   syncKeypadSignToggleState();
   clearAnswerFeedbackVisuals();
-  if (skipped) {
-    pushPracticeFeedbackMarker("skipped");
-  } else if (evaluation?.isCorrect) {
-    pushPracticeFeedbackMarker("correct");
-  } else {
-    pushPracticeFeedbackMarker("incorrect");
-  }
 }
 
 function queueNextQuestion(delay) {
@@ -1205,7 +1166,9 @@ function handleSubmit(event) {
     evaluation.isCorrect ? "success" : evaluation.signError ? "sign-error" : "error",
   );
   setFeedback(
-    evaluation.isCorrect ? "" : `Not quite. Correct answer: ${expectedValue}`,
+    evaluation.isCorrect
+      ? "Correct."
+      : `Not quite. Correct answer: ${expectedValue}`,
     evaluation.isCorrect ? "success" : "error",
   );
   queueNextQuestion(evaluation.isCorrect ? 320 : 520);
@@ -1387,5 +1350,4 @@ function handleFinishSession() {
 
   openEndWorkoutDialog();
 }
-
 

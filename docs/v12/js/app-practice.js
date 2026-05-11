@@ -638,9 +638,6 @@ function clearAnswerFeedbackVisuals() {
   if (field) {
     field.classList.remove("is-correct", "is-error", "is-sign-error");
   }
-  if (elements.problemWrap) {
-    elements.problemWrap.classList.remove("feedback-correct", "feedback-error");
-  }
   if (elements.answerStatusIcon) {
     elements.answerStatusIcon.textContent = "";
     elements.answerStatusIcon.classList.remove("is-correct", "is-error", "is-sign-error");
@@ -657,23 +654,20 @@ function setAnswerFeedbackVisual(tone) {
   if (tone === "success") {
     field.classList.add("is-correct");
     elements.answerStatusIcon.classList.add("is-correct");
-    elements.answerStatusIcon.textContent = "\u2713";
-    elements.problemWrap?.classList.add("feedback-correct");
+    elements.answerStatusIcon.textContent = "✓";
     return;
   }
 
   if (tone === "sign-error") {
     field.classList.add("is-sign-error");
     elements.answerStatusIcon.classList.add("is-sign-error");
-    elements.answerStatusIcon.textContent = "\u00b1";
-    elements.problemWrap?.classList.add("feedback-error");
+    elements.answerStatusIcon.textContent = "±";
     return;
   }
 
   field.classList.add("is-error");
   elements.answerStatusIcon.classList.add("is-error");
-  elements.answerStatusIcon.textContent = "\u2715";
-  elements.problemWrap?.classList.add("feedback-error");
+  elements.answerStatusIcon.textContent = "✕";
 }
 
 function sanitisePracticeAnswerInput(value) {
@@ -1387,5 +1381,4 @@ function handleFinishSession() {
 
   openEndWorkoutDialog();
 }
-
 

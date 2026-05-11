@@ -15,7 +15,7 @@ const KEYPAD_PREFERENCE_STORAGE_KEY = `${PRODUCT_STORAGE_PREFIX}-keypad-preferen
 const LEGACY_KEYPAD_PREFERENCE_STORAGE_KEYS = [
   `${LEGACY_PRODUCT_STORAGE_PREFIX}-keypad-preference-v1`,
 ];
-const APP_VERSION = "v0.16.0";
+const APP_VERSION = "v0.15.0";
 const FACTOR_LIMIT = 12;
 const TABLE_FACTORS = Array.from({ length: FACTOR_LIMIT }, (_, index) => index + 1);
 const QUESTION_PRESETS = [10, 20, 30];
@@ -506,9 +506,6 @@ const elements = {
   personalBestsList: document.getElementById("personalBestsList"),
   recentWorkoutsList: document.getElementById("recentWorkoutsList"),
   techniqueScreenShell: document.getElementById("techniqueScreenShell"),
-  techniqueExitNavButton: document.getElementById("techniqueExitNavButton"),
-  progressCalendarYearLabel: document.getElementById("progressCalendarYearLabel"),
-  resultsCalendarYearLabel: document.getElementById("resultsCalendarYearLabel"),
   attemptBadge: document.getElementById("attemptBadge"),
   accuracyBadge: document.getElementById("accuracyBadge"),
   attemptProgressLabel: document.getElementById("attemptProgressLabel"),

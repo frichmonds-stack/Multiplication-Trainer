@@ -270,9 +270,6 @@ async function initialise() {
   elements.techniqueScreenShell.addEventListener("submit", handleTechniqueLessonSubmit);
   elements.techniqueScreenShell.addEventListener("input", handleTechniqueInput);
   elements.techniqueScreenShell.addEventListener("keydown", handleTechniqueLessonKeydown);
-  elements.techniqueExitNavButton?.addEventListener("click", () => {
-    handleTechniqueAction("exit");
-  });
   let resizeRenderTimeoutId = null;
   window.addEventListener("resize", () => {
     window.clearTimeout(resizeRenderTimeoutId);

@@ -247,8 +247,8 @@ function getMultiplicationLessonPlan(table = state.technique.selectedTable || TE
   return {
     table: safeTable,
     kicker: `${safeTable}x Technique`,
-    completeTitle: `Congratulations on learning how to multiply by ${safeTable}!`,
-    completeCopy: "Choose where to build from here.",
+    completeTitle: `${safeTable}x technique complete.`,
+    completeCopy: `You finished the ${safeTable}x lesson and can review any section whenever you want.`,
     ...plans[safeTable],
   };
 }
@@ -653,6 +653,9 @@ function renderTechniqueSwitchStage() {
           .join("")}
       </div>
       <div class="technique-action-row">
+        <button class="ghost-button" type="button" data-technique-action="prev-stage">
+          Back
+        </button>
         <button class="primary-button" type="button" data-technique-action="next-stage">
           Continue
         </button>
@@ -674,6 +677,9 @@ function renderTechniquePatternStage() {
         ${state.technique.patternFeedback.message}
       </p>
       <div class="technique-action-row">
+        <button class="ghost-button" type="button" data-technique-action="prev-stage">
+          Back
+        </button>
         <div class="technique-side-actions">
           <button
             class="primary-button"
@@ -741,9 +747,12 @@ function renderTechniqueGuidedStage() {
           ? `<div class="technique-hint">${getTechniqueHintMarkup(question)}</div>`
           : ""
       }
-      <p class="technique-feedback ${feedback.tone}">${feedback.tone === "error" ? feedback.message : ""}</p>
+      <p class="technique-feedback ${feedback.tone}">${feedback.message}</p>
       <p class="sr-only" aria-live="polite">${feedback.message}</p>
       <div class="technique-action-row">
+        <button class="ghost-button" type="button" data-technique-action="prev-stage">
+          Back
+        </button>
         <div class="technique-side-actions">
           ${
             !state.technique.guidedHintVisible && !state.technique.guidedSolved
@@ -814,9 +823,12 @@ function renderTechniqueQuickCheckStage() {
           ? `<div class="technique-hint">${getTechniqueHintMarkup(question)}</div>`
           : ""
       }
-      <p class="technique-feedback ${feedback.tone}">${feedback.tone === "error" ? feedback.message : ""}</p>
+      <p class="technique-feedback ${feedback.tone}">${feedback.message}</p>
       <p class="sr-only" aria-live="polite">${feedback.message}</p>
       <div class="technique-action-row">
+        <button class="ghost-button" type="button" data-technique-action="prev-stage">
+          Back
+        </button>
         <div class="technique-side-actions">
           ${
             hintAvailable && !state.technique.quickCheckSolved && !state.technique.quickCheckHintVisible
@@ -848,8 +860,8 @@ function renderTechniquePracticeStage() {
     <div class="technique-lesson-wrap">
       <div class="technique-lesson-head">
         <div>
-          <p class="section-kicker">${plan.table}x Practice</p>
-          <h2>Practice multiplying by ${plan.table}.</h2>
+          <p class="section-kicker">Practice More</p>
+          <h2>Keep the ${plan.table}x table feeling easy.</h2>
         </div>
         <button class="ghost-button subtle-button" type="button" data-technique-action="back-to-techniques">
           Back to Techniques
@@ -858,7 +870,7 @@ function renderTechniquePracticeStage() {
 
       <form class="technique-lesson-card technique-question-shell technique-practice-shell" data-technique-form="practice" autocomplete="off">
         <div class="technique-question-meta">
-          <span class="technique-progress-copy">Same lesson focus. Workout pace.</span>
+          <span class="technique-progress-copy">Questions can flip either way now.</span>
         </div>
         <div class="problem-wrap technique-practice-problem">
           <p class="technique-question">${formatTechniqueEquation(question)} = ?</p>
@@ -894,10 +906,10 @@ function renderTechniquePracticeStage() {
             ? `<div class="technique-hint">${getTechniqueHintMarkup(question)}</div>`
             : ""
         }
-        <p class="technique-feedback ${feedback.tone}" aria-live="polite">${feedback.tone === "error" ? feedback.message : ""}</p>
+        <p class="technique-feedback ${feedback.tone}">${feedback.message}</p>
         <div class="technique-action-row">
           ${
-            !state.technique.practiceHintVisible && !state.technique.practiceSolved
+            !state.technique.practiceHintVisible
               ? `
                 <button class="ghost-button" type="button" data-technique-action="show-practice-hint">
                   Hint
@@ -905,6 +917,17 @@ function renderTechniquePracticeStage() {
               `
               : '<span class="technique-progress-copy">Use the hint when you want a quick reminder.</span>'
           }
+          <div class="technique-side-actions">
+            ${
+              state.technique.practiceSolved
+                ? `
+                  <button class="primary-button" type="button" data-technique-action="next-practice">
+                    Next Practice Question
+                  </button>
+                `
+                : ""
+            }
+          </div>
         </div>
       </form>
     </div>
@@ -1107,6 +1130,9 @@ function renderMake10IdeaBlock(title, copy, examples, primaryLabel = "Continue")
           .join("")}
       </div>
       <div class="technique-action-row">
+        <button class="ghost-button" type="button" data-technique-action="make10-back">
+          Back
+        </button>
         <button class="primary-button" type="button" data-technique-action="make10-next">
           ${primaryLabel}
         </button>
@@ -1194,13 +1220,19 @@ function renderMake10CompleteBlock() {
     <section class="technique-lesson-card">
       <p class="technique-helper">Build to 10 lesson complete.</p>
       <article class="technique-hint">
-        Nice work. You're building fluent number sense with sums around 10. If you want to practice more, press Start Workout.
+        Nice work. You're building fluent number sense with sums around 10.
       </article>
-      <div class="technique-action-row technique-action-row-end">
+      <div class="technique-action-row">
         <button class="primary-button" type="button" data-technique-action="start-make10-workout">
-          Start Workout
+          Start Focused Workout
         </button>
-        </div>
+        <button class="ghost-button" type="button" data-technique-action="make10-restart">
+          Restart Lesson
+        </button>
+        <button class="ghost-button" type="button" data-technique-action="back-to-techniques">
+          Back to Lessons
+        </button>
+      </div>
     </section>
   `;
 }
@@ -1248,6 +1280,9 @@ function renderMake10LessonScreen(lesson) {
           <p class="section-kicker">Addition Technique</p>
           <h2>${lesson.title}</h2>
         </div>
+        <button class="ghost-button subtle-button" type="button" data-technique-action="back-to-techniques">
+          Back to Lessons
+        </button>
       </div>
       <div class="technique-stage-pills">${getMake10FlowPillsMarkup()}</div>
       ${bodyMarkup}
@@ -2187,6 +2222,9 @@ function renderAdditionFinalIntro(step) {
         This set blends every atomic move from the lesson. Use the whole skill now.
       </article>
       <div class="technique-action-row">
+        <button class="ghost-button" type="button" data-technique-action="addition-back">
+          Back
+        </button>
         <button class="primary-button" type="button" data-technique-action="addition-next">
           Start Final Practice
         </button>
@@ -2201,11 +2239,17 @@ function renderAdditionCompleteBlock(plan) {
       <h3 class="technique-step-title">${escapeHtml(plan.completeTitle)}</h3>
       <p class="technique-helper">${escapeHtml(plan.completeCopy)}</p>
       <article class="technique-hint">
-        Nice work. This lesson is now saved in your training menu for review. If you want to practice more, press Start Workout.
+        Nice work. That lesson is now linked to your training menu for review.
       </article>
-      <div class="technique-action-row technique-action-row-end">
+      <div class="technique-action-row">
         <button class="primary-button" type="button" data-technique-action="start-addition-workout">
-          Start Workout
+          Start Focused Workout
+        </button>
+        <button class="ghost-button" type="button" data-technique-action="addition-restart">
+          Restart Lesson
+        </button>
+        <button class="ghost-button" type="button" data-technique-action="back-to-techniques">
+          Back to Lessons
         </button>
       </div>
     </section>
@@ -2237,6 +2281,9 @@ function renderAdditionLessonScreen(lesson) {
           <p class="section-kicker">Addition Technique</p>
           <h2>${escapeHtml(lesson.title)}</h2>
         </div>
+        <button class="ghost-button subtle-button" type="button" data-technique-action="back-to-techniques">
+          Back to Lessons
+        </button>
       </div>
       <div class="technique-stage-pills">${getAdditionLessonFlowPillsMarkup()}</div>
       ${bodyMarkup}
@@ -2280,17 +2327,17 @@ function renderTechniqueCelebrationScreen() {
         <p class="section-kicker">Lesson Complete</p>
         <h2>${escapeHtml(plan.completeTitle)}</h2>
         <p class="technique-completion-copy">
-          ${escapeHtml(plan.completeCopy)}
+          ${escapeHtml(plan.completeCopy)} You locked in ${TECHNIQUE_COMPLETION_GOAL} solo reps.
         </p>
         <div class="technique-completion-actions">
           <button class="ghost-button" type="button" data-technique-action="back-to-techniques">
-            Learn More
+            Back to Techniques
           </button>
           <button class="ghost-button" type="button" data-technique-action="open-practice">
             Practice More
           </button>
           <button class="primary-button" type="button" data-technique-action="back-to-setup">
-            Start Workout
+            Go to Work Out
           </button>
         </div>
       </div>
@@ -2354,6 +2401,9 @@ function renderTechniqueLessonScreen() {
           <p class="section-kicker">${stageMeta.kicker}</p>
           <h2>${stageMeta.title}</h2>
         </div>
+        <button class="ghost-button subtle-button" type="button" data-technique-action="exit">
+          Exit Lesson
+        </button>
       </div>
       <div class="technique-stage-pills">${getTechniqueStagePillsMarkup()}</div>
       ${getTechniqueStageMarkup()}
@@ -2364,11 +2414,6 @@ function renderTechniqueLessonScreen() {
 function renderTechniqueScreen() {
   if (!elements.techniqueScreenShell) {
     return;
-  }
-  const isLessonMode =
-    state.technique.mode === "lesson" || state.technique.mode === "addition-lesson";
-  if (elements.techniqueExitNavButton) {
-    elements.techniqueExitNavButton.classList.toggle("is-hidden", !isLessonMode);
   }
 
   if (state.technique.mode === "menu") {
@@ -2852,7 +2897,6 @@ function submitQuickCheckAnswer() {
 function submitTechniquePracticeAnswer() {
   const question = state.technique.practiceQuestion;
   const answer = state.technique.practiceAnswer.trim();
-  clearTechniqueAdvanceTimer();
 
   if (answer === `${question.answer}`) {
     state.technique.practiceSolved = true;
@@ -2861,19 +2905,7 @@ function submitTechniquePracticeAnswer() {
       message: "Correct.",
       tone: "success",
     };
-    renderTechniqueScreen();
-    state.techniqueAdvanceTimeoutId = window.setTimeout(() => {
-      state.technique.practiceQuestion = createTechniqueQuestion(state.technique.selectedTable);
-      state.technique.practiceAnswer = "";
-      state.technique.practiceSolved = false;
-      state.technique.practiceHintVisible = false;
-      state.technique.practiceFeedback = { message: "", tone: "" };
-      clearTechniqueAdvanceTimer();
-      renderTechniqueScreen();
-    }, TECHNIQUE_AUTO_ADVANCE_MS);
-    return;
   } else {
-    state.technique.practiceAnswer = "";
     state.technique.practiceSolved = false;
     state.technique.practiceFeedback = {
       message: "Not quite. Try again.",
@@ -3330,5 +3362,4 @@ function handleTechniqueMenuChange(event) {
   state.technique.additionLessonId = "";
   renderTechniqueScreen();
 }
-
 

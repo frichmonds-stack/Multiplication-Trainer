@@ -2391,17 +2391,10 @@ function renderMonthNavigation() {
   ensureDisplayMonthKey();
   const currentMonthDate = createMonthDateFromKey(state.displayMonthKey);
   const navState = getMonthNavigationState();
-  const monthLabel = currentMonthDate.toLocaleDateString(undefined, { month: "long" });
-  const yearLabel = String(currentMonthDate.getFullYear());
+  const label = formatMonthLabel(currentMonthDate);
 
-  elements.currentMonthLabel.textContent = monthLabel;
-  elements.resultsMonthLabel.textContent = monthLabel;
-  if (elements.progressCalendarYearLabel) {
-    elements.progressCalendarYearLabel.textContent = yearLabel;
-  }
-  if (elements.resultsCalendarYearLabel) {
-    elements.resultsCalendarYearLabel.textContent = yearLabel;
-  }
+  elements.currentMonthLabel.textContent = label;
+  elements.resultsMonthLabel.textContent = label;
 
   [
     elements.progressMonthPrevButton,

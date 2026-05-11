@@ -65,30 +65,16 @@
                   />
                 </svg>
               </button>
+              <button class="nav-button home-progress-button" type="button" data-view-target="progress">
+                Progress
+              </button>
+              <button class="nav-button home-learn-button" type="button" data-view-target="techniques">
+                Learn
+              </button>
+              <button class="primary-button home-start-button" type="button" data-view-target="setup">
+                Start Workout
+              </button>
             </div>
-          </div>
-          <div class="home-menu-row" aria-label="Primary">
-            <button class="nav-button home-learn-button" type="button" data-view-target="techniques">
-              <span class="home-menu-icon" aria-hidden="true">+</span>
-              <span class="home-menu-copy">
-                <span class="home-menu-label">Learn</span>
-                <span class="home-menu-meta">Techniques</span>
-              </span>
-            </button>
-            <button class="primary-button home-start-button" type="button" data-view-target="setup">
-              <span class="home-menu-icon" aria-hidden="true">=</span>
-              <span class="home-menu-copy">
-                <span class="home-menu-label">Start Workout</span>
-                <span class="home-menu-meta">Begin training</span>
-              </span>
-            </button>
-            <button class="nav-button home-progress-button" type="button" data-view-target="progress">
-              <span class="home-menu-icon" aria-hidden="true">#</span>
-              <span class="home-menu-copy">
-                <span class="home-menu-label">Progress</span>
-                <span class="home-menu-meta">Stats and streaks</span>
-              </span>
-            </button>
           </div>
           <div class="home-feedback-group" aria-label="Workout feedback">
             <div class="home-daily-group home-feedback-panel">
@@ -551,9 +537,6 @@
               <div class="focused-view-kicker-row" aria-hidden="true">
                 <p class="section-kicker">Learn</p>
               </div>
-              <button class="ghost-button subtle-button technique-exit-nav is-hidden" type="button" id="techniqueExitNavButton">
-                Exit Lesson
-              </button>
               <button class="ghost-button" type="button" data-view-target="home" aria-label="Back to home">
                 <svg viewBox="0 0 24 24" aria-hidden="true" role="presentation">
                   <path
@@ -624,7 +607,6 @@
               <div class="combo-indicator" id="comboIndicator" aria-live="polite" aria-hidden="true">
                 COMBO x0
               </div>
-              <div class="practice-response-rail" id="practiceResponseRail" aria-hidden="true"></div>
 
               <div class="problem-wrap minimalist">
                 <div class="problem-text" id="problemText" aria-live="polite">Ready when you are.</div>
@@ -680,11 +662,6 @@
 
           <section class="screen" data-view="results" id="resultsScreen">
             <div class="focused-view-head">
-              <div class="focused-view-kicker-row carousel-inline-nav-row" aria-label="Results panels">
-                <button class="carousel-inline-nav-button" type="button" data-carousel-target="results" data-carousel-shift="-1" aria-label="Previous results panel">&#8249;</button>
-                <p class="section-kicker" id="resultsCarouselKickerLabel">Workout Summary</p>
-                <button class="carousel-inline-nav-button" type="button" data-carousel-target="results" data-carousel-shift="1" aria-label="Next results panel">&#8250;</button>
-              </div>
               <button class="ghost-button" type="button" data-view-target="home" aria-label="Back to home">
                 <svg viewBox="0 0 24 24" aria-hidden="true" role="presentation">
                   <path
@@ -710,9 +687,12 @@
               <div class="results-carousel">
                 <section class="results-slide is-active" data-results-slide="summary" data-carousel-kicker="Workout Summary">
                   <div class="slide-heading">
-                    <div>
-                      <h2 id="resultsTitle">Great job on showing up today.</h2>
-                    </div>
+                    <div class="carousel-inline-nav-row">
+                      <button class="carousel-inline-nav-button" type="button" data-carousel-target="results" data-carousel-shift="-1" aria-label="Previous results panel">&#8249;</button>
+                      <p class="slide-subtitle carousel-inline-kicker">Workout Summary</p>
+                      <button class="carousel-inline-nav-button" type="button" data-carousel-target="results" data-carousel-shift="1" aria-label="Next results panel">&#8250;</button>
+            </div>
+                    <h2 id="resultsTitle">Great job on showing up today.</h2>
                   </div>
 
                   <div class="stats-grid results-stats">
@@ -747,21 +727,25 @@
                     </div>
                   </div>
 
-                  <div class="results-top-actions">
-                    <button class="ghost-button" type="button" id="repeatSessionButton">
+                  <div class="button-row results-actions">
+                    <button class="primary-button" type="button" id="repeatSessionButton">
                       Repeat Workout
                     </button>
                     <button class="ghost-button" type="button" data-view-target="setup">
-                      New Workout
+                      Adjust Workout
                     </button>
-                  </div>
-
+            </div>
                 </section>
 
                 <section class="results-slide" data-results-slide="tracker" data-carousel-kicker="Workout Tracker">
                   <div class="tracker-layout">
                     <div class="tracker-left-column">
                       <div class="tracker-slide-head tracker-title-block">
+                        <div class="carousel-inline-nav-row">
+                          <button class="carousel-inline-nav-button" type="button" data-carousel-target="results" data-carousel-shift="-1" aria-label="Previous results panel">&#8249;</button>
+                          <p class="section-kicker carousel-inline-kicker">Workout Tracker</p>
+                          <button class="carousel-inline-nav-button" type="button" data-carousel-target="results" data-carousel-shift="1" aria-label="Next results panel">&#8250;</button>
+            </div>
                         <h2>This month</h2>
                       </div>
 
@@ -797,7 +781,7 @@
 
                     <div class="tracker-calendar-wrap">
                       <div class="tracker-calendar-head">
-                        <span class="preview-label" id="resultsCalendarYearLabel">2026</span>
+                        <span class="preview-label">Month</span>
                         <div class="calendar-nav">
                           <button
                             class="calendar-nav-button"
@@ -807,7 +791,7 @@
                           >
                             &#8249;
                           </button>
-                          <span class="section-note month-label" id="resultsMonthLabel">April</span>
+                          <span class="section-note month-label" id="resultsMonthLabel">April 2026</span>
                           <button
                             class="calendar-nav-button"
                             type="button"
@@ -834,6 +818,11 @@
 
                 <section class="results-slide" data-results-slide="focus" data-carousel-kicker="Next Focus">
                   <div class="slide-heading">
+                    <div class="carousel-inline-nav-row">
+                      <button class="carousel-inline-nav-button" type="button" data-carousel-target="results" data-carousel-shift="-1" aria-label="Previous results panel">&#8249;</button>
+                      <p class="section-kicker carousel-inline-kicker">Next Focus</p>
+                      <button class="carousel-inline-nav-button" type="button" data-carousel-target="results" data-carousel-shift="1" aria-label="Next results panel">&#8250;</button>
+            </div>
                     <h2>Where to build next</h2>
                   </div>
 
@@ -1014,7 +1003,7 @@
 
                     <div class="tracker-calendar-wrap">
                       <div class="tracker-calendar-head">
-                        <span class="preview-label" id="progressCalendarYearLabel">2026</span>
+                        <span class="preview-label">Month</span>
                         <div class="calendar-nav">
                           <button
                             class="calendar-nav-button"
@@ -1024,7 +1013,7 @@
                           >
                             &#8249;
                           </button>
-                          <span class="section-note month-label" id="currentMonthLabel">April</span>
+                          <span class="section-note month-label" id="currentMonthLabel">April 2026</span>
                           <button
                             class="calendar-nav-button"
                             type="button"
@@ -1158,7 +1147,7 @@
                 <section class="progress-slide" data-progress-slide="records" data-carousel-kicker="Workout Records">
                   <div class="slide-heading slide-heading-with-filter">
                     <div>
-                      <h2>Workout history at a glance</h2>
+                      <h2>How your workouts are stacking up</h2>
                     </div>
                     <div class="facts-selector-row records-selector-row" id="recordsSelectorRow">
                       <div class="fact-carousel-selector progress-inline-selector" aria-label="Records operation">
