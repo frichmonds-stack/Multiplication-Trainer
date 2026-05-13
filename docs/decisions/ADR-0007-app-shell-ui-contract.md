@@ -6,6 +6,12 @@ Date: 2026-05-11
 
 Accepted
 
+## Related Design Guidance
+
+- `docs/design/ui-direction.md` is the stable UI direction document for future design and implementation work.
+- `docs/design/component-system.md` defines reusable component roles and target class contracts for keeping the style consistent.
+- This ADR records the app-shell contract decision; the design document translates that contract into practical visual and control rules.
+
 ## Context
 
 Recent UI passes created several individually reasonable layouts, but Progress, Results, Learn, and lesson practice screens started to feel visually inconsistent. The app direction is iPad-first, with desktop expected to look like the same app rather than a separate website adaptation.

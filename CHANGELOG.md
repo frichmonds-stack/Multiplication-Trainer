@@ -6,6 +6,13 @@ The format is inspired by Keep a Changelog and uses a simple project-friendly ve
 
 ## [Unreleased]
 
+## [0.18.0] - 2026-05-13
+
+### Changed
+- Softened the shared button, selector, toggle, metric-panel, lesson-card, and fact-card styling toward the minimalist all-ages iPad component direction while preserving the existing theme/color token system.
+- Added a compact rounded training dock for primary app navigation and made Train the default entry surface.
+- Reduced decorative icons inside destination/workout buttons so visuals can move toward app-level, lesson-level, progress/status, and math-context cues instead of cluttering every control.
+
 ## [0.17.0] - 2026-05-11
 
 ### Changed

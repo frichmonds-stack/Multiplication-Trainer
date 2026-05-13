@@ -164,8 +164,15 @@ Use this map to route future Codex/GPT sessions to the right files before editin
 2. Related docs or ADRs
    - `README.md`
    - `PROJECT_NOTES.md`
+   - `docs/design/ui-direction.md`
+   - `docs/design/component-system.md`
+   - `docs/design/current-button-ui.md`
+   - `docs/decisions/ADR-0007-app-shell-ui-contract.md`
    - `ai/open-threads.md`
 3. Read before editing
+   - `docs/design/ui-direction.md`
+   - `docs/design/component-system.md`
+   - `docs/design/current-button-ui.md`
    - Relevant markup in `index.html`
    - Existing nearby CSS sections in `styles.css`
    - Generated markup for the affected screen if the DOM is built in JavaScript.

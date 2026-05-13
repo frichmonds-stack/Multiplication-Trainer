@@ -1,12 +1,12 @@
 # Current State
 
-Last updated: 2026-05-11
+Last updated: 2026-05-13
 
 ## Implementation
 
 - Project/product naming is standardized as `Math Muscle Trainer`.
-- Root app is at `v0.17.0` on `main`.
-- Latest docs snapshot is `docs/v14`, marked latest in `docs/index.html`.
+- Root app is at `v0.18.0` on `main`.
+- Latest docs snapshot is `docs/v15`, marked latest in `docs/index.html`.
 - Current publish-close batch pushed the lesson expansion, `docs/v10`, lesson content workflow, docs, ADRs, and AI continuity updates to GitHub.
 - `AGENTS.md`, `ai/`, and `docs/decisions/` are now explicitly Codex-managed continuity files.
 - `ai/task-map.md` routes future AI sessions from work type to relevant files, pre-reads, docs, and risks.
@@ -46,6 +46,15 @@ Last updated: 2026-05-11
 - 2026-05-11 publish close bumped runtime version to `v0.16.0`, added `CHANGELOG.md` release notes, published `docs/v13`, and updated README publish instructions.
 - 2026-05-11 app viewport frame release bumped runtime version to `v0.17.0`, updated ADR-0007, and published `docs/v14`.
 - Desktop/tablet-landscape rendering now fits the app into a centered `1194 x 834` iPad-landscape canvas instead of stretching to arbitrary browser dimensions; narrow/mobile layouts still switch to scroll-friendly responsive rules.
+- 2026-05-12 project memory cleanup pruned `PROJECT_NOTES.md` into durable context/idea-bank material, reorganized `ai/open-threads.md` into decision categories, and grouped `ai/tasks/next-actions.md` into concrete next batches.
+- 2026-05-12 follow-up compressed `ai/session-log.md` into milestone entries plus active handoff notes, added near-term roadmap shape (`v0.18.0` UI cleanup, `v0.19.0` lesson content foundation, `v0.20.0` onboarding/mastery clarity), and queued AI continuity/versioning reviews.
+- `docs/design/ui-direction.md` now holds the stable UI direction for future design work, including the all-ages minimalist iPad-app north star, button/control roles, toggle rules, content-role rules, and icon/brand guidance.
+- `docs/design/component-system.md` now defines the reusable UI role/class contract for future CSS alignment: buttons, icon utilities, toggles, segmented controls, content headers, metrics, action tiles, insight boards, dialogs, and carousel/kicker controls.
+- `docs/design/current-button-ui.md` now documents the current implemented button/control baseline and screenshot-review checklist.
+- First CSS alignment pass softened existing shared controls toward the chosen direction: Concept 3 tactile control feel governed by Concept 1 hierarchy, while preserving existing theme/color variables.
+- Root app now opens to the Train/setup surface by default and includes a compact centered rounded training dock for `Train`, `Learn`, and `Progress` instead of relying on a launcher-style home menu as the main navigation.
+- Visual anchors were pulled back from destination/workout buttons; operation symbols and Practice status/HUD cues remain where they carry math/status meaning, while future visual richness should happen at the app, lesson, progress/status, and math-context level.
+- 2026-05-13 publish close bumped runtime version to `v0.18.0`, moved the UI direction notes from `Unreleased` into `CHANGELOG.md`, published `docs/v15`, and prepared the branch for GitHub sync.
 
 ## Product Direction
 
@@ -58,6 +67,9 @@ Last updated: 2026-05-11
 - The app should be usable from primary students through adults; the theme should stay universal around mental/arithmetic strength.
 - Branding can remain strength-oriented, but mastery should not feel age-locked, overly childish, or narrowly targeted.
 - Speculative feature suggestions should be treated as an idea bank unless the user explicitly promotes them to roadmap.
+- Adaptive learning should not be exposed as a simple learner-facing on/off setting. Future adaptive controls should be framed as friendly training preferences such as Gentle/Balanced/Challenge, session length, focus mode, hints, or mistake review.
+- Visual direction should preserve a minimalist thread: restrained, clear, low-clutter, tactile iPad-app UI for all ages. Avoid both over-decorated game styling and cold/boxy admin-dashboard styling.
+- Visual direction should also move the app away from mostly text-only surfaces by adding consistent math-strength marks, status symbols, and simple pictorial cues where they improve scanning and interaction clarity, but not by putting icons inside every button.
 
 ## Verification
 
@@ -88,6 +100,10 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\check-repo.ps1
   - `https://frichmonds-stack.github.io/Math-Muscle-Trainer/` lists `docs/v14` as latest.
   - `https://frichmonds-stack.github.io/Math-Muscle-Trainer/v14/index.html` returned HTTP 200.
   - `https://frichmonds-stack.github.io/Math-Muscle-Trainer/v14/js/app-core.js` served `APP_VERSION = "v0.17.0"`.
+- 2026-05-12 project memory cleanup changed documentation/continuity only; `scripts/check-repo.ps1` passed afterward. No push or live verification was run.
+- 2026-05-12 UI direction implementation ran `node --check` on all root JS modules and a CSS brace sanity check successfully. `scripts/check-repo.ps1` reported expected snapshot drift because root app files differed from latest `docs/v14` until the next snapshot publish.
+- 2026-05-13 publish close ran `scripts/check-repo.ps1` after `docs/v15`; result: `All repo checks passed.`
+- 2026-05-13 publish close ran `node --check` for all root JS modules; all syntax checks passed.
 
 ## Working Tree Note
 
