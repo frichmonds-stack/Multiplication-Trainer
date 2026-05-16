@@ -159,6 +159,8 @@ This log records durable session milestones and active handoff notes. Keep detai
 - Ran `node --check` on all root JS modules; syntax checks passed.
 - Ran a CSS brace sanity check; braces are balanced.
 - Ran `scripts/check-repo.ps1`; result: `All repo checks passed.`
+- Pushed release commit `c2362d3` (`Release v0.20.3 Home QA polish`) to GitHub.
+- Verified GitHub Pages live after deployment caught up: `/` lists `Live - v0.20.3 Home QA polish`, `/live/` returned HTTP 200 with `Workout Streak`, `/live/js/app-core.js` served `APP_VERSION = "v0.20.3"`, and `/live/js/app-progress.js` served the Home streak value from `streakSummary.current`.
 - Pushed `main` to GitHub and verified GitHub Pages serving `Live - v0.20.1 live cleanup`, including `/live/` and `/live/js/app-core.js`.
 - Pushed `main` to GitHub and verified GitHub Pages serving Version 17 / `v0.20.0`, including `v17/` and `v17/js/app-core.js`.
 

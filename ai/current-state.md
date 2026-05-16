@@ -95,6 +95,7 @@ Last updated: 2026-05-16
 - Home's `Workout Streak` headline now shows the current consecutive-day streak, while the weekly strip underneath still shows the last-7-days activity pattern.
 - Home has a compact-height desktop spacing pass: utility buttons sit higher, the dashboard stack uses less vertical gap, and Weekly Reps labels sit above tall bars with more separation from `Last 7 days`.
 - `v0.20.3` is a rolling live Home QA polish release: it keeps `Workout Streak` as the consecutive-day headline, preserves the 7-day strip as recent activity context, tightens vertical Home spacing, and includes the `Create lessons` backlog item in AI continuity.
+- `v0.20.3` was pushed to `main` and verified on GitHub Pages after deployment caught up.
 
 ## Product Direction
 
@@ -180,6 +181,15 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\check-repo.ps1
   - `https://frichmonds-stack.github.io/Math-Muscle-Trainer/` lists `Live - v0.20.2 UI polish`.
   - `https://frichmonds-stack.github.io/Math-Muscle-Trainer/live/` returned HTTP 200.
   - `https://frichmonds-stack.github.io/Math-Muscle-Trainer/live/js/app-core.js` served `APP_VERSION = "v0.20.2"`.
+- `v0.20.3` Home QA polish ran `node --check` for all root JS modules; syntax checks passed.
+- `v0.20.3` Home QA polish ran a CSS brace sanity check; braces are balanced.
+- `v0.20.3` Home QA polish ran `scripts/check-repo.ps1` after `docs/live`; result: `All repo checks passed.`
+- `v0.20.3` Home QA polish pushed release commit `c2362d3` to `main`; a follow-up continuity verification commit was pushed after live deployment caught up.
+- GitHub Pages verified live for `v0.20.3` on 2026-05-16:
+  - `https://frichmonds-stack.github.io/Math-Muscle-Trainer/` lists `Live - v0.20.3 Home QA polish`.
+  - `https://frichmonds-stack.github.io/Math-Muscle-Trainer/live/` returned HTTP 200 and included `Workout Streak`.
+  - `https://frichmonds-stack.github.io/Math-Muscle-Trainer/live/js/app-core.js` served `APP_VERSION = "v0.20.3"`.
+  - `https://frichmonds-stack.github.io/Math-Muscle-Trainer/live/js/app-progress.js` served the Home streak value from `streakSummary.current`.
 
 ## Working Tree Note
 
