@@ -33,6 +33,21 @@ Project guidance for Codex and other AI coding sessions in this repo.
 4. Summarize the current repo state and the intended change before changing code.
 5. For work affecting product direction, architecture, release flow, storage shape, or long-lived conventions, create or update an ADR in `docs/decisions/`.
 
+## Post-Initialization Collaboration Rule
+
+After completing the Session Start Protocol, default to discussion/planning mode. Codex may inspect files, run read-only discovery commands, and propose plans, but must not change repo state until the user explicitly authorizes implementation.
+
+Changing repo state includes editing files, updating AI continuity docs, running publish scripts, creating generated build outputs, installing dependencies, changing saved app data, committing, or pushing.
+
+Implementation and release scope must follow the user's explicit wording:
+
+- `execute now`, `go ahead`, `make the changes`, `implement this`, `fix it`, or `update the files` authorizes local file changes only.
+- `Normal Close` or `Run the session close protocol from AGENTS.md and update the AI continuity files` authorizes local session-close work: best available checks, affected local docs, AI continuity updates, and final status reporting. It does not authorize publishing `docs/live`, creating snapshots, committing, pushing, or claiming live verification.
+- `Publish Close` authorizes release-style closeout: version/changelog updates when needed, publishing the appropriate docs build, usually `docs/live` for routine updates, running repo checks after publish, checking status/remotes, committing, pushing, and verifying the live GitHub Pages build when deployment timing allows.
+- `publish`, `commit`, and `push` authorize only those named release steps when paired with an implementation or closeout request.
+
+Vague approval such as `sounds good` should be treated as continued discussion unless the user clearly asks for action.
+
 ## Session Close Protocol
 
 Before finishing a coding session:

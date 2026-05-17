@@ -15,19 +15,18 @@ Use this file for concrete next work. Broader undecided questions belong in `ai/
 
 ## Best Next Batch
 
-1. Manually review the published `v0.20.2` polish batch on iPad landscape, iPad portrait, narrow resized desktop windows, mobile widths, and light mode: Home header spacing, centered dashboard rhythm, rolling weekly metrics, Practice answer/status layout, Progress selectors, Operation Mastery help, Learn correct counters, Workout Tracker calendar goal colors, and setup operation choices.
+1. Manually review the published `v0.20.5` app-shell polish on iPad landscape, iPad portrait, narrow resized desktop windows, mobile widths, light mode, Jungle, and Solo Leveling: dock Options gear, no floating Home utility buttons, compact About/Give Feedback flow, Weekly Reps two-thirds goal line, setup density/centering, debug persona historical data, theme status badge contrast, and light-mode outline strength.
 2. Manually retest Practice with the built-in keypad on keyboardless student devices, especially iPad/tablet landscape and portrait, to confirm the larger answer input, answer icon, and in-card dot rail do not crowd the keypad layout.
 3. Draft the Lesson Experience System design brief so future lessons have consistent structure, visual roles, media placement, motion rules, and stage/progression behavior instead of one-off screen design.
-4. Manually review the `v0.20.4` debug/UI polish on iPad landscape, iPad portrait, light mode, and Aang theme: debug unlock/exit/appearance controls, Workout setup density, Practice HUD grouping, Learn feedback delay/reveal, Home Weekly Reps goal line/alignment, About `i`, and Fact Tracker status contrast.
-5. Manually test hidden adaptive Home quick starts with new-user/no-data state and with existing progress data for each operation.
-6. Decide whether the 50 reps/day goal should stay fixed, become adaptive, or become a learner-facing training preference, and how it should be explained outside the calendar header.
-7. Plan the deeper Operation Mastery communication/IA pass, including whether Fact Tracker becomes the detail/evidence layer inside Operation Mastery.
-8. Confirm the Daily Routine checklist should stay as four separate 5-correct operation routines until multi-operation workouts exist.
-9. Manually test Learn correct counters and the new feedback delay/reveal across Make 10, an addition final practice, multiplication assisted reps, and multiplication solo reps.
-10. Move `Exit Lesson` out of the global top-right utility rail into the lesson-local header/content area.
-11. Do a dedicated stale Home CSS prune for old launcher-era selectors (`home-launcher`, `home-menu-row`, `daily-widget`, and related legacy classes) after checking they are not used by any archived/current root UI paths.
-12. Add intentional zero-state displays for new-user/empty-data surfaces so Home, Progress, Mastery, Fact Tracker, Records, and Learn completion states do not feel blank or broken before evidence exists.
-13. Audit text-heavy surfaces and add consistent math-strength/status visuals where they improve scanning, touchability, or app-like interaction without stuffing icons into every button.
+4. Manually test hidden adaptive Home quick starts with new-user/no-data state and with existing progress data for each operation.
+5. Decide whether the 50 reps/day goal should stay fixed, become adaptive, or become a learner-facing training preference, and how it should be explained outside the calendar header.
+6. Plan the deeper Operation Mastery communication/IA pass, including whether Fact Tracker becomes the detail/evidence layer inside Operation Mastery.
+7. Confirm the Daily Routine checklist should stay as four separate 5-correct operation routines until multi-operation workouts exist.
+8. Manually test Learn correct counters and the new feedback delay/reveal across Make 10, an addition final practice, multiplication assisted reps, and multiplication solo reps.
+9. Move `Exit Lesson` out of the global top-right utility rail into the lesson-local header/content area.
+10. Do a dedicated stale Home CSS prune for old launcher-era selectors (`home-launcher`, `home-menu-row`, `daily-widget`, and related legacy classes) after checking they are not used by any archived/current root UI paths.
+11. Add intentional zero-state displays for new-user/empty-data surfaces so Home, Progress, Mastery, Fact Tracker, Records, and Learn completion states do not feel blank or broken before evidence exists.
+12. Audit text-heavy surfaces and add consistent math-strength/status visuals where they improve scanning, touchability, or app-like interaction without stuffing icons into every button.
 
 ## Design Systems
 

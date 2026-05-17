@@ -6,6 +6,25 @@ The format is inspired by Keep a Changelog and uses a simple project-friendly ve
 
 ## [Unreleased]
 
+## [0.20.5] - 2026-05-17
+
+### Added
+- Added a dock Options gear and moved About into a compact Options section.
+- Added a `Give Feedback` button that opens the temporary classroom feedback message.
+- Added historical data to debug personas so calendar month navigation and older workout states can be reviewed.
+
+### Changed
+- Removed the floating Home About/Settings utility buttons so the Home header is cleaner.
+- Changed Weekly Reps to use the daily goal line at about two-thirds chart height, with goal-value days reaching the line and over-goal days rising above it.
+- Refined iPad and tablet QA layout: compacted Workout setup, improved portrait Practice keypad clearance, separated stacked Workout Tracker sections, and tightened Progress indicator spacing near the dock.
+- Tightened Setup difficulty/duration buttons and centered Workout Type content while preserving the current toggle styling.
+- Strengthened light-mode card/control outlines with dark-neutral borders and preserved more Solo Leveling purple identity in non-semantic accents.
+- Reduced debug unlock dimming so debug mode does not distort visual QA.
+
+### Fixed
+- Fixed theme correctness colors so correct/incorrect feedback stays universally green/red across palettes.
+- Fixed Jungle light-mode status badge contrast in Fact Tracker.
+
 ## [0.20.4] - 2026-05-17
 
 ### Added

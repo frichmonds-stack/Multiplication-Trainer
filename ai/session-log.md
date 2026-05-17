@@ -257,3 +257,29 @@ This log records durable session milestones and active handoff notes. Keep detai
 - Updated publish/check scripts to include `js/app-debug.js`, republished `docs/live`, and ran `scripts/check-repo.ps1`; result: `All repo checks passed.`
 - Pushed release commit `f85795b` (`Release v0.20.4 debug and UI polish`) to GitHub.
 - Verified GitHub Pages live after deployment caught up: `/` lists `Live - v0.20.4 debug and UI polish`, `/live/` includes `app-debug.js`, `/live/js/app-core.js` serves `APP_VERSION = "v0.20.4"`, and `/live/js/app-debug.js` returned HTTP 200 with debug unlock markers present.
+
+## 2026-05-17 - Collaboration Rule Update
+
+- Added a post-initialization collaboration rule to `AGENTS.md`: after startup, future sessions default to discussion/planning mode until the user explicitly authorizes local implementation, `Normal Close`, or `Publish Close`.
+- Documented closeout vocabulary: `Normal Close` authorizes local checks/docs/AI continuity only, while `Publish Close` authorizes release-style publish/check/commit/push/live verification when deployment timing allows.
+- Mirrored the rule in `ai/context.md`, `ai/prompts/session-start.md`, `ai/prompts/session-close.md`, and `ai/current-state.md` so future sessions pick up the behavior from both startup instructions and continuity memory.
+
+## 2026-05-17 - Home QA Follow-Up Notes
+
+- Logged follow-up Home polish without implementing it: make the About `i` a heavier circular icon button, adjust Weekly Reps so the goal line sits around two-thirds chart height and bars reach it at the goal value, and align the Weekly Reps label/value block with the chart columns.
+- Clarified the apparent dark-mode dimness is caused by debug mode adding a dimming layer, not the base dark palette. Logged a debug visual QA fix to remove whole-app dimming from unlocked debug mode.
+- Logged additional QA notes without implementing them: Setup difficulty/duration buttons are too tall, Workout Type content is not centered, toggles look good and should be left alone, Jungle light-mode status badges can become unreadable yellow, Solo Leveling light mode needs more non-semantic purple identity, and debug personas need historical data for calendar/month-nav testing.
+- Logged light-mode definition direction: try stronger dark-neutral outlines on cards/buttons first rather than pure black outlines, to increase crispness without making the UI feel like a wireframe.
+
+## 2026-05-17 - v0.20.5 App Shell Polish Publish Close
+
+- Moved app Options into a dock gear, removed floating Home About/Settings buttons, folded About into Options, and added a temporary `Give Feedback` dialog that shows the classroom message.
+- Changed Home Weekly Reps to use the 50-rep daily goal at a fixed two-thirds chart line, with over-goal days extending above it.
+- Kept Setup toggles intact while tightening difficulty/duration buttons and centering Workout Type button content.
+- Added iPad QA CSS polish for setup density, Progress indicator spacing, portrait Practice keypad clearance, stacked Workout Tracker separation, and compact `Where to build next` cards.
+- Kept correctness feedback green/red across palettes, fixed Jungle light-mode `Building` badge contrast, preserved more Solo Leveling purple in non-semantic accents, and strengthened light-mode outlines with dark-neutral borders.
+- Added historical debug persona data for calendar/month-nav QA and reduced debug unlock dimming so visual review is less distorted.
+- Updated `APP_VERSION` and `CHANGELOG.md` to `v0.20.5`, updated README, PROJECT_NOTES, ADR-0007, AI continuity, and published `docs/live` with label `v0.20.5 app shell polish`.
+- Ran `node --check` for all root JS modules; syntax checks passed.
+- Ran a CSS brace sanity check; braces are balanced.
+- Ran `scripts/check-repo.ps1` after publishing `docs/live`; result: `All repo checks passed.`

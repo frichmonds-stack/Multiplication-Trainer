@@ -216,8 +216,21 @@
       };
     }
 
+    for (let dayOffset = 8; dayOffset <= 42; dayOffset += 3) {
+      const operation = OPERATION_OPTIONS[dayOffset % OPERATION_OPTIONS.length];
+      const wave = dayOffset % 5;
+      dayPlans.push({
+        operation,
+        attempted: 12 + wave * 4,
+        accuracy: 0.66 + wave * 0.05,
+        averageMs: 5200 - wave * 340,
+        difficultyBand: wave >= 3 ? "medium" : "standard",
+        dateOffset: dayOffset,
+      });
+    }
+
     dayPlans.forEach((plan, index) => {
-      const dateKey = getDateKeyDaysAgo(index % 7);
+      const dateKey = getDateKeyDaysAgo(Number.isFinite(plan.dateOffset) ? plan.dateOffset : index % 7);
       const correct = Math.round(plan.attempted * plan.accuracy);
       const existing = progress.dailyRecords[dateKey] || defaultDailyRecord();
       progress.dailyRecords[dateKey] = normaliseDailyRecord({
@@ -401,7 +414,11 @@
       return;
     }
     if (action === "feedback") {
-      window.alert("Put up your hand and tell Mr Foo");
+      if (typeof showFeedbackDialog === "function") {
+        showFeedbackDialog();
+      } else {
+        window.alert("Put up your hand and tell Mr Foo");
+      }
       setDebugStatus("Classroom feedback message shown.");
       return;
     }

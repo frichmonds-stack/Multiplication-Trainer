@@ -20,7 +20,8 @@ Recent UI passes created several individually reasonable layouts, but Progress, 
 
 Use a shared app-shell contract across the main app surfaces:
 
-- Top-right global controls are reserved for Home and Settings.
+- App-level options live in the bottom dock as an icon-only gear utility. Home should not carry floating About/Settings buttons unless a later redesign explicitly restores them.
+- About and temporary classroom feedback live inside Options; debug tools remain separate developer/teacher tooling for now.
 - Carousel/kicker navigation uses a fixed label space so left/right arrows do not shift between slides.
 - Local selectors and actions live with the slide/content header, not with global utility controls.
 - Static metric panels are display-only and do not use hover/lift affordances.

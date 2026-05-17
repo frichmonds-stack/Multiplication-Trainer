@@ -224,6 +224,14 @@ body[data-theme="mudkip"] {
   --ambient-right-rgb: 239, 169, 71;
 }
 
+body,
+body[data-theme] {
+  --success: #16a060;
+  --danger: #d94a3a;
+  --glow-success: rgba(22, 160, 96, 0.2);
+  --glow-danger: rgba(217, 74, 58, 0.2);
+}
+
 body[data-color-mode="light"] {
   color-scheme: light;
   --bg: #e8eef7;
@@ -306,7 +314,7 @@ body[data-color-mode="light"] .technique-hint,
 body[data-color-mode="light"] .technique-pattern-row,
 body[data-color-mode="light"] .calendar-day {
   background: var(--surface-strong);
-  border-color: var(--stroke);
+  border-color: rgba(24, 35, 52, 0.24);
 }
 
 body[data-color-mode="light"] .carousel-position-indicator {
@@ -648,6 +656,7 @@ button,
 input,
 select {
   font: inherit;
+  touch-action: manipulation;
 }
 
 button {
@@ -699,6 +708,7 @@ select:focus-visible {
   margin: 0 auto;
   padding: 0 clamp(0.7rem, 1.6vw, 1.1rem);
   display: grid;
+  touch-action: manipulation;
 }
 
 .page-shell:not(.is-home-shell) .page-header {
@@ -1120,7 +1130,7 @@ body[data-color-mode="light"] .fact-range-nav,
 body[data-color-mode="light"] .fact-range-button {
   background: rgba(255, 255, 255, 0.95);
   color: #1b2a40;
-  border-color: rgba(24, 35, 52, 0.2);
+  border-color: rgba(24, 35, 52, 0.3);
   box-shadow: 0 6px 12px rgba(13, 21, 34, 0.08);
 }
 
@@ -1170,6 +1180,16 @@ body[data-color-mode="light"] .app-dock {
 
 body[data-color-mode="light"] .app-dock-button {
   color: rgba(27, 42, 64, 0.66);
+}
+
+body[data-color-mode="light"] .app-dock-utility-button {
+  background: rgba(24, 35, 52, 0.055);
+  border-color: rgba(24, 35, 52, 0.24);
+  color: rgba(27, 42, 64, 0.78);
+}
+
+body[data-color-mode="light"] .app-dock-utility-button::before {
+  background: rgba(24, 35, 52, 0.18);
 }
 
 body[data-color-mode="light"] .app-dock-button:hover:not(:disabled),
@@ -1752,6 +1772,11 @@ body[data-color-mode="light"] .nav-button-primary {
   justify-items: stretch;
 }
 
+.home-reps-metric .home-snapshot-head {
+  justify-self: center;
+  width: min(100%, 25rem);
+}
+
 .home-reps-scale {
   justify-self: center;
   width: min(100%, 25rem);
@@ -2232,7 +2257,7 @@ body[data-color-mode="light"] .home-snapshot-metric {
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.68)),
     rgba(255, 255, 255, 0.72);
-  border-color: rgba(24, 35, 52, 0.12);
+  border-color: rgba(24, 35, 52, 0.26);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.7),
     0 12px 28px rgba(13, 21, 34, 0.08);
@@ -2521,7 +2546,7 @@ body[data-color-mode="light"] .primary-button .visual-anchor {
   align-items: center;
   justify-content: center;
   gap: 0.22rem;
-  width: min(92%, 34rem);
+  width: min(94%, 38rem);
   min-height: 3.34rem;
   padding: 0.32rem;
   border-radius: 999px;
@@ -2559,6 +2584,43 @@ body[data-color-mode="light"] .primary-button .visual-anchor {
     border-color var(--interactive-duration) ease,
     box-shadow var(--interactive-duration) ease,
     color var(--interactive-duration) ease;
+}
+
+.app-dock-utility-button {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 2.55rem;
+  width: 2.55rem;
+  min-width: 2.55rem;
+  min-height: 2.55rem;
+  padding: 0;
+  margin-left: 0.18rem;
+  border-radius: 999px;
+  border: 1px solid var(--control-border);
+  background: rgba(255, 255, 255, 0.055);
+  color: rgba(255, 255, 255, 0.74);
+}
+
+.app-dock-utility-button::before {
+  content: "";
+  position: absolute;
+  left: -0.18rem;
+  width: 1px;
+  height: 1.45rem;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.app-dock-utility-button svg {
+  width: 1.08rem;
+  height: 1.08rem;
+  fill: currentColor;
+}
+
+.app-dock-utility-button:hover:not(:disabled),
+.app-dock-utility-button:focus-visible:not(:disabled) {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.09);
 }
 
 .app-dock-button:hover:not(:disabled),
@@ -3053,8 +3115,8 @@ body[data-color-mode="light"] .primary-button .visual-anchor {
 }
 
 #setupScreen .choice-pill > span {
-  min-height: 3.9rem;
-  padding: 0.56rem 0.74rem;
+  min-height: 3.05rem;
+  padding: 0.44rem 0.7rem;
 }
 
 #setupScreen .choice-pill-copy {
@@ -3137,6 +3199,84 @@ body[data-color-mode="light"] .primary-button .visual-anchor {
   #setupScreen #isolationField .isolation-range-grid {
     margin-top: 0;
     gap: 0.42rem;
+  }
+}
+
+@media (min-width: 901px) and (max-width: 1366px) and (orientation: landscape) {
+  #setupScreen.screen.is-active {
+    width: min(100%, 1060px);
+  }
+
+  #setupScreen .focused-view-head {
+    margin-bottom: 0.1rem;
+  }
+
+  #setupScreen .operation-panel {
+    gap: 0.46rem;
+    padding-block: 0.42rem 0.2rem;
+  }
+
+  #setupScreen .section-heading.compact {
+    margin-bottom: 0.18rem;
+  }
+
+  #setupScreen .operation-choice-grid {
+    gap: 0.34rem;
+  }
+
+  #setupScreen .operation-choice {
+    max-height: 62px;
+  }
+
+  #setupScreen .operation-choice-copy {
+    min-height: 46px;
+    padding: 0.5rem 0.68rem;
+  }
+
+  #setupScreen .setup-step-shell {
+    grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+    gap: 0.5rem 0.76rem;
+    align-items: start;
+  }
+
+  #setupScreen .setup-step-field {
+    grid-column: 1;
+  }
+
+  #setupScreen #sessionTypeField {
+    grid-row: span 2;
+  }
+
+  #setupScreen .setup-settings-form {
+    grid-column: 2;
+    grid-row: 1 / span 3;
+    grid-template-columns: minmax(0, 0.86fr) minmax(0, 1.14fr);
+    gap: 0.48rem 0.66rem;
+  }
+
+  #setupScreen .setup-settings-form > .field.option-field {
+    min-width: 0;
+  }
+
+  #setupScreen .setup-settings-form > .extra-options-field {
+    padding-top: 0;
+  }
+
+  #setupScreen .setup-actions {
+    grid-column: 1 / -1;
+  }
+
+  #setupScreen .workout-type-grid .choice-pill > span {
+    min-height: 3.18rem;
+    padding-block: 0.46rem;
+  }
+
+  #setupScreen .setup-option-list {
+    grid-template-columns: 1fr;
+  }
+
+  #setupScreen .choice-row-compact .choice-pill {
+    min-width: 76px;
   }
 }
 
@@ -3360,8 +3500,8 @@ input[type="number"]::-webkit-outer-spin-button {
 }
 
 .workout-type-grid .choice-pill > span {
-  min-height: 3.9rem;
-  padding: 0.74rem 0.86rem;
+  min-height: 3.35rem;
+  padding: 0.54rem 0.86rem;
 }
 
 .workout-type-grid .choice-pill-copy {
@@ -3369,8 +3509,9 @@ input[type="number"]::-webkit-outer-spin-button {
   grid-template-columns: 1fr;
   gap: 0.12rem;
   align-content: center;
-  justify-items: start;
-  text-align: left;
+  justify-items: center;
+  min-height: 2.2rem;
+  text-align: center;
 }
 
 .workout-type-grid .choice-pill-copy small {
@@ -4856,8 +4997,8 @@ body[data-color-mode="light"] .technique-correct-dot.is-filled {
 
 .practice-response-dot.incorrect,
 .practice-response-dot.skipped {
-  background: rgba(var(--accent-rgb), 0.86);
-  border-color: rgba(var(--accent-rgb), 0.9);
+  background: rgba(217, 74, 58, 0.9);
+  border-color: rgba(217, 74, 58, 0.96);
 }
 
 .combo-indicator.tier-smoke {
@@ -5560,6 +5701,13 @@ body[data-color-mode="light"] .carousel-actions-floating .carousel-button {
 body[data-color-mode="light"] .app-page-indicator {
   background: rgba(22, 33, 50, 0.94);
   border-color: rgba(22, 33, 50, 0.42);
+}
+
+@media (min-width: 901px) and (max-width: 1366px) and (orientation: landscape) {
+  .carousel-position-indicator,
+  .app-page-indicator {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 0.42rem);
+  }
 }
 
 body[data-color-mode="light"] .carousel-position-dot.is-active {
@@ -6771,7 +6919,7 @@ body[data-color-mode="light"] .tracker-side-panel .compact-stat:hover {
 }
 
 .recent-item.incorrect {
-  border-color: rgba(var(--accent-rgb), 0.22);
+  border-color: rgba(217, 74, 58, 0.28);
 }
 
 .recent-pill {
@@ -6789,7 +6937,7 @@ body[data-color-mode="light"] .tracker-side-panel .compact-stat:hover {
 }
 
 .recent-pill.incorrect {
-  background: rgba(var(--accent-rgb), 0.12);
+  background: rgba(217, 74, 58, 0.12);
   color: var(--danger);
 }
 
@@ -7072,6 +7220,18 @@ body[data-theme="aang"][data-color-mode="light"] .table-pill.steady {
   color: #9b6413;
 }
 
+body[data-theme="jungle"][data-color-mode="light"] .table-pill.steady {
+  background: rgba(100, 118, 34, 0.18);
+  color: #4d5c17;
+}
+
+body[data-theme="solo-leveling"][data-color-mode="light"] .eyebrow,
+body[data-theme="solo-leveling"][data-color-mode="light"] .home-card-kicker,
+body[data-theme="solo-leveling"][data-color-mode="light"] .section-kicker,
+body[data-theme="solo-leveling"][data-color-mode="light"] .carousel-inline-kicker {
+  color: #8e6be8;
+}
+
 .table-card.unseen {
   border-color: rgba(255, 255, 255, 0.08);
 }
@@ -7176,6 +7336,16 @@ body[data-theme="aang"][data-color-mode="light"] .table-pill.steady {
   border-radius: 0;
   border: 0;
   background: transparent;
+}
+
+.compact-about-card {
+  display: grid;
+  gap: 0.48rem;
+}
+
+.compact-about-card .ghost-button {
+  justify-self: start;
+  margin-top: 0.16rem;
 }
 
 .options-copy {
@@ -7381,8 +7551,8 @@ body[data-theme="aang"][data-color-mode="light"] .table-pill.steady {
 }
 
 .debug-lock-dialog::backdrop {
-  background: rgba(6, 6, 8, 0.72);
-  backdrop-filter: blur(7px);
+  background: rgba(6, 6, 8, 0.24);
+  backdrop-filter: none;
 }
 
 .debug-lock-card {
@@ -7694,14 +7864,15 @@ body[data-color-mode="light"] .debug-lock-card {
 
   .tracker-left-column {
     padding-right: 0;
-    padding-bottom: 0.7rem;
+    padding-bottom: 0.95rem;
     border-right: none;
     border-bottom: 1px solid var(--stroke);
   }
 
   .tracker-calendar-wrap {
     padding-left: 0;
-    padding-top: 0;
+    padding-top: 0.95rem;
+    border-top: 1px solid var(--stroke);
   }
 
   .focus-column,
@@ -7772,7 +7943,7 @@ body[data-color-mode="light"] .debug-lock-card {
   }
 }
 
-@media (max-width: 900px) {
+@media (max-width: 900px), (orientation: portrait) and (max-width: 1180px) {
   body {
     display: block;
     height: auto;
@@ -7789,6 +7960,12 @@ body[data-color-mode="light"] .debug-lock-card {
     height: auto;
     overflow: visible;
     display: block;
+  }
+
+  #resultsScreen.screen.is-active,
+  #progressScreen.screen.is-active {
+    display: block;
+    overflow-y: visible;
   }
 
   #resultsScreen .results-screen-panel,
@@ -7814,6 +7991,16 @@ body[data-color-mode="light"] .debug-lock-card {
   .app-shell {
     min-height: 100vh;
     overflow: visible;
+  }
+
+  .practice-panel {
+    height: auto;
+    overflow: visible;
+    padding-bottom: 0.8rem;
+  }
+
+  #practiceScreen .practice-keypad {
+    margin-bottom: 0.75rem;
   }
 
   .home-dashboard {
@@ -8242,6 +8429,60 @@ body[data-color-mode="light"] .debug-lock-card {
   .technique-action-row {
     flex-direction: column;
     align-items: flex-start;
+  }
+}
+
+@media (orientation: portrait) and (min-width: 901px) and (max-width: 1180px) {
+  .screen.is-active {
+    width: min(960px, 100%);
+  }
+
+  .page-shell {
+    padding-inline: clamp(0.8rem, 2vw, 1.25rem);
+  }
+
+  .focus-columns {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: stretch;
+  }
+
+  .focus-column {
+    padding-inline: 0.62rem;
+  }
+
+  .focus-column:first-child {
+    padding-left: 0;
+  }
+
+  .focus-column:last-child {
+    padding-right: 0;
+  }
+
+  .focus-column + .focus-column {
+    padding-top: 0;
+    padding-left: 0.9rem;
+    border-top: 0;
+    border-left: 1px solid var(--stroke);
+  }
+
+  .single-column-grid .focus-card,
+  .focus-card {
+    min-height: 76px;
+    padding: 0.58rem 0.62rem;
+  }
+
+  .focus-card .fact-name,
+  .focus-metric,
+  .focus-meta-row {
+    font-size: 0.86rem;
+  }
+
+  #practiceScreen .practice-panel.has-touch-keypad {
+    padding-bottom: calc(var(--app-dock-space) + 0.75rem);
+  }
+
+  #practiceScreen .practice-panel.has-touch-keypad .practice-keypad {
+    width: min(100%, 292px);
   }
 }
 

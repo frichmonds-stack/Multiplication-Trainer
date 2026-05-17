@@ -50,6 +50,20 @@ async function resolveDisplayVersion() {
   }
 }
 
+function openOptionsDialog() {
+  if (!elements.optionsDialog || elements.optionsDialog.open) {
+    return;
+  }
+  elements.optionsDialog.showModal();
+}
+
+function showFeedbackDialog() {
+  if (!elements.feedbackDialog || elements.feedbackDialog.open) {
+    return;
+  }
+  elements.feedbackDialog.showModal();
+}
+
 async function initialise() {
   if (elements.appVersion) {
     elements.appVersion.textContent = await resolveDisplayVersion();
@@ -153,17 +167,11 @@ async function initialise() {
       startSession(state.settings);
     }
   });
-  elements.optionsButton.addEventListener("click", () => {
-    elements.optionsDialog.showModal();
-  });
+  elements.optionsButton?.addEventListener("click", openOptionsDialog);
   elements.globalOptionsButtons.forEach((button) => {
-    button.addEventListener("click", () => {
-      elements.optionsDialog.showModal();
-    });
+    button.addEventListener("click", openOptionsDialog);
   });
-  elements.aboutButton?.addEventListener("click", () => {
-    elements.aboutDialog?.showModal();
-  });
+  elements.giveFeedbackButton?.addEventListener("click", showFeedbackDialog);
   elements.masteryHelpButton?.addEventListener("click", () => {
     elements.masteryHelpDialog?.showModal();
   });
@@ -171,8 +179,11 @@ async function initialise() {
   elements.optionsCloseButton.addEventListener("click", () => {
     elements.optionsDialog.close();
   });
-  elements.aboutCloseButton?.addEventListener("click", () => {
-    elements.aboutDialog?.close();
+  elements.feedbackCloseButton?.addEventListener("click", () => {
+    elements.feedbackDialog?.close();
+  });
+  elements.feedbackGotItButton?.addEventListener("click", () => {
+    elements.feedbackDialog?.close();
   });
   elements.masteryHelpCloseButton?.addEventListener("click", () => {
     elements.masteryHelpDialog?.close();
@@ -195,7 +206,7 @@ async function initialise() {
     }
   });
   registerBackdropClose(elements.optionsDialog);
-  registerBackdropClose(elements.aboutDialog);
+  registerBackdropClose(elements.feedbackDialog);
   registerBackdropClose(elements.masteryHelpDialog);
   registerBackdropClose(elements.endWorkoutDialog);
   registerBackdropClose(elements.exitTechniqueDialog);

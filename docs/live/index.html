@@ -43,23 +43,6 @@
                 <p class="hero-tagline" id="homeDailyThought">Grow your brain &amp; begin your reign.</p>
               </div>
             </div>
-            <div class="home-button-stack" aria-label="Home utilities">
-              <button class="utility-button home-about-button" type="button" id="aboutButton" aria-label="Open about">
-                i
-              </button>
-              <button
-                class="utility-button home-settings-button"
-                type="button"
-                id="optionsButton"
-                aria-label="Open settings"
-              >
-                <svg viewBox="0 0 24 24" aria-hidden="true" role="presentation">
-                  <path
-                    d="M9.6 2h4.8l.54 2.44c.53.18 1.03.39 1.5.65l2.33-.94 2.4 4.16-1.8 1.73c.05.32.08.64.08.96s-.03.64-.08.96l1.8 1.73-2.4 4.16-2.33-.94c-.47.26-.97.47-1.5.65L14.4 22H9.6l-.54-2.44a8.494 8.494 0 0 1-1.5-.65l-2.33.94-2.4-4.16 1.8-1.73A6.89 6.89 0 0 1 4.56 13c0-.32.03-.64.08-.96l-1.8-1.73 2.4-4.16 2.33.94c.47-.26.97-.47 1.5-.65ZM12 8.4A3.6 3.6 0 1 0 12 15.6 3.6 3.6 0 0 0 12 8.4Z"
-                  />
-                </svg>
-              </button>
-            </div>
           </div>
 
           <div class="home-dashboard-grid">
@@ -1266,6 +1249,13 @@
           <button class="app-dock-button" type="button" data-view-target="progress">
             <span>Progress</span>
           </button>
+          <button class="app-dock-utility-button" type="button" id="optionsButton" data-open-options aria-label="Open options">
+            <svg viewBox="0 0 24 24" aria-hidden="true" role="presentation">
+              <path
+                d="M9.6 2h4.8l.54 2.44c.53.18 1.03.39 1.5.65l2.33-.94 2.4 4.16-1.8 1.73c.05.32.08.64.08.96s-.03.64-.08.96l1.8 1.73-2.4 4.16-2.33-.94c-.47.26-.97.47-1.5.65L14.4 22H9.6l-.54-2.44a8.494 8.494 0 0 1-1.5-.65l-2.33.94-2.4-4.16 1.8-1.73A6.89 6.89 0 0 1 4.56 13c0-.32.03-.64.08-.96l-1.8-1.73 2.4-4.16 2.33.94c.47-.26.97-.47 1.5-.65ZM12 8.4A3.6 3.6 0 1 0 12 15.6 3.6 3.6 0 0 0 12 8.4Z"
+              />
+            </svg>
+          </button>
         </nav>
 
       </div>
@@ -1274,7 +1264,7 @@
         <div class="options-dialog-head">
           <div>
             <p class="section-kicker">Options</p>
-            <h2>Visual Settings</h2>
+            <h2>App Options</h2>
           </div>
           <button class="carousel-button" type="button" id="optionsCloseButton" aria-label="Close options">
             &#10005;
@@ -1282,10 +1272,6 @@
             </div>
 
         <div class="options-stack">
-          <button class="ghost-button options-reset-button" type="button" id="resetProgressButton">
-            Reset Saved Progress
-          </button>
-
           <section class="options-card">
             <p class="section-kicker">Appearance</p>
             <label class="field">
@@ -1315,47 +1301,40 @@
               </select>
             </label>
           </section>
+
+          <section class="options-card compact-about-card">
+            <p class="section-kicker">About</p>
+            <p class="options-copy"><strong id="appVersion">v0.12.0</strong></p>
+            <p class="options-copy">
+              A strength-themed arithmetic trainer for building clean, confident reps.
+            </p>
+            <button class="ghost-button" type="button" id="giveFeedbackButton">Give Feedback</button>
+          </section>
+
+          <section class="options-card">
+            <p class="section-kicker">Data</p>
+            <button class="ghost-button options-reset-button" type="button" id="resetProgressButton">
+              Reset Saved Progress
+            </button>
+          </section>
         </div>
       </dialog>
 
-      <dialog class="options-dialog" id="aboutDialog">
+      <dialog class="options-dialog confirm-dialog" id="feedbackDialog">
         <div class="options-dialog-head">
           <div>
-            <p class="section-kicker">About</p>
-            <h2>App Notes</h2>
+            <p class="section-kicker">Feedback</p>
+            <h2>Give Feedback</h2>
           </div>
-          <button class="carousel-button" type="button" id="aboutCloseButton" aria-label="Close about">
+          <button class="carousel-button" type="button" id="feedbackCloseButton" aria-label="Close feedback">
             &#10005;
           </button>
-            </div>
-
+        </div>
         <div class="options-stack">
-          <section class="options-card">
-            <p class="section-kicker">Version</p>
-            <p class="options-copy"><strong id="appVersion">v0.12.0</strong></p>
-          </section>
-
-          <section class="options-card">
-            <p class="section-kicker">Feedback</p>
-            <p class="options-copy">Put up your hand and tell Mr Foo.</p>
-          </section>
-
-          <section class="options-card">
-            <p class="section-kicker">Logs</p>
-            <ul class="options-list">
-              <li>Fixed Make 10 focused workout setup.</li>
-              <li>Fixed division tracker isolation workouts.</li>
-              <li>Improved runtime version resolution and release checks.</li>
-              <li>Centralized operation display symbols.</li>
-            </ul>
-          </section>
-
-          <section class="options-card">
-            <p class="section-kicker">Roadmap</p>
-            <p class="options-copy">
-              Subtraction and division modes, richer lesson interactivity, stronger rewards clarity, and milestone celebrations are next on the roadmap.
-            </p>
-          </section>
+          <p class="options-copy">Put up your hand and tell Mr Foo.</p>
+          <div class="confirm-actions">
+            <button class="primary-button" type="button" id="feedbackGotItButton">Got it</button>
+          </div>
         </div>
       </dialog>
 

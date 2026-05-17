@@ -15,7 +15,7 @@ const KEYPAD_PREFERENCE_STORAGE_KEY = `${PRODUCT_STORAGE_PREFIX}-keypad-preferen
 const LEGACY_KEYPAD_PREFERENCE_STORAGE_KEYS = [
   `${LEGACY_PRODUCT_STORAGE_PREFIX}-keypad-preference-v1`,
 ];
-const APP_VERSION = "v0.20.4";
+const APP_VERSION = "v0.20.5";
 const FACTOR_LIMIT = 12;
 const TABLE_FACTORS = Array.from({ length: FACTOR_LIMIT }, (_, index) => index + 1);
 const QUESTION_PRESETS = [10, 20, 30];
@@ -353,12 +353,13 @@ const elements = {
   viewButtons: Array.from(document.querySelectorAll("[data-view-target]")),
   globalOptionsButtons: Array.from(document.querySelectorAll("[data-open-options]")),
   optionsButton: document.getElementById("optionsButton"),
-  aboutButton: document.getElementById("aboutButton"),
   optionsDialog: document.getElementById("optionsDialog"),
-  aboutDialog: document.getElementById("aboutDialog"),
+  feedbackDialog: document.getElementById("feedbackDialog"),
   masteryHelpDialog: document.getElementById("masteryHelpDialog"),
   optionsCloseButton: document.getElementById("optionsCloseButton"),
-  aboutCloseButton: document.getElementById("aboutCloseButton"),
+  giveFeedbackButton: document.getElementById("giveFeedbackButton"),
+  feedbackCloseButton: document.getElementById("feedbackCloseButton"),
+  feedbackGotItButton: document.getElementById("feedbackGotItButton"),
   masteryHelpButton: document.getElementById("masteryHelpButton"),
   masteryHelpCloseButton: document.getElementById("masteryHelpCloseButton"),
   appVersion: document.getElementById("appVersion"),

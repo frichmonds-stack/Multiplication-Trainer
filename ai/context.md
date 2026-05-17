@@ -27,6 +27,8 @@
 - Prefer small, safe changes over broad rewrites.
 - Preserve the app's current visual direction unless a redesign is requested.
 - Use `PROJECT_NOTES.md` and `ai/` files together: notes for broader memory, `ai/` for session continuity.
+- After session initialization, default to discussion/planning mode. Do not change repo state until the user explicitly authorizes local implementation, `Normal Close`, or `Publish Close`.
+- Treat `Normal Close` as local checks/docs/AI continuity only. Treat `Publish Close` as release-style closeout with docs publishing, checks, commit/push, and live verification when deployment timing allows.
 
 ## Documentation Ownership
 

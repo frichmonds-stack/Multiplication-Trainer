@@ -12,4 +12,4 @@ Use this at the start of a future AI coding session:
    - intended change,
    - checks likely to run.
 6. Treat `AGENTS.md`, `ai/`, and `docs/decisions/` as Codex-managed continuity files.
-7. Only then begin code changes.
+7. After initialization, default to discussion/planning mode. Inspect files and propose plans as needed, but do not change repo state until the user explicitly authorizes local implementation, `Normal Close`, or `Publish Close`.

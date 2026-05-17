@@ -6,7 +6,7 @@ Last updated: 2026-05-17
 
 - Project/product naming is standardized as `Math Muscle Trainer`.
 - Root app is at `v0.20.4` locally.
-- Current live docs build is `docs/live`, marked latest in `docs/index.html` as `v0.20.4 debug and UI polish`.
+- Current live docs build is `docs/live`, marked latest in `docs/index.html` as `v0.20.5 app shell polish`.
 - Latest preserved numbered snapshot is `docs/v17` for `v0.20.0`.
 - Current publish-close batch pushed the lesson expansion, `docs/v10`, lesson content workflow, docs, ADRs, and AI continuity updates to GitHub.
 - `AGENTS.md`, `ai/`, and `docs/decisions/` are now explicitly Codex-managed continuity files.
@@ -100,6 +100,8 @@ Last updated: 2026-05-17
 - Debug mode is a client-side classroom gate, not real security. It adds a visible debug badge/panel, screen jumps, canned learner personas, quick debug workouts, appearance controls, `Exit Debug`, the temporary classroom feedback message (`Put up your hand and tell Mr Foo`), and local progress clearing.
 - ADR-0009 records the debug-mode decision and security boundary.
 - `v0.20.4` UI polish simplified the leave-workout CTA to `End Workout`, changed the Home About button from `?` to `i`, added the classroom feedback note to About, added a Home Weekly Reps goal line, polished Workout setup control alignment/density, added subtle Practice HUD grouping in light mode, improved Learn light-mode contrast, added stronger Learn feedback lockout/reveal states, and fixed Aang light-mode `Strong` Fact Tracker pill contrast.
+- Post-initialization collaboration now defaults to discussion/planning mode until the user explicitly authorizes local implementation, `Normal Close`, or `Publish Close`. `Normal Close` is local checks/docs/AI continuity only; `Publish Close` is release-style publish/check/commit/push/live verification when deployment timing allows.
+- `v0.20.5` app-shell polish moved Options into a dock gear, removed floating Home utility buttons, folded About into Options, added a temporary Give Feedback dialog, set Home Weekly Reps to a two-thirds daily-goal line, tightened setup difficulty/duration/workout-type controls, improved iPad landscape/portrait QA CSS, strengthened light-mode dark-neutral outlines, fixed Jungle light-mode status badge contrast, preserved Solo Leveling purple in non-semantic accents, reduced debug unlock dimming, and added historical debug persona data for calendar QA.
 
 ## Product Direction
 
@@ -209,6 +211,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\check-repo.ps1
   - `https://frichmonds-stack.github.io/Math-Muscle-Trainer/live/` returned HTTP 200 and includes `app-debug.js`.
   - `https://frichmonds-stack.github.io/Math-Muscle-Trainer/live/js/app-core.js` served `APP_VERSION = "v0.20.4"`.
   - `https://frichmonds-stack.github.io/Math-Muscle-Trainer/live/js/app-debug.js` returned HTTP 200 with debug unlock markers present.
+- 2026-05-17 `v0.20.5` app-shell polish ran `node --check` for all root JS modules; syntax checks passed.
+- 2026-05-17 `v0.20.5` app-shell polish ran a CSS brace sanity check; braces are balanced.
+- 2026-05-17 `v0.20.5` app-shell polish published `docs/live` and ran `scripts/check-repo.ps1`; result: `All repo checks passed.`
 
 ## Working Tree Note
 

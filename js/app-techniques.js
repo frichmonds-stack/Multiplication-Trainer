@@ -2632,9 +2632,8 @@ function showView(view) {
     button.disabled = false;
   });
 
-  elements.optionsButton.disabled = !isHomeView;
-  if (elements.aboutButton) {
-    elements.aboutButton.disabled = !isHomeView;
+  if (elements.optionsButton) {
+    elements.optionsButton.disabled = false;
   }
 
   if (typeof renderAppPageIndicator === "function") {
@@ -2664,6 +2663,11 @@ function closeOpenDialog() {
 
   if (elements.optionsDialog.open) {
     elements.optionsDialog.close();
+    return true;
+  }
+
+  if (elements.feedbackDialog?.open) {
+    elements.feedbackDialog.close();
     return true;
   }
 

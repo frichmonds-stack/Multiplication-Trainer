@@ -2504,15 +2504,14 @@ function getLastSevenSummary() {
 }
 
 function buildHomeRepsGraphMarkup() {
-  const dailyGoal = 120;
+  const dailyGoal = DAILY_REP_GOAL;
+  const goalHeight = 66;
   const days = getLastSevenDailyRecords();
   const values = days.map((day) => day.record.attempted || 0);
-  const maxValue = Math.max(...values, dailyGoal, 1);
-  const goalHeight = Math.max(6, Math.min(100, Math.round((dailyGoal / maxValue) * 100)));
   const bars = values.map((value, index) => {
     const label = days[index].label;
-    const ratio = value / maxValue;
-    const height = value > 0 ? Math.max(5, Math.round(Math.pow(ratio, 1.65) * 100)) : 3;
+    const goalRatio = dailyGoal > 0 ? value / dailyGoal : 0;
+    const height = value > 0 ? Math.max(5, Math.min(100, Math.round(goalRatio * goalHeight))) : 3;
     return `<span class="home-reps-day" style="--rep-height: ${height}%"><strong>${value}</strong><span>${label}</span></span>`;
   }).join("");
 
