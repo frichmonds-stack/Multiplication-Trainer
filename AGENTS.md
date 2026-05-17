@@ -14,6 +14,7 @@ Project guidance for Codex and other AI coding sessions in this repo.
   - `js/app-progress.js` - progress analytics, trackers, records, carousel behavior.
   - `js/app-techniques.js` - Learn / Techniques lessons.
   - `js/app-init.js` - startup rendering and event binding.
+  - `js/app-debug.js` - opt-in teacher/developer debug mode, loaded only through `?debug=1` / `#debug` behavior.
 - The rolling live GitHub Pages build lives under `docs/live`; preserved static snapshots live under `docs/v*`; `docs/index.html` marks the current live build and lists preserved snapshots.
 - Project memory lives in `PROJECT_NOTES.md` and the `ai/` continuity files.
 - Current product name is `Math Muscle Trainer`; avoid reintroducing prior product branding except when discussing external/manual rename history.

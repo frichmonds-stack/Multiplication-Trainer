@@ -2504,9 +2504,11 @@ function getLastSevenSummary() {
 }
 
 function buildHomeRepsGraphMarkup() {
+  const dailyGoal = 120;
   const days = getLastSevenDailyRecords();
   const values = days.map((day) => day.record.attempted || 0);
-  const maxValue = Math.max(...values, 1);
+  const maxValue = Math.max(...values, dailyGoal, 1);
+  const goalHeight = Math.max(6, Math.min(100, Math.round((dailyGoal / maxValue) * 100)));
   const bars = values.map((value, index) => {
     const label = days[index].label;
     const ratio = value / maxValue;
@@ -2516,7 +2518,10 @@ function buildHomeRepsGraphMarkup() {
 
   return `
     <span class="home-reps-scale">Last 7 days</span>
-    <span class="home-reps-days" aria-hidden="true">${bars}</span>
+    <span class="home-reps-days" style="--rep-goal-height: ${goalHeight}%" aria-hidden="true">
+      <span class="home-reps-goal-line"><span>Goal</span></span>
+      ${bars}
+    </span>
   `;
 }
 

@@ -40,6 +40,7 @@ This file is the project's broad working memory. Use it for durable context, des
 - Improve the first-time learner flow so new users can start usefully without understanding every app area.
 - Continue UI polish around the app-shell contract before starting another large redesign.
 - Design and refine a stronger initial Home / Today screen before treating Train-first startup as final.
+- Likely future rollout model is subscription payment. Treat this as product-direction memory, not an implemented billing commitment yet; any account, payment, feedback, analytics, or student-data features should get a privacy/security pass before public release.
 
 ## Home Screen And Training Dashboard Ideas
 
@@ -78,6 +79,19 @@ These ideas combine the GitHub-saved Home research notes from commit `4ef3917` w
 - 2026-05-15 follow-up review: Home should avoid adding filler content to solve empty lower space. Prefer better vertical rhythm: more header breathing room, a centered dashboard stack above the dock, rolling 7-day streak, tighter Weekly Reps columns, and a per-day Weekly Accuracy visual.
 - 2026-05-16 polish direction: shared Progress selectors need enough built-in arrow space so labels stay centered inside the pill across Workout Log, Mastery, Fact Tracker, Focus, Coach, and Records.
 - 2026-05-16 Learn direction: any Learn stage with a correct-rep requirement should show an in-question cumulative correct tick counter. Wrong answers do not fill or reset the counter; progression should follow cumulative correct reps when the counter is the gate.
+- 2026-05-17 debug direction: teacher/developer debug mode is opt-in by double-clicking the Home arm mark or through `?debug=1` / `#debug`, with the classroom password `N0v4r3`. This is a client-side classroom gate, not real security. Debug tools can seed personas, jump screens, start quick test workouts, show the temporary classroom feedback message, and clear local progress.
+- 2026-05-17 design direction: add intentional zero-state displays for empty/new-user views, especially Home, Progress, Operation Mastery, Fact Tracker, Records, and Learn completion/progress surfaces.
+- 2026-05-17 data/content direction: negative-number data needs a dedicated decision pass before expanding it further, especially fact-key formats, storage normalization, answer telemetry, progress buckets, mastery scoring, reports, migrations, and whether negative integer addition/subtraction belongs in lessons, advanced practice, or a later extension.
+- 2026-05-17 architecture direction: explicitly explore long-term app data shape/structure for native-readiness, including progress, lessons, telemetry, debug personas/states, accounts, sync, reports, migrations, and versioning.
+- 2026-05-17 Workout setup polish notes: operation buttons may need label-centered alignment rather than centering the sign+label group; workout type buttons should have centered text and less oversized button proportions; Workout Options toggles should be compact, same-height as nearby controls, and likely sit side-by-side instead of full-width rows.
+- 2026-05-17 responsive direction: primary target remains iPad/tablet classroom use, especially landscape. Phones should be usable but not optimized as the main product target. Use responsive density to avoid unnecessary scroll on large enough app-frame screens, while allowing comfortable scroll-first layouts on small portrait/mobile screens.
+- 2026-05-17 release direction: learning design and visual design work should be prioritized because the Learning Experience System, Learning Interaction System, Learning Feedback, zero states, and theme/visual system directly affect pedagogy, usability, classroom experience, and eventual product positioning.
+- 2026-05-17 `v0.20.4` implementation: first-pass debug mode and UI polish shipped locally before publish close, including debug appearance controls/Exit Debug, setup control alignment/density, Practice HUD light-mode grouping, Learn feedback reveal/lockout, Home Weekly Reps goal line, About `i`/feedback note, and Aang Fact Tracker status contrast.
+- 2026-05-17 learning system direction: use `Learning Interaction System` as the umbrella term for reusable prompt, input, scaffold, feedback, answer reveal, anti-spam lockout, retry/advance timing, and progress-gate patterns across Workout Practice and Learn. `Learning Feedback` is the correct/incorrect/reveal/timing sub-system.
+- 2026-05-17 learning theory direction: cross-reference learning systems with modern learning theory and instructional design, including Cognitive Load Theory, worked examples, retrieval practice, spaced review, interleaving, feedback timing, mastery learning, desirable difficulties, multimedia learning, and Universal Design for Learning.
+- 2026-05-17 marketing/product direction: the minimalist design should be framed as a cognitive-load strategy, not only visual taste. Minimalism should reduce extraneous load so attention stays on arithmetic; visuals and motion should clarify the task rather than decorate it.
+- 2026-05-17 future Progress idea: explore a Progress-wide side rail/drawer only as a consistent system across all Progress views, not a one-off Records fix. It could later support journey/mastery progression and move local controls out of busy headers.
+- 2026-05-17 future calendar idea: explore operation-mix calendar visuals where operation colors, intensity, and possibly a special all-four-operations state communicate daily training balance. This is not part of the `v0.20.4` patch.
 
 ## Near-Term Roadmap Shape
 
@@ -105,6 +119,8 @@ These ideas combine the GitHub-saved Home research notes from commit `4ef3917` w
 - Teacher-authored lesson wording is the source of truth; Codex should not invent pedagogy unless asked.
 - Routine "make it live" requests should update `docs/live` with a patch version. Create a numbered `docs/v*` snapshot only for significant milestones or when explicitly requested.
 - Future snapshot cleanup should prune low-value old `docs/v*` folders only after confirming which shared URLs or milestones still matter.
+- A subscription payment model is the likely future commercial rollout direction, pending later pricing, platform, privacy, security, and account-model decisions.
+- Debug mode is teacher/developer tooling only. Its client-side password gate is not real security and must not protect secrets, accounts, billing, or shared data.
 
 ## Home Screen And Training Dashboard Ideas
 

@@ -38,6 +38,7 @@ A strength-themed arithmetic practice webapp built with plain HTML, CSS, and Jav
 - Keeps a rolling recent-progress window for dated history data to keep storage lean
 - Saves long-term progress in the browser with localStorage
 - Supports independent palette and dark/light mode appearance controls with rotating strength-building banner messages
+- Includes an opt-in teacher/developer debug mode for local polish and classroom testing
 
 ## Run it
 
@@ -50,6 +51,16 @@ python -m http.server 8000
 ```
 
 Then open `http://localhost:8000`.
+
+## Teacher debug mode
+
+Double-click the arm mark on the Home screen, or open the app with `?debug=1`, to use local teacher/developer tools:
+
+```text
+index.html?debug=1
+```
+
+The password is `N0v4r3`. This is a client-side classroom gate, not real security. Debug tools can jump between screens, load canned learner personas, start quick test workouts, switch light/dark mode and color palettes, show the classroom feedback message, exit debug mode, and clear progress saved in the current browser.
 
 ## Check it
 
@@ -96,6 +107,7 @@ Use `docs/live/` for normal "make it live" updates. Use `docs/v*` snapshots only
 - `js/app-practice.js` contains question generation, session flow, and answer handling
 - `js/app-progress.js` contains results/progress trackers, filters, and analytics rendering
 - `js/app-init.js` contains startup rendering and event wiring
+- `js/app-debug.js` contains opt-in teacher/developer debug tools
 
 ## Versioning
 

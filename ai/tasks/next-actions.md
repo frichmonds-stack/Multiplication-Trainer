@@ -1,32 +1,57 @@
 # Next Actions
 
-Last updated: 2026-05-16
+Last updated: 2026-05-17
 
 Use this file for concrete next work. Broader undecided questions belong in `ai/open-threads.md`; speculative ideas belong in `PROJECT_NOTES.md`.
+
+## Priority Order
+
+1. Finish near-term manual QA for the current `v0.20.3` live polish so the active classroom build stays trustworthy.
+2. Create a Lesson Experience System design brief before major lesson expansion: reusable patterns for explanation blocks, worked examples, visual/diagram blocks, hints, guided practice, final practice, completion, locked stages, media controls, and lesson navigation.
+3. Prioritize the Learning Experience System, Learning Interaction System, Learning Feedback, zero states, and theme/visual system work because these affect pedagogy, usability, classroom experience, and eventual product positioning.
+4. Extend debug mode / developer review tools after the first slice: state saving/loading, import/export for reproducible bugs, lesson-lock bypass when normal locks return, richer persona controls, and direct lesson-stage jumps.
+5. Continue teacher-authored lesson content and addition progression planning using the Lesson Experience System as the visual/structural guide.
+6. Plan deeper Operation Mastery communication and Progress IA after the lesson direction is clearer.
 
 ## Best Next Batch
 
 1. Manually review the published `v0.20.2` polish batch on iPad landscape, iPad portrait, narrow resized desktop windows, mobile widths, and light mode: Home header spacing, centered dashboard rhythm, rolling weekly metrics, Practice answer/status layout, Progress selectors, Operation Mastery help, Learn correct counters, Workout Tracker calendar goal colors, and setup operation choices.
 2. Manually retest Practice with the built-in keypad on keyboardless student devices, especially iPad/tablet landscape and portrait, to confirm the larger answer input, answer icon, and in-card dot rail do not crowd the keypad layout.
-3. Manually test hidden adaptive Home quick starts with new-user/no-data state and with existing progress data for each operation.
-4. Decide whether the 50 reps/day goal should stay fixed, become adaptive, or become a learner-facing training preference, and how it should be explained outside the calendar header.
-5. Plan the deeper Operation Mastery communication/IA pass, including whether Fact Tracker becomes the detail/evidence layer inside Operation Mastery.
-6. Confirm the Daily Routine checklist should stay as four separate 5-correct operation routines until multi-operation workouts exist.
-7. Manually test Learn correct counters across Make 10, an addition final practice, multiplication assisted reps, and multiplication solo reps; confirm wrong answers do not fill ticks and correct reps advance as expected.
-8. Move `Exit Lesson` out of the global top-right utility rail into the lesson-local header/content area.
-9. Do a dedicated stale Home CSS prune for old launcher-era selectors (`home-launcher`, `home-menu-row`, `daily-widget`, and related legacy classes) after checking they are not used by any archived/current root UI paths.
-10. Audit text-heavy surfaces and add consistent math-strength/status visuals where they improve scanning, touchability, or app-like interaction without stuffing icons into every button.
+3. Draft the Lesson Experience System design brief so future lessons have consistent structure, visual roles, media placement, motion rules, and stage/progression behavior instead of one-off screen design.
+4. Manually review the `v0.20.4` debug/UI polish on iPad landscape, iPad portrait, light mode, and Aang theme: debug unlock/exit/appearance controls, Workout setup density, Practice HUD grouping, Learn feedback delay/reveal, Home Weekly Reps goal line/alignment, About `i`, and Fact Tracker status contrast.
+5. Manually test hidden adaptive Home quick starts with new-user/no-data state and with existing progress data for each operation.
+6. Decide whether the 50 reps/day goal should stay fixed, become adaptive, or become a learner-facing training preference, and how it should be explained outside the calendar header.
+7. Plan the deeper Operation Mastery communication/IA pass, including whether Fact Tracker becomes the detail/evidence layer inside Operation Mastery.
+8. Confirm the Daily Routine checklist should stay as four separate 5-correct operation routines until multi-operation workouts exist.
+9. Manually test Learn correct counters and the new feedback delay/reveal across Make 10, an addition final practice, multiplication assisted reps, and multiplication solo reps.
+10. Move `Exit Lesson` out of the global top-right utility rail into the lesson-local header/content area.
+11. Do a dedicated stale Home CSS prune for old launcher-era selectors (`home-launcher`, `home-menu-row`, `daily-widget`, and related legacy classes) after checking they are not used by any archived/current root UI paths.
+12. Add intentional zero-state displays for new-user/empty-data surfaces so Home, Progress, Mastery, Fact Tracker, Records, and Learn completion states do not feel blank or broken before evidence exists.
+13. Audit text-heavy surfaces and add consistent math-strength/status visuals where they improve scanning, touchability, or app-like interaction without stuffing icons into every button.
+
+## Design Systems
+
+1. Lesson Experience System: define reusable lesson blocks and interaction rules for explanations, examples, diagrams/images, hints, guided practice, final practice, completion, locked/unlocked stages, media controls, and learner navigation.
+2. Debug/review mode follow-up: first pass exists with password-gated screen jumps, personas, quick workouts, local clearing, and classroom feedback messaging. Next define state save/load, import/export, richer personas, lesson-lock bypass, and direct lesson-stage jumps.
+3. Progress/Mastery System: define reusable patterns for rank cards, improvement signals, next-focus states, fact evidence, calendar meaning, and long-term growth displays.
+4. Feedback/Motion System: define when to use animation or transitions for correct/incorrect answers, lesson progress, stage completion, streak continuation, mastery changes, and empty states.
+5. Home/Training System: define daily routine, quick workout, continue-learning, streak/momentum, and training snapshot roles so Home stays useful without becoming cluttered.
+6. Zero-State System: define reusable empty/new-user states for no progress, no workouts, no mastery evidence, no fact data, no records, and lessons not started.
+7. Theme Token / Color Role System: review palettes by semantic roles so each theme keeps readable contrast for surfaces, status chips, progress bars, selected states, and small text.
+8. Learning Interaction System: define the shared learner task loop for prompts, inputs, scaffolds, feedback, answer reveal, anti-spam lockout, retry/advance timing, and progress gates across Workout Practice and Learn.
 
 ## Lesson Content
 
 1. Create lessons: expand the Learn / Techniques content backlog into teacher-authored lesson specs before adding more app systems around it.
 2. Have the teacher fill `learn/specs/make-10.md` with the intended Make 10 pedagogy.
 3. Continue writing or refining addition lesson specs before expanding homepage/dashboard systems.
-4. Convert reviewed lesson specs into structured lesson JSON without changing teacher-authored wording.
-5. Decide when to migrate current hardcoded lesson text into structured lesson data.
-6. Design the Addition lesson progression/pathway system.
-7. Decide whether addition focused-workout handoffs need lesson-specific question pools.
-8. Decide whether multiplication lessons should eventually use the same atomic lesson-plan model as addition lessons.
+4. Decide how negative-number data should be represented across the app, including fact-key formats, storage normalization, answer telemetry, progress buckets, mastery scoring, reports, and migrations.
+5. Plan whether negative integer addition/subtraction should be a dedicated lesson pathway, an advanced practice mode, or a later extension after positive-number fluency.
+6. Convert reviewed lesson specs into structured lesson JSON without changing teacher-authored wording.
+7. Decide when to migrate current hardcoded lesson text into structured lesson data.
+8. Design the Addition lesson progression/pathway system.
+9. Decide whether addition focused-workout handoffs need lesson-specific question pools.
+10. Decide whether multiplication lessons should eventually use the same atomic lesson-plan model as addition lessons.
 
 ## Manual QA
 
@@ -45,10 +70,11 @@ Use this file for concrete next work. Broader undecided questions belong in `ai/
 
 1. Add a tiny browser smoke-test workflow for Home -> Setup -> Practice and Learn -> lesson -> focused workout.
 2. Plan snapshot pruning now that `docs/live` is the rolling current build. Keep meaningful milestones such as `v17`, lesson expansion, and major UI direction snapshots; remove low-value iterative snapshots only after confirming no shared links are needed.
-3. Review any remaining GitHub UI metadata and decide whether to add the live Pages URL to `README.md`.
-4. Review the AI continuity infrastructure for duplication, startup friction, and whether each file still has a clear job.
-5. Decide and document a versioning policy for pre-`1.0.0` releases, including when to bump minor versus patch.
-6. Audit current UI controls against `docs/design/component-system.md` before the first CSS alignment batch.
-7. Keep using `scripts/check-repo.ps1` before publishing.
-8. For routine live updates, bump patch version, update `CHANGELOG.md`, run `scripts/publish-live.ps1`, run checks, commit/push, then verify GitHub Pages `/live/` before claiming the site is live.
-9. For preserved milestone snapshots, use `scripts/publish-snapshot.ps1` only when a numbered archive is explicitly wanted.
+3. Explore the long-term app data shape/structure explicitly for native-readiness: progress, lessons, telemetry, personas/debug states, accounts, sync, reports, migrations, and versioning.
+4. Review any remaining GitHub UI metadata and decide whether to add the live Pages URL to `README.md`.
+5. Review the AI continuity infrastructure for duplication, startup friction, and whether each file still has a clear job.
+6. Decide and document a versioning policy for pre-`1.0.0` releases, including when to bump minor versus patch.
+7. Audit current UI controls against `docs/design/component-system.md` before the first CSS alignment batch.
+8. Keep using `scripts/check-repo.ps1` before publishing.
+9. For routine live updates, bump patch version, update `CHANGELOG.md`, run `scripts/publish-live.ps1`, run checks, commit/push, then verify GitHub Pages `/live/` before claiming the site is live.
+10. For preserved milestone snapshots, use `scripts/publish-snapshot.ps1` only when a numbered archive is explicitly wanted.

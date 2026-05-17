@@ -230,3 +230,28 @@ This log records durable session milestones and active handoff notes. Keep detai
 - Ran `node --check` on all root JS modules; syntax checks passed.
 - Ran a CSS brace sanity check; braces are balanced.
 - Ran `scripts/check-repo.ps1`; result: `All repo checks passed.`
+
+## 2026-05-17 - Backlog Prioritisation Discussion
+
+- Discussed debug mode as developer-only state/persona tooling for faster polish, including state save/load, screen jumps, lesson-lock bypass, and future export/import use for reproducing issues.
+- Clarified that unlocked lesson stage pills were a review convenience and should eventually move behind debug mode when normal learner lesson locks are restored.
+- Added a priority order and `Design Systems` backlog section to `ai/tasks/next-actions.md`, with the Lesson Experience System as the next high-value design brief before major lesson expansion.
+- Added likely future subscription rollout direction to project memory and opened commercialisation/security questions for later planning.
+- Implemented first-pass teacher/developer debug mode in `js/app-debug.js`: activate by double-clicking the Home arm mark or opening with `?debug=1` / `#debug`, unlock with `N0v4r3`, then use screen jumps, canned personas, quick workouts, local progress clearing, and the classroom feedback message.
+- Added ADR-0009 for debug mode and updated ADR-0004 to clarify unlocked lesson sections are currently a review convenience pending future learner-lock decisions.
+- Ran `node --check` for all root JS modules; syntax checks passed.
+- Ran a CSS brace sanity check; braces are balanced.
+- Ran `scripts/check-repo.ps1`; expected live-build drift failures reported for `index.html` and `styles.css` because `docs/live` was not published.
+- Ran headless Chrome `file://` smoke checks: normal `index.html` did not render the debug unlock dialog, while `index.html?debug=1` did.
+- Added zero-state display work to the backlog and project notes for empty/new-user Home, Progress, Mastery, Fact Tracker, Records, and Learn surfaces.
+- Simplified the leave-workout confirmation CTA to always read `End Workout`; the dialog body still names the destination when navigation triggered the confirmation.
+- Clarified the negative-number handling note as a data-modeling pass for fact keys, storage normalization, telemetry, progress buckets, mastery, reports, and migrations; kept negative integer addition/subtraction as a separate lesson/practice pathway question.
+- Added an explicit long-term data-shape/native-readiness note covering progress, lessons, telemetry, debug states, accounts, sync, reports, migrations, and versioning.
+- Logged UI polish notes without implementation per user request: setup operation button label alignment, workout type button centering/proportions, and compact side-by-side Workout Options toggles.
+- Added responsive design direction to the batch: iPad/tablet landscape is primary, phones are usable-but-not-optimized, and setup/layout polish should use responsive density on app-frame screens while allowing comfortable scrolling on small screens.
+- Executed the `v0.20.4` debug/UI polish batch: debug appearance controls and Exit Debug, setup control alignment/density, Practice HUD light-mode grouping, Learn light-mode contrast and feedback reveal/lockout, Home Weekly Reps goal line/alignment, About `i` with classroom feedback note, and Aang Fact Tracker status contrast.
+- Bumped runtime version to `v0.20.4`, moved release notes into the `0.20.4` changelog heading, and published `docs/live` with label `v0.20.4 debug and UI polish`.
+- Ran `node --check` for all root JS modules; syntax checks passed.
+- Ran a CSS brace sanity check; braces are balanced.
+- Ran headless Chrome `file://` smoke checks: normal `index.html` did not render the debug unlock dialog, while `index.html?debug=1` did.
+- Updated publish/check scripts to include `js/app-debug.js`, republished `docs/live`, and ran `scripts/check-repo.ps1`; result: `All repo checks passed.`

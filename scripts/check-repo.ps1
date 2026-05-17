@@ -134,7 +134,8 @@ try {
         "js/app-init.js",
         "js/app-practice.js",
         "js/app-progress.js",
-        "js/app-techniques.js"
+        "js/app-techniques.js",
+        "js/app-debug.js"
       )
       foreach ($relativePath in $rootFiles) {
         $rootFile = Join-Path $RepoRoot $relativePath

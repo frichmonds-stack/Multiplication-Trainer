@@ -1,12 +1,12 @@
 # Current State
 
-Last updated: 2026-05-16
+Last updated: 2026-05-17
 
 ## Implementation
 
 - Project/product naming is standardized as `Math Muscle Trainer`.
-- Root app is at `v0.20.3` on `main`.
-- Current live docs build is `docs/live`, marked latest in `docs/index.html` as `v0.20.3 Home QA polish`.
+- Root app is at `v0.20.4` locally.
+- Current live docs build is `docs/live`, marked latest in `docs/index.html` as `v0.20.4 debug and UI polish`.
 - Latest preserved numbered snapshot is `docs/v17` for `v0.20.0`.
 - Current publish-close batch pushed the lesson expansion, `docs/v10`, lesson content workflow, docs, ADRs, and AI continuity updates to GitHub.
 - `AGENTS.md`, `ai/`, and `docs/decisions/` are now explicitly Codex-managed continuity files.
@@ -96,6 +96,10 @@ Last updated: 2026-05-16
 - Home has a compact-height desktop spacing pass: utility buttons sit higher, the dashboard stack uses less vertical gap, and Weekly Reps labels sit above tall bars with more separation from `Last 7 days`.
 - `v0.20.3` is a rolling live Home QA polish release: it keeps `Workout Streak` as the consecutive-day headline, preserves the 7-day strip as recent activity context, tightens vertical Home spacing, and includes the `Create lessons` backlog item in AI continuity.
 - `v0.20.3` was pushed to `main` and verified on GitHub Pages after deployment caught up.
+- Root app now has an opt-in teacher/developer debug mode in `js/app-debug.js`, activated by double-clicking the Home arm mark or opening with `?debug=1` / `#debug`, then unlocked with the classroom password `N0v4r3`.
+- Debug mode is a client-side classroom gate, not real security. It adds a visible debug badge/panel, screen jumps, canned learner personas, quick debug workouts, appearance controls, `Exit Debug`, the temporary classroom feedback message (`Put up your hand and tell Mr Foo`), and local progress clearing.
+- ADR-0009 records the debug-mode decision and security boundary.
+- `v0.20.4` UI polish simplified the leave-workout CTA to `End Workout`, changed the Home About button from `?` to `i`, added the classroom feedback note to About, added a Home Weekly Reps goal line, polished Workout setup control alignment/density, added subtle Practice HUD grouping in light mode, improved Learn light-mode contrast, added stronger Learn feedback lockout/reveal states, and fixed Aang light-mode `Strong` Fact Tracker pill contrast.
 
 ## Product Direction
 
@@ -104,6 +108,8 @@ Last updated: 2026-05-16
 - Mastery indicators should motivate improvement through meaningful metrics such as speed, precision, consistency, coverage, and lesson progress.
 - A stronger new-user flow is high priority so first-time learners are guided into a useful starting path instead of needing to understand the full app immediately.
 - Product philosophy is iPad-first and eventual Apple App Store oriented.
+- Likely future rollout model is subscription payment, pending later decisions about pricing, account model, platform, privacy, and security.
+- Debug mode must stay free of secrets and server/admin assumptions; a real security/privacy pass is needed before accounts, payments, cloud sync, analytics, networked feedback, student identifiers, or public support exports.
 - Gamification is not a goal by itself. Regular usage should come from useful skill-building, good learning habits, visible growth, and mastery rather than attention-hacking loops.
 - The app should be usable from primary students through adults; the theme should stay universal around mental/arithmetic strength.
 - Branding can remain strength-oriented, but mastery should not feel age-locked, overly childish, or narrowly targeted.
@@ -190,6 +196,14 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\check-repo.ps1
   - `https://frichmonds-stack.github.io/Math-Muscle-Trainer/live/` returned HTTP 200 and included `Workout Streak`.
   - `https://frichmonds-stack.github.io/Math-Muscle-Trainer/live/js/app-core.js` served `APP_VERSION = "v0.20.3"`.
   - `https://frichmonds-stack.github.io/Math-Muscle-Trainer/live/js/app-progress.js` served the Home streak value from `streakSummary.current`.
+- 2026-05-17 debug-mode implementation ran `node --check` for all root JS modules; syntax checks passed.
+- 2026-05-17 debug-mode implementation ran a CSS brace sanity check; braces are balanced.
+- 2026-05-17 debug-mode implementation ran headless Chrome `file://` smoke checks: normal `index.html` did not render the debug unlock dialog, while `index.html?debug=1` did.
+- 2026-05-17 debug-mode implementation ran `scripts/check-repo.ps1`; expected live-build drift failures reported for `index.html` and `styles.css` because `docs/live` was not published.
+- 2026-05-17 `v0.20.4` publish close ran `node --check` for all root JS modules; syntax checks passed.
+- 2026-05-17 `v0.20.4` publish close ran a CSS brace sanity check; braces are balanced.
+- 2026-05-17 `v0.20.4` publish close ran headless Chrome `file://` smoke checks: normal `index.html` did not render the debug unlock dialog, while `index.html?debug=1` did.
+- 2026-05-17 `v0.20.4` publish close updated publish/check scripts to include `js/app-debug.js`, then ran `scripts/check-repo.ps1` after publishing `docs/live`; result: `All repo checks passed.`
 
 ## Working Tree Note
 

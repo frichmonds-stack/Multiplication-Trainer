@@ -22,6 +22,8 @@ The design phrase to remember:
 
 `An iPad training app a child can understand and an adult would not feel silly using.`
 
+Minimalism is a learning-design strategy, not only a visual preference. Use it to reduce extraneous cognitive load so learners can spend more attention on arithmetic. Visuals, motion, surfaces, and feedback should clarify the task or progress state; avoid decoration that competes with the math.
+
 ## Visual Feel
 
 Aim for:
@@ -61,7 +63,11 @@ The app uses a single app-shell mental model.
 
 - Desktop and tablet-landscape render inside a centered iPad-landscape-style app canvas.
 - Extra browser space outside the app canvas is ambient frame, not a layout area to fill.
+- The primary design target is iPad/tablet classroom use, especially landscape. Tablet portrait, narrow desktop, and phones are secondary support targets.
+- Phone layouts should be usable, not optimized as the main product target.
 - Narrow/mobile layouts may become scroll-friendly and portrait-oriented.
+- Avoid unnecessary scrolling on large enough app-frame screens, but use comfortable scrolling on small screens instead of shrinking controls below usable touch sizes.
+- Prefer responsive density for app-frame layouts: scale gaps, padding, headings, and control proportions for shorter desktop/tablet heights before allowing avoidable overflow.
 - Screens should feel like app surfaces, not website sections.
 - Avoid visible page-section panels inside the app shell unless the element is a true card, repeated item, or dialog.
 - The default entry should be the learner's main training surface, not a launcher-style home page.

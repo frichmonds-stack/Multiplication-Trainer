@@ -57,6 +57,7 @@ Copy-Item -LiteralPath (Join-Path $RepoRoot "js/app-init.js") -Destination (Join
 Copy-Item -LiteralPath (Join-Path $RepoRoot "js/app-practice.js") -Destination (Join-Path $target "js/app-practice.js") -Force
 Copy-Item -LiteralPath (Join-Path $RepoRoot "js/app-progress.js") -Destination (Join-Path $target "js/app-progress.js") -Force
 Copy-Item -LiteralPath (Join-Path $RepoRoot "js/app-techniques.js") -Destination (Join-Path $target "js/app-techniques.js") -Force
+Copy-Item -LiteralPath (Join-Path $RepoRoot "js/app-debug.js") -Destination (Join-Path $target "js/app-debug.js") -Force
 
 $docsIndex = Read-Utf8Text "docs/index.html"
 $existingLabels = @{}

@@ -367,6 +367,17 @@ function getTechniqueStatusIconMarkup(status, extraClass = "") {
   return `<span class="${classes.join(" ")}" aria-hidden="true"></span>`;
 }
 
+function getTechniqueOperatorFeedbackClasses(symbol, expected, submittedAnswer, feedbackPending) {
+  const classes = ["ghost-button", "technique-operator-button"];
+  if (feedbackPending && symbol === expected) {
+    classes.push("is-correct");
+  }
+  if (feedbackPending && symbol === submittedAnswer && symbol !== expected) {
+    classes.push("is-error");
+  }
+  return classes.join(" ");
+}
+
 function getTechniqueCorrectCounterMarkup(correctCount, requiredCount, label = "Correct reps") {
   const total = Math.max(0, Number(requiredCount) || 0);
   if (total < 1) {
@@ -990,6 +1001,9 @@ function createMake10LessonState() {
     answer: "",
     feedback: "",
     tone: "",
+    submittedAnswer: "",
+    expectedAnswer: "",
+    feedbackPending: false,
     currentQuestion: null,
     lastPracticeScore: null,
   };
@@ -1014,6 +1028,9 @@ function beginMake10Practice(stepId) {
   lessonState.answer = "";
   lessonState.feedback = "";
   lessonState.tone = "";
+  lessonState.submittedAnswer = "";
+  lessonState.expectedAnswer = "";
+  lessonState.feedbackPending = false;
   lessonState.currentQuestion = createMake10Question(stepId, lessonState.questionIndex);
 }
 
@@ -1044,13 +1061,25 @@ function advanceMake10AfterPractice() {
   lessonState.answer = "";
   lessonState.feedback = "";
   lessonState.tone = "";
+  lessonState.submittedAnswer = "";
+  lessonState.expectedAnswer = "";
+  lessonState.feedbackPending = false;
   lessonState.currentQuestion = null;
+}
+
+function clearMake10FeedbackState(lessonState) {
+  lessonState.answer = "";
+  lessonState.feedback = "";
+  lessonState.tone = "";
+  lessonState.submittedAnswer = "";
+  lessonState.expectedAnswer = "";
+  lessonState.feedbackPending = false;
 }
 
 function submitMake10Answer(rawAnswer) {
   const lessonState = ensureMake10LessonState();
   const stepId = getMake10Step().id;
-  if (!lessonState.currentQuestion) {
+  if (!lessonState.currentQuestion || lessonState.feedbackPending) {
     return;
   }
 
@@ -1067,22 +1096,27 @@ function submitMake10Answer(rawAnswer) {
     lessonState.correctCount += 1;
   }
 
-  lessonState.questionIndex += 1;
   const isComplete = lessonState.correctCount >= MAKE10_PRACTICE_QUESTION_COUNT;
-
-  if (isComplete) {
-    lessonState.feedback = "";
-    lessonState.tone = "";
-    advanceMake10AfterPractice();
-    return;
-  }
-
-  lessonState.feedback = isCorrect
-    ? "Correct."
-    : `Not quite. Correct answer: ${expected}`;
+  lessonState.submittedAnswer = submitted;
+  lessonState.expectedAnswer = expected;
+  lessonState.feedback = isCorrect ? "Correct." : `Correct answer: ${expected}`;
   lessonState.tone = isCorrect ? "success" : "error";
-  lessonState.answer = "";
-  lessonState.currentQuestion = createMake10Question(stepId, lessonState.questionIndex);
+  lessonState.feedbackPending = true;
+  renderTechniqueScreen();
+
+  window.clearTimeout(state.techniqueAdvanceTimeoutId);
+  state.techniqueAdvanceTimeoutId = window.setTimeout(() => {
+    state.techniqueAdvanceTimeoutId = null;
+    if (isComplete) {
+      advanceMake10AfterPractice();
+      renderTechniqueScreen();
+      return;
+    }
+    lessonState.questionIndex += 1;
+    clearMake10FeedbackState(lessonState);
+    lessonState.currentQuestion = createMake10Question(stepId, lessonState.questionIndex);
+    renderTechniqueScreen();
+  }, 760);
 }
 
 function getMake10FlowPillsMarkup() {
@@ -1142,6 +1176,11 @@ function renderMake10NumericPractice() {
   const stepId = getMake10Step().id;
   const prompt = lessonState.currentQuestion?.prompt || "";
   const answerState = lessonState.tone === "success" ? "correct" : lessonState.tone === "error" ? "error" : "idle";
+  const feedbackReveal = lessonState.feedbackPending
+    ? `<p class="technique-answer-reveal ${lessonState.tone}">
+        ${lessonState.tone === "success" ? "Correct" : `Answer: ${escapeHtml(lessonState.expectedAnswer)}`}
+      </p>`
+    : "";
 
   return `
     <form class="technique-lesson-card technique-question-shell technique-practice-shell" data-technique-form="${stepId}" autocomplete="off">
@@ -1152,6 +1191,7 @@ function renderMake10NumericPractice() {
           "Correct reps",
         )}
         <p class="technique-question">${prompt}</p>
+        ${feedbackReveal}
       </div>
       <div class="technique-input-row technique-practice-input-row">
         <div class="technique-answer-wrap ${
@@ -1166,6 +1206,7 @@ function renderMake10NumericPractice() {
               pattern="[0-9]*"
               placeholder="Type your answer"
               value="${escapeHtml(lessonState.answer)}"
+              ${lessonState.feedbackPending ? "disabled" : ""}
               data-technique-autofocus="true"
             />
           </label>
@@ -1173,7 +1214,7 @@ function renderMake10NumericPractice() {
             ${getTechniqueStatusIconMarkup(answerState, "technique-status-icon-inline")}
           </span>
         </div>
-        <button class="primary-button" type="submit">Check Answer</button>
+        <button class="primary-button" type="submit" ${lessonState.feedbackPending ? "disabled" : ""}>Check Answer</button>
       </div>
       ${state.useTouchKeypad ? getTechniqueKeypadMarkup() : ""}
       <p class="technique-feedback ${lessonState.tone}">${escapeHtml(lessonState.feedback)}</p>
@@ -1185,8 +1226,9 @@ function renderMake10ComparePractice() {
   const lessonState = ensureMake10LessonState();
   const prompt = lessonState.currentQuestion?.prompt || "";
   const total = lessonState.currentQuestion?.total;
-  const compactPrompt = Number.isFinite(total) ? `${total}` : "";
-
+  const expected = lessonState.expectedAnswer || lessonState.currentQuestion?.expected || "";
+  const displayedSymbol = lessonState.feedbackPending ? expected : "";
+  const compareStateClass = lessonState.feedbackPending ? `is-${lessonState.tone}` : "";
   return `
     <section class="technique-lesson-card technique-question-shell technique-practice-shell">
       <div class="problem-wrap technique-practice-problem">
@@ -1197,21 +1239,20 @@ function renderMake10ComparePractice() {
         )}
         <p class="technique-question technique-compare-question">
           <span>${prompt}</span>
-          <span class="technique-compare-box" aria-hidden="true"></span>
+          <span class="technique-compare-box ${compareStateClass}" aria-hidden="true">${escapeHtml(displayedSymbol)}</span>
           <span>10</span>
         </p>
-        <p class="technique-compare-mini">${compactPrompt}</p>
       </div>
       <div class="technique-operator-row">
-        <button class="ghost-button technique-operator-button" type="button" data-technique-action="make10-symbol-less">
+        <button class="${getTechniqueOperatorFeedbackClasses("<", expected, lessonState.submittedAnswer, lessonState.feedbackPending)}" type="button" data-technique-action="make10-symbol-less" ${lessonState.feedbackPending ? "disabled" : ""}>
           <span class="technique-operator-symbol">&lt;</span>
           <span class="technique-operator-label">Less than</span>
         </button>
-        <button class="ghost-button technique-operator-button" type="button" data-technique-action="make10-symbol-equal">
+        <button class="${getTechniqueOperatorFeedbackClasses("=", expected, lessonState.submittedAnswer, lessonState.feedbackPending)}" type="button" data-technique-action="make10-symbol-equal" ${lessonState.feedbackPending ? "disabled" : ""}>
           <span class="technique-operator-symbol">=</span>
           <span class="technique-operator-label">Equal to</span>
         </button>
-        <button class="ghost-button technique-operator-button" type="button" data-technique-action="make10-symbol-greater">
+        <button class="${getTechniqueOperatorFeedbackClasses(">", expected, lessonState.submittedAnswer, lessonState.feedbackPending)}" type="button" data-technique-action="make10-symbol-greater" ${lessonState.feedbackPending ? "disabled" : ""}>
           <span class="technique-operator-symbol">&gt;</span>
           <span class="technique-operator-label">Greater than</span>
         </button>
@@ -1948,6 +1989,9 @@ function createAdditionLessonState(lessonId) {
     answer: "",
     feedback: "",
     tone: "",
+    submittedAnswer: "",
+    expectedAnswer: "",
+    feedbackPending: false,
     currentQuestion: null,
     lastPracticeScore: null,
   };
@@ -1989,6 +2033,9 @@ function beginAdditionLessonPractice(step) {
   lessonState.answer = "";
   lessonState.feedback = "";
   lessonState.tone = "";
+  lessonState.submittedAnswer = "";
+  lessonState.expectedAnswer = "";
+  lessonState.feedbackPending = false;
   lessonState.currentQuestion = createAdditionQuestionForStep(step);
 }
 
@@ -2002,6 +2049,9 @@ function setAdditionLessonFlowIndex(nextIndex) {
   lessonState.answer = "";
   lessonState.feedback = "";
   lessonState.tone = "";
+  lessonState.submittedAnswer = "";
+  lessonState.expectedAnswer = "";
+  lessonState.feedbackPending = false;
 
   const step = flow[boundedIndex];
   if (step.type === "practice" || step.type === "final") {
@@ -2032,7 +2082,11 @@ function jumpToAdditionLessonStep(stepId) {
 function submitAdditionLessonAnswer(rawAnswer) {
   const lessonState = ensureAdditionLessonState();
   const step = getAdditionFlowStep();
-  if (!lessonState.currentQuestion || (step.type !== "practice" && step.type !== "final")) {
+  if (
+    !lessonState.currentQuestion ||
+    lessonState.feedbackPending ||
+    (step.type !== "practice" && step.type !== "final")
+  ) {
     return;
   }
 
@@ -2049,21 +2103,36 @@ function submitAdditionLessonAnswer(rawAnswer) {
     lessonState.correctCount += 1;
   }
 
-  lessonState.questionIndex += 1;
   const isComplete = lessonState.correctCount >= getAdditionPracticeGoal(step);
-  if (isComplete) {
-    lessonState.lastPracticeScore = lessonState.correctCount;
-    if (step.type === "final") {
-      markTechniqueCompleted(`addition:${lessonState.lessonId}`);
-    }
-    setAdditionLessonFlowIndex(lessonState.flowIndex + 1);
-    return;
-  }
-
-  lessonState.feedback = isCorrect ? "Correct." : `Not quite. Correct answer: ${expected}`;
+  lessonState.submittedAnswer = submitted;
+  lessonState.expectedAnswer = expected;
+  lessonState.feedback = isCorrect ? "Correct." : `Correct answer: ${expected}`;
   lessonState.tone = isCorrect ? "success" : "error";
-  lessonState.answer = "";
-  lessonState.currentQuestion = createAdditionQuestionForStep(step);
+  lessonState.feedbackPending = true;
+  renderTechniqueScreen();
+
+  window.clearTimeout(state.techniqueAdvanceTimeoutId);
+  state.techniqueAdvanceTimeoutId = window.setTimeout(() => {
+    state.techniqueAdvanceTimeoutId = null;
+    if (isComplete) {
+      lessonState.lastPracticeScore = lessonState.correctCount;
+      if (step.type === "final") {
+        markTechniqueCompleted(`addition:${lessonState.lessonId}`);
+      }
+      setAdditionLessonFlowIndex(lessonState.flowIndex + 1);
+      renderTechniqueScreen();
+      return;
+    }
+    lessonState.questionIndex += 1;
+    lessonState.answer = "";
+    lessonState.feedback = "";
+    lessonState.tone = "";
+    lessonState.submittedAnswer = "";
+    lessonState.expectedAnswer = "";
+    lessonState.feedbackPending = false;
+    lessonState.currentQuestion = createAdditionQuestionForStep(step);
+    renderTechniqueScreen();
+  }, 760);
 }
 
 function getAdditionLessonFlowPillsMarkup() {
@@ -2125,12 +2194,18 @@ function renderAdditionNumericPractice(step) {
   lessonState.currentQuestion = question;
   const answerState = lessonState.tone === "success" ? "correct" : lessonState.tone === "error" ? "error" : "idle";
   const goal = getAdditionPracticeGoal(step);
+  const feedbackReveal = lessonState.feedbackPending
+    ? `<p class="technique-answer-reveal ${lessonState.tone}">
+        ${lessonState.tone === "success" ? "Correct" : `Answer: ${escapeHtml(lessonState.expectedAnswer)}`}
+      </p>`
+    : "";
 
   return `
     <form class="technique-lesson-card technique-question-shell technique-practice-shell" data-technique-form="addition-practice" autocomplete="off">
       <div class="problem-wrap technique-practice-problem">
         ${getTechniqueCorrectCounterMarkup(lessonState.correctCount, goal, "Correct reps")}
         <p class="technique-question">${escapeHtml(question.prompt)}</p>
+        ${feedbackReveal}
       </div>
       <div class="technique-input-row technique-practice-input-row">
         <div class="technique-answer-wrap ${
@@ -2145,6 +2220,7 @@ function renderAdditionNumericPractice(step) {
               pattern="[0-9]*"
               placeholder="Type your answer"
               value="${escapeHtml(lessonState.answer)}"
+              ${lessonState.feedbackPending ? "disabled" : ""}
               data-technique-autofocus="true"
             />
           </label>
@@ -2152,7 +2228,7 @@ function renderAdditionNumericPractice(step) {
             ${getTechniqueStatusIconMarkup(answerState, "technique-status-icon-inline")}
           </span>
         </div>
-        <button class="primary-button" type="submit">Check Answer</button>
+        <button class="primary-button" type="submit" ${lessonState.feedbackPending ? "disabled" : ""}>Check Answer</button>
       </div>
       ${question.hint ? `<article class="technique-hint addition-practice-hint">${escapeHtml(question.hint)}</article>` : ""}
       ${state.useTouchKeypad ? getTechniqueKeypadMarkup() : ""}
@@ -2166,29 +2242,30 @@ function renderAdditionComparePractice(step) {
   const question = lessonState.currentQuestion || createAdditionQuestionForStep(step);
   lessonState.currentQuestion = question;
   const goal = getAdditionPracticeGoal(step);
-
+  const expected = lessonState.expectedAnswer || question.expected || "";
+  const displayedSymbol = lessonState.feedbackPending ? expected : "";
+  const compareStateClass = lessonState.feedbackPending ? `is-${lessonState.tone}` : "";
   return `
     <section class="technique-lesson-card technique-question-shell technique-practice-shell">
       <div class="problem-wrap technique-practice-problem">
         ${getTechniqueCorrectCounterMarkup(lessonState.correctCount, goal, "Correct reps")}
         <p class="technique-question technique-compare-question">
           <span>${escapeHtml(question.prompt)}</span>
-          <span class="technique-compare-box" aria-hidden="true"></span>
+          <span class="technique-compare-box ${compareStateClass}" aria-hidden="true">${escapeHtml(displayedSymbol)}</span>
           <span>${escapeHtml(question.compareTarget)}</span>
         </p>
-        <p class="technique-compare-mini">${escapeHtml(question.compactPrompt)}</p>
       </div>
       ${question.hint ? `<article class="technique-hint addition-practice-hint">${escapeHtml(question.hint)}</article>` : ""}
       <div class="technique-operator-row">
-        <button class="ghost-button technique-operator-button" type="button" data-technique-action="addition-symbol-less">
+        <button class="${getTechniqueOperatorFeedbackClasses("<", expected, lessonState.submittedAnswer, lessonState.feedbackPending)}" type="button" data-technique-action="addition-symbol-less" ${lessonState.feedbackPending ? "disabled" : ""}>
           <span class="technique-operator-symbol">&lt;</span>
           <span class="technique-operator-label">Less than</span>
         </button>
-        <button class="ghost-button technique-operator-button" type="button" data-technique-action="addition-symbol-equal">
+        <button class="${getTechniqueOperatorFeedbackClasses("=", expected, lessonState.submittedAnswer, lessonState.feedbackPending)}" type="button" data-technique-action="addition-symbol-equal" ${lessonState.feedbackPending ? "disabled" : ""}>
           <span class="technique-operator-symbol">=</span>
           <span class="technique-operator-label">Equal to</span>
         </button>
-        <button class="ghost-button technique-operator-button" type="button" data-technique-action="addition-symbol-greater">
+        <button class="${getTechniqueOperatorFeedbackClasses(">", expected, lessonState.submittedAnswer, lessonState.feedbackPending)}" type="button" data-technique-action="addition-symbol-greater" ${lessonState.feedbackPending ? "disabled" : ""}>
           <span class="technique-operator-symbol">&gt;</span>
           <span class="technique-operator-label">Greater than</span>
         </button>
@@ -2464,9 +2541,7 @@ function setEndWorkoutDialogContent(targetView = null) {
       : "Your results will be saved and this workout will finish.";
   }
   if (elements.endWorkoutDialogConfirmLabel) {
-    elements.endWorkoutDialogConfirmLabel.textContent = leavingToAnotherView
-      ? `End Workout and Go to ${getViewLabelForDialog(targetView)}`
-      : "End Workout";
+    elements.endWorkoutDialogConfirmLabel.textContent = "End Workout";
   }
 }
 

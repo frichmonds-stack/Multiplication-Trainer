@@ -6,6 +6,23 @@ The format is inspired by Keep a Changelog and uses a simple project-friendly ve
 
 ## [Unreleased]
 
+## [0.20.4] - 2026-05-17
+
+### Added
+- Added opt-in teacher/developer debug mode behind a Home arm-mark double-click or `?debug=1` / `#debug`, with a classroom password gate, screen jumps, canned learner personas, quick debug workouts, a classroom feedback message, and local progress clearing.
+- Added debug-mode appearance controls for light/dark mode and color palette checks, plus an `Exit Debug` action.
+- Added a Home Weekly Reps goal line.
+
+### Changed
+- Simplified the leave-workout confirmation button label to `End Workout` while keeping the dialog copy responsible for naming the destination.
+- Polished Workout setup controls so operation labels, workout type buttons, and Workout Options toggles align more cleanly.
+- Improved Practice HUD grouping in light mode while keeping the quiet non-card direction.
+- Improved Learn light-mode lesson surface contrast and shared Learn answer feedback for correct/incorrect states, including short input lockout before advancing.
+- Changed the Home About utility from `?` to `i` and added the classroom feedback note to the About dialog.
+
+### Fixed
+- Fixed Aang light-mode contrast for Fact Tracker `Strong` status pills.
+
 ## [0.20.3] - 2026-05-16
 
 ### Changed

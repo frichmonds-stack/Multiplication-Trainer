@@ -9,6 +9,7 @@ Use this map to route future Codex/GPT sessions to the right files before editin
    - `js/app-init.js` - display version resolution, startup rendering, event binding.
    - `js/app-core.js` - shared constants, state defaults, setup helpers.
    - `js/app-techniques.js` - app view routing via `requestView` and `showView`.
+   - `js/app-debug.js` - opt-in teacher/developer debug mode and persona seeding.
 2. Related docs or ADRs
    - `README.md`
    - `AGENTS.md`
@@ -18,11 +19,13 @@ Use this map to route future Codex/GPT sessions to the right files before editin
    - `AGENTS.md`, `ai/context.md`, `ai/current-state.md`
    - The script tags near the end of `index.html`
    - `initialise()` in `js/app-init.js`
+   - Debug activation in `js/app-debug.js` if changing startup, routing, storage, or test personas.
 4. Common risks or things not to break
    - Script order matters because modules share globals.
    - Duplicate element IDs break bindings and `scripts/check-repo.ps1`.
    - View buttons depend on matching `data-view-target` values and screen IDs.
    - The app should still open directly from `index.html`.
+   - Debug mode is a client-side classroom gate only; do not add secrets or real admin behavior to it.
 
 ## Workout Logic
 
