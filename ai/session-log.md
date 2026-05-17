@@ -283,3 +283,5 @@ This log records durable session milestones and active handoff notes. Keep detai
 - Ran `node --check` for all root JS modules; syntax checks passed.
 - Ran a CSS brace sanity check; braces are balanced.
 - Ran `scripts/check-repo.ps1` after publishing `docs/live`; result: `All repo checks passed.`
+- Pushed release commit `c7c0a43` (`Release v0.20.5 app shell polish`) to GitHub.
+- Verified GitHub Pages live: `/` lists `Live - v0.20.5 app shell polish`, `/live/js/app-core.js` serves `APP_VERSION = "v0.20.5"`, and `/live/index.html` includes the dock Options and `Give Feedback` markers.
